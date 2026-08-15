@@ -1,0 +1,208 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-08-14",
+  "currency": "IDR",
+  "brand": {
+    "name": "MAU'S Kitchen",
+    "tagline": "Homemade with Love",
+    "whatsapp": "6281617691585",
+    "whatsappDisplay": "0816-1769-1585"
+  },
+  "categories": [
+    {
+      "id": "taichan",
+      "name": "Taichan",
+      "tagline": "Pedesnya nampol, rasanya nagih!",
+      "image": "/assets/menu/menu-taichan.jpeg",
+      "order": 1
+    },
+    {
+      "id": "minuman",
+      "name": "Minuman",
+      "tagline": "Segarnya bikin nagih!",
+      "image": "/assets/menu/menu-minuman.jpeg",
+      "order": 2
+    },
+    {
+      "id": "chocoberry",
+      "name": "ChocoBerry",
+      "tagline": "Fresh Berries, Premium Chocolate",
+      "image": "/assets/menu/menu-chocoberry.jpeg",
+      "order": 3
+    }
+  ],
+  "items": [
+    {
+      "id": "taichan-daging",
+      "categoryId": "taichan",
+      "name": "Taichan Daging",
+      "description": "Sate ayam bagian daging, dibakar tanpa bumbu kacang, disajikan dengan sambal taichan pedas dan jeruk nipis.",
+      "basePrice": 35000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-taichan.jpeg",
+      "available": true,
+      "isBestSeller": true,
+      "unit": "porsi"
+    },
+    {
+      "id": "taichan-kulit",
+      "categoryId": "taichan",
+      "name": "Taichan Kulit",
+      "description": "Sate kulit ayam renyah dibakar, gurih di luar juicy di dalam, dengan sambal taichan khas.",
+      "basePrice": 35000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-taichan.jpeg",
+      "available": true,
+      "isBestSeller": true,
+      "unit": "porsi"
+    },
+    {
+      "id": "lontong",
+      "categoryId": "taichan",
+      "name": "Lontong",
+      "description": "Lontong pulen, pendamping pas untuk taichan.",
+      "basePrice": 5000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-taichan.jpeg",
+      "available": true,
+      "isBestSeller": false,
+      "isAddOnItem": true,
+      "unit": "porsi"
+    },
+    {
+      "id": "sambel-taichan",
+      "categoryId": "taichan",
+      "name": "Sambel Taichan",
+      "description": "Sambal taichan ekstra, pedas segar khas MAU'S Kitchen.",
+      "basePrice": 5000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-taichan.jpeg",
+      "available": true,
+      "isBestSeller": false,
+      "isAddOnItem": true,
+      "unit": "porsi"
+    },
+    {
+      "id": "teh-original",
+      "categoryId": "minuman",
+      "name": "Teh Original",
+      "description": "Es teh original segar, manisnya pas untuk menemani taichan pedas.",
+      "basePrice": 10000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-minuman.jpeg",
+      "available": true,
+      "isBestSeller": false,
+      "unit": "cup"
+    },
+    {
+      "id": "thai-tea",
+      "categoryId": "minuman",
+      "name": "Thai Tea",
+      "description": "Thai tea creamy dengan aroma teh Thailand yang khas.",
+      "basePrice": 17000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-minuman.jpeg",
+      "available": true,
+      "isBestSeller": true,
+      "unit": "cup"
+    },
+    {
+      "id": "teh-susu",
+      "categoryId": "minuman",
+      "name": "Teh Susu",
+      "description": "Perpaduan teh pilihan dan susu, lembut dan bikin nagih.",
+      "basePrice": 17000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-minuman.jpeg",
+      "available": true,
+      "isBestSeller": false,
+      "unit": "cup"
+    },
+    {
+      "id": "aren-latte",
+      "categoryId": "minuman",
+      "name": "Aren Latte",
+      "description": "Kopi susu gula aren dengan manis alami khas gula aren asli.",
+      "basePrice": 17000,
+      "variants": [],
+      "addOns": [],
+      "image": "/assets/menu/menu-minuman.jpeg",
+      "available": true,
+      "isBestSeller": true,
+      "unit": "cup"
+    },
+    {
+      "id": "choco-berry-original",
+      "categoryId": "chocoberry",
+      "name": "Choco Berry Original",
+      "description": "Strawberry segar disiram coklat premium yang lumer.",
+      "basePrice": 25000,
+      "variants": [
+        { "id": "small", "name": "Small", "price": 25000 },
+        { "id": "medium", "name": "Medium", "price": 35000 }
+      ],
+      "addOns": [
+        { "id": "pistacio-kunava", "name": "Pistacio Kunava", "price": 8000 }
+      ],
+      "image": "/assets/menu/menu-chocoberry.jpeg",
+      "available": true,
+      "isBestSeller": true,
+      "unit": "cup"
+    },
+    {
+      "id": "choco-berry-grape",
+      "categoryId": "chocoberry",
+      "name": "Choco Berry Grape",
+      "description": "Strawberry & anggur segar disiram coklat premium yang lumer.",
+      "basePrice": 30000,
+      "variants": [
+        { "id": "small", "name": "Small", "price": 30000 },
+        { "id": "medium", "name": "Medium", "price": 40000 }
+      ],
+      "addOns": [
+        { "id": "pistacio-kunava", "name": "Pistacio Kunava", "price": 8000 }
+      ],
+      "image": "/assets/menu/menu-chocoberry.jpeg",
+      "available": true,
+      "isBestSeller": true,
+      "unit": "cup"
+    },
+    {
+      "id": "choco-berry-banana",
+      "categoryId": "chocoberry",
+      "name": "Choco Berry Banana",
+      "description": "Strawberry & pisang segar disiram coklat premium yang lumer.",
+      "basePrice": 25000,
+      "variants": [
+        { "id": "small", "name": "Small", "price": 25000 },
+        { "id": "medium", "name": "Medium", "price": 35000 }
+      ],
+      "addOns": [
+        { "id": "pistacio-kunava", "name": "Pistacio Kunava", "price": 8000 }
+      ],
+      "image": "/assets/menu/menu-chocoberry.jpeg",
+      "available": true,
+      "isBestSeller": false,
+      "unit": "cup"
+    }
+  ],
+  "archivedItems": [
+    {
+      "id": "lemon-tea",
+      "name": "Lemon Tea",
+      "reason": "Tidak ada di poster menu terbaru. Menunggu konfirmasi harga dari pemilik."
+    },
+    {
+      "id": "susu-strawberry",
+      "name": "Susu Strawberry",
+      "reason": "Tidak ada di poster menu terbaru. Menunggu konfirmasi harga dari pemilik."
+    }
+  ]
+}

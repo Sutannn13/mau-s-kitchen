@@ -1,0 +1,23 @@
+"use client";
+
+import { useCart, useRehydrateCart } from "@/lib/cart-store";
+
+// Badge jumlah item keranjang, sinkron real-time dengan store (T3.6).
+// Muncul setelah rehydrate agar tidak bentrok dengan HTML server.
+export function CartBadge() {
+  useRehydrateCart();
+  const totalQuantity = useCart((state) =>
+    state.items.reduce((total, item) => total + item.quantity, 0),
+  );
+
+  if (totalQuantity < 1) {
+    return null;
+  }
+
+  return (
+    <span className="absolute -right-0.5 -top-0.5 flex min-w-5 items-center justify-center rounded-full bg-chili px-1 py-0.5 text-[10px] font-bold leading-none text-white">
+      {totalQuantity > 99 ? "99+" : totalQuantity}
+      <span className="sr-only"> item di keranjang</span>
+    </span>
+  );
+}
