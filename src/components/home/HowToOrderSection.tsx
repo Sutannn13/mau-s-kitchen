@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, ClipboardPenLine, QrCode, ShoppingBag } from "lucide-react";
 
+import { Card } from "@/components/ui";
+
 interface OrderStep {
   title: string;
   description: string;
@@ -45,9 +47,10 @@ export function HowToOrderSection() {
 
         <ol className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {orderSteps.map((step, index) => (
-            <li
+            <Card
+              as="li"
               key={step.title}
-              className="relative rounded-2xl border border-gold/20 bg-cream-soft p-5 shadow-warm"
+              className="relative p-5"
             >
               <div className="flex items-center justify-between">
                 <span className="flex size-11 items-center justify-center rounded-full bg-brown-deep text-cream">
@@ -67,7 +70,7 @@ export function HowToOrderSection() {
               <p className="mt-2 text-sm leading-6 text-brown/70">
                 {step.description}
               </p>
-            </li>
+            </Card>
           ))}
         </ol>
       </div>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Input } from "@/components/ui";
 import { statusLabels, orderStatuses } from "@/lib/order-status";
 
 // Filter daftar pesanan: rentang tanggal, status, pencarian
@@ -123,14 +124,14 @@ export function OrderFilters({
             >
               Dari
             </label>
-            <input
+            <Input
               id="filter-dari"
               type="date"
               value={dari}
               onChange={(event) => {
                 setDari(event.target.value);
               }}
-              className="mt-1 min-h-11 w-full rounded-xl border border-gold/30 bg-cream px-3 text-sm text-brown-deep"
+              className="mt-1 px-3"
             />
           </div>
           <div>
@@ -140,14 +141,14 @@ export function OrderFilters({
             >
               Sampai
             </label>
-            <input
+            <Input
               id="filter-sampai"
               type="date"
               value={sampai}
               onChange={(event) => {
                 setSampai(event.target.value);
               }}
-              className="mt-1 min-h-11 w-full rounded-xl border border-gold/30 bg-cream px-3 text-sm text-brown-deep"
+              className="mt-1 px-3"
             />
           </div>
           <div className="flex items-end">
@@ -207,13 +208,13 @@ export function OrderFilters({
             router.push(`/admin/pesanan?${params.toString()}`);
           }}
         >
-          <input
+          <Input
             id="filter-q"
             name="q"
             type="search"
             defaultValue={currentQuery}
             placeholder="MK-… atau nama"
-            className="min-h-11 w-full rounded-xl border border-gold/30 bg-cream px-3 text-sm text-brown-deep"
+            className="px-3"
           />
           <button
             type="submit"

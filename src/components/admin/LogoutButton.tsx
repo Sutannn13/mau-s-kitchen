@@ -4,8 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+
 // Logout admin: hapus sesi Supabase lalu kembali ke halaman login.
-export function LogoutButton() {
+export function LogoutButton({
+  className,
+  iconOnly = false,
+}: {
+  className?: string;
+  iconOnly?: boolean;
+}) {
   const router = useRouter();
   const [isBusy, setIsBusy] = useState(false);
 
@@ -32,10 +40,18 @@ export function LogoutButton() {
         void handleLogout();
       }}
       disabled={isBusy}
-      className="flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-brown/80 transition-colors hover:bg-gold/15 hover:text-brown-deep disabled:opacity-60"
+      aria-label={iconOnly ? "Keluar" : undefined}
+      aria-busy={isBusy || undefined}
+      className={cn(
+        "flex min-h-11 items-center gap-2 rounded-xl text-sm font-semibold transition-colors disabled:opacity-60",
+        iconOnly
+          ? "justify-center px-0"
+          : "px-4 text-brown/80 hover:bg-gold/15 hover:text-brown-deep",
+        className,
+      )}
     >
       <LogOut aria-hidden="true" className="size-4" strokeWidth={1.75} />
-      {isBusy ? "Keluar…" : "Keluar"}
+      {iconOnly ? null : isBusy ? "Keluar…" : "Keluar"}
     </button>
   );
 }

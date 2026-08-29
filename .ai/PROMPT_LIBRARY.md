@@ -177,9 +177,8 @@ Buat alur checkout MAU'S Kitchen.
    Format pesan PERSIS seperti docs/13_WHATSAPP_INTEGRATION.md §13.2.
    Gunakan *bold* satu bintang (format WhatsApp), bukan **bold**.
 
-5. Setelah submit: buka WhatsApp di tab baru, kosongkan keranjang,
-   arahkan ke /pembayaran/[kode].
-   Gunakan pola "buka tab kosong dulu" (§13.4) agar tidak diblokir popup blocker.
+5. Setelah submit: simpan pesanan, kosongkan keranjang, lalu arahkan ke
+   /pembayaran/[kode] tanpa membuka tab atau aplikasi WhatsApp.
 ```
 
 ---

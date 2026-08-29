@@ -11,9 +11,13 @@ import type { MenuItem } from "@/types/menu";
 interface MenuCardProps {
   item: MenuItem;
   onOpen: (item: MenuItem) => void;
+  priority?: boolean;
 }
 
-export function MenuCard({ item, onOpen }: MenuCardProps) {
+// Semua item (termasuk item tambahan seperti Lontong & Sambel Taichan)
+// memakai kartu penuh dengan foto dan link detail. Perubahan atas desain
+// kartu ringkas lama — permintaan pemilik, lihat docs/08_UI_UX_SPEC.md §8.3.
+export function MenuCard({ item, onOpen, priority = false }: MenuCardProps) {
   const productHref = `/produk/${item.id}`;
 
   const variantPrices = item.variants.map((variant) => variant.price);
@@ -45,37 +49,8 @@ export function MenuCard({ item, onOpen }: MenuCardProps) {
     </button>
   );
 
-  // Item tambahan (Lontong, Sambel Taichan) memakai kartu ringkas
-  // tanpa foto besar. Lihat docs/08_UI_UX_SPEC.md §8.3.
-  if (item.isAddOnItem) {
-    return (
-      <article className="flex items-center gap-3 rounded-2xl border border-gold/20 bg-cream-soft px-4 py-3 shadow-warm">
-        <div className="min-w-0 flex-1">
-          <h3 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-brown-deep">
-            <Link href={productHref} className="transition-colors hover:text-brown">
-              {item.name}
-            </Link>
-            {!item.available && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-500">
-                <CircleOff aria-hidden="true" className="size-3.5" strokeWidth={2} />
-                Habis
-              </span>
-            )}
-          </h3>
-          <p className="mt-0.5 line-clamp-1 text-xs leading-5 text-brown/70">
-            {item.description}
-          </p>
-          <p className="mt-1 text-sm font-bold tabular-nums text-gold">
-            {formatRupiah(item.basePrice)}
-          </p>
-        </div>
-        {addButton}
-      </article>
-    );
-  }
-
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-gold/20 bg-cream-soft shadow-warm">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gold/20 bg-cream-soft shadow-warm">
       <div className="relative aspect-[4/5] overflow-hidden">
         <Link
           href={productHref}
@@ -86,10 +61,11 @@ export function MenuCard({ item, onOpen }: MenuCardProps) {
             src={item.image}
             alt={`Poster resmi yang menampilkan ${item.name}`}
             fill
+            priority={priority}
             quality={70}
             sizes="(max-width: 479px) 92vw, (max-width: 767px) 46vw, (max-width: 1023px) 46vw, (max-width: 1279px) 31vw, 23vw"
             className={cn(
-              "object-cover transition duration-300 group-hover:scale-105",
+              "object-cover transition duration-300 motion-safe:group-hover:scale-105",
               !item.available && "grayscale",
             )}
           />

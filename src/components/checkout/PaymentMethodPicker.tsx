@@ -2,11 +2,13 @@
 
 import { Banknote, Building2, QrCode } from "lucide-react";
 
+import { isPaymentMethodEnabled } from "@/config/payment";
 import { cn } from "@/lib/utils";
-import type { PaymentMethod } from "@/types/order";
+import type { OrderType, PaymentMethod } from "@/types/order";
 
 interface PaymentMethodPickerProps {
   value: PaymentMethod;
+  orderType: OrderType;
   onChange: (value: PaymentMethod) => void;
   error?: string;
 }
@@ -43,6 +45,7 @@ const methods: Array<{
 
 export function PaymentMethodPicker({
   value,
+  orderType,
   onChange,
   error,
 }: PaymentMethodPickerProps) {
@@ -52,7 +55,7 @@ export function PaymentMethodPicker({
         Metode Pembayaran
       </legend>
       <div className="mt-3 grid gap-2 sm:grid-cols-3">
-        {methods.map((method) => {
+        {methods.filter((method) => isPaymentMethodEnabled(method.id)).map((method) => {
           const isSelected = value === method.id;
           return (
             <label
@@ -80,13 +83,29 @@ export function PaymentMethodPicker({
                   {method.label}
                 </span>
                 <span className="block text-xs leading-5 text-brown/70">
-                  {method.description}
+                  {method.id === "tunai"
+                    ? orderType === "antar"
+                      ? "Bayar saat diterima; khusus diantar langsung MAU'S Kitchen"
+                      : "Bayar saat mengambil pesanan"
+                    : method.description}
                 </span>
               </span>
             </label>
           );
         })}
       </div>
+      {orderType === "antar" ? (
+        <p className="mt-3 rounded-xl border border-gold/25 bg-gold/10 px-4 py-3 text-xs leading-5 text-brown/75">
+          Antar tidak otomatis COD. Admin akan mengecek alamat, menetapkan ongkir,
+          lalu memilih pengantaran langsung atau kurir online. Jika memilih Tunai/COD,
+          pesanan hanya dapat diantar langsung oleh MAU&apos;S Kitchen.
+        </p>
+      ) : null}
+      {methods.every((method) => !isPaymentMethodEnabled(method.id)) ? (
+        <p role="alert" className="mt-2 text-sm font-semibold text-chili">
+          Metode pembayaran belum tersedia. Hubungi admin melalui WhatsApp.
+        </p>
+      ) : null}
       {error ? (
         <p role="alert" className="mt-2 text-sm font-semibold text-chili">
           {error}

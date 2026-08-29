@@ -1,0 +1,59 @@
+name = "maus-kitchen"
+main = ".open-next/worker.js"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+# Custom Domain menjadikan Worker sebagai origin; Cloudflare membuat DNS dan
+# sertifikat TLS otomatis saat deployment berhasil.
+[[routes]]
+pattern = "maukitchen.my.id"
+custom_domain = true
+
+[[ratelimits]]
+name = "ORDER_READ_RATE_LIMITER"
+namespace_id = "26082701"
+
+[ratelimits.simple]
+limit = 120
+period = 60
+
+[[ratelimits]]
+name = "HEALTH_RATE_LIMITER"
+namespace_id = "26082702"
+
+[ratelimits.simple]
+limit = 30
+period = 60
+
+[vars]
+DEPLOYMENT_PLATFORM = "cloudflare"
+# --- Publik (aman di-commit, RLS Supabase yang lindungi data, bukan key) ---
+NEXT_PUBLIC_SITE_URL = "https://maukitchen.my.id"
+NEXT_PUBLIC_SITE_NAME = "MAU'S Kitchen"
+NEXT_PUBLIC_WHATSAPP_NUMBER = "6281617691585"
+NEXT_PUBLIC_WHATSAPP_DISPLAY = "0816-1769-1585"
+NEXT_PUBLIC_QRIS_IMAGE_PATH = "/assets/payment/qris.jpeg"
+NEXT_PUBLIC_QRIS_MERCHANT_NAME = "SATE TAICHAN HANNA"
+# Aktifkan setelah QRIS diuji transaksi nominal kecil oleh pemilik.
+NEXT_PUBLIC_ENABLE_QRIS = "false"
+NEXT_PUBLIC_ENABLE_TRANSFER = "false"
+NEXT_PUBLIC_ENABLE_CASH = "true"
+NEXT_PUBLIC_BANK_NAME = "BCA"
+NEXT_PUBLIC_BANK_ACCOUNT_NUMBER = "TBD"
+NEXT_PUBLIC_BANK_ACCOUNT_NAME = "TBD"
+NEXT_PUBLIC_BUSINESS_HOURS = "TBD"
+NEXT_PUBLIC_BUSINESS_ADDRESS = "TBD"
+NEXT_PUBLIC_INSTAGRAM_URL = ""
+NEXT_PUBLIC_SUPABASE_URL = "https://ghjgicxxxftjhqxnbzan.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_lIsxSqC20yxaL1ztV9cwpQ_DQ-k9xc6"
+ORDER_RETENTION_DAYS = "90"
+
+# --- Secret server-side (JANGAN tulis di sini, ikut ter-commit) ---
+# Set via:  npx wrangler secret put <NAME>   lalu paste nilainya saat diminta.
+#   SUPABASE_SERVICE_ROLE_KEY  → sb_secret_...  (wajib, akses admin Supabase)
+#   ADMIN_EMAILS               → mauskitchen@gmail.com (siapa yang boleh akses /admin)
+#   RATE_LIMIT_SALT            → string acak 32+ char (hash rate limiter)

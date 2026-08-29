@@ -4,8 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { formatRupiah } from "@/lib/format";
-import { getCategoryStartingPrice, menu } from "@/lib/menu";
-import type { CategoryId } from "@/types/menu";
+import { getCachedMenu, getCategoryStartingPriceAsync } from "@/lib/menu-data";
+import type { MenuCategory } from "@/types/menu";
 
 interface CategoryVisual {
   Icon: LucideIcon;
@@ -14,7 +14,8 @@ interface CategoryVisual {
   label: string;
 }
 
-const categoryVisuals: Record<CategoryId, CategoryVisual> = {
+// Visual khusus untuk tiga kategori seed; kategori dinamis pakai default netral.
+const categoryVisuals: Record<string, CategoryVisual> = {
   taichan: {
     Icon: Flame,
     cardClassName: "bg-ink text-white",
@@ -35,15 +36,30 @@ const categoryVisuals: Record<CategoryId, CategoryVisual> = {
   },
 };
 
-export function CategorySection() {
-  const categories = [...menu.categories].sort((a, b) => a.order - b.order);
+const defaultVisual: CategoryVisual = {
+  Icon: Heart,
+  cardClassName: "bg-brown text-cream",
+  iconClassName: "bg-gold text-brown-deep",
+  label: "Spesial MAU'S Kitchen",
+};
+
+function visualFor(category: MenuCategory): CategoryVisual {
+  return categoryVisuals[category.id] ?? defaultVisual;
+}
+
+export async function CategorySection() {
+  const loaded = await getCachedMenu();
+  const categories = [...loaded.categories].sort((a, b) => a.order - b.order);
+  const startingPrices = await Promise.all(
+    categories.map((category) => getCategoryStartingPriceAsync(category.id)),
+  );
 
   return (
     <section className="bg-cream-soft py-12 md:py-24">
       <div className="mx-auto w-full max-w-content px-4 md:px-8">
         <div className="max-w-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            Tiga pilihan, satu dapur
+            Pilihan favorit
           </p>
           <h2 className="mt-3 font-serif text-2xl font-bold text-brown-deep md:text-4xl">
             Lagi ingin makan apa?
@@ -55,15 +71,15 @@ export function CategorySection() {
         </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          {categories.map((category) => {
-            const visual = categoryVisuals[category.id];
-            const startingPrice = getCategoryStartingPrice(category.id);
+          {categories.map((category, index) => {
+            const visual = visualFor(category);
+            const startingPrice = startingPrices[index] ?? 0;
 
             return (
               <article
                 key={category.id}
                 className={
-                  "group overflow-hidden rounded-2xl shadow-warm transition duration-200 hover:-translate-y-1 hover:shadow-warm-lg " +
+                  "group overflow-hidden rounded-2xl shadow-warm transition duration-200 motion-safe:hover:-translate-y-1 hover:shadow-warm-lg " +
                   visual.cardClassName
                 }
               >
@@ -74,7 +90,7 @@ export function CategorySection() {
                     fill
                     quality={70}
                     sizes="(max-width: 1023px) 100vw, 33vw"
-                    className="object-cover transition duration-300 group-hover:scale-105"
+                    className="object-cover transition duration-300 motion-safe:group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                   <span

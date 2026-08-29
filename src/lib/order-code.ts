@@ -1,5 +1,11 @@
 // Format kode pesanan MK-YYMMDD-XXX (zona Asia/Jakarta).
 // Lihat docs/10_DATA_MODEL.md §10.6 dan docs/16_TESTING_QA.md §16.2.
+const ORDER_CODE_PATTERN = /^MK-\d{6}-\d{3}$/;
+
+export function isValidOrderCode(value: string): boolean {
+  return ORDER_CODE_PATTERN.test(value);
+}
+
 export function buildOrderCode(date: Date, sequence: number): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Jakarta",

@@ -3,11 +3,12 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 import { formatRupiah } from "@/lib/format";
-import { getCategoryById, menu } from "@/lib/menu";
+import { getCachedMenu } from "@/lib/menu-data";
 
-export function ChocoBerryHighlight() {
-  const category = getCategoryById("chocoberry");
-  const featuredItem = menu.items.find(
+export async function ChocoBerryHighlight() {
+  const loaded = await getCachedMenu();
+  const category = loaded.categories.find((entry) => entry.id === "chocoberry");
+  const featuredItem = loaded.items.find(
     (item) => item.categoryId === "chocoberry" && item.isBestSeller,
   );
   const featuredAddOn = featuredItem?.addOns[0];
@@ -53,7 +54,7 @@ export function ChocoBerryHighlight() {
           )}
           <Link
             href="/menu/chocoberry"
-            className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-bold text-brown-deep transition-transform hover:-translate-y-0.5 hover:bg-gold-light"
+            className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-gold px-6 text-sm font-bold text-brown-deep transition-colors motion-safe:hover:-translate-y-0.5 hover:bg-gold-light"
           >
             Pilih ChocoBerry
             <ArrowRight aria-hidden="true" className="size-4" />

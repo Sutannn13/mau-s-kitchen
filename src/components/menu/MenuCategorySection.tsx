@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { motion, type Variants } from "motion/react";
 
 import { Toast } from "@/components/common/Toast";
 import { MenuCard } from "@/components/menu/MenuCard";
@@ -12,6 +13,26 @@ import type {
   MenuItem,
   ProductSelection,
 } from "@/types/menu";
+
+// Stagger masuk kartu menu: tiap kartu fade-up 8px dengan jeda 30ms —
+// ringan, opacity/transform saja, dan otomatis dilucuti transformnya oleh
+// MotionConfig reducedMotion="user". Kartu bermain setelah skeleton
+// selesai, jadi tidak menunda paint awal halaman.
+const gridVariants: Variants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.03, delayChildren: 0.04 },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.18, ease: "easeOut" },
+  },
+};
 
 interface MenuCategorySectionProps {
   category: MenuCategory;
@@ -63,19 +84,31 @@ export function MenuCategorySection({
   return (
     // scroll-mt menutup header 72px + bar tab sticky agar anchor tidak
     // tertutup elemen menempel. Lihat docs/08_UI_UX_SPEC.md §8.3.
-    <section id={category.id} className="scroll-mt-[144px] py-8 md:py-10">
-      <header className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+    <section id={category.id} className="scroll-mt-[144px] py-5 md:py-10">
+      <header className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 md:mb-5">
         <Heading className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
           {category.name}
         </Heading>
         <p className="text-sm italic text-brown/70">{category.tagline}</p>
       </header>
 
-      <MenuGrid>
-        {items.map((item) => (
-          <MenuCard key={item.id} item={item} onOpen={setActiveItem} />
-        ))}
-      </MenuGrid>
+      <motion.div
+        variants={gridVariants}
+        initial="hidden"
+        animate="show"
+      >
+        <MenuGrid>
+          {items.map((item, index) => (
+            <motion.div key={item.id} variants={cardVariants} className="h-full">
+              <MenuCard
+                item={item}
+                onOpen={setActiveItem}
+                priority={headingLevel === "h1" && index === 0}
+              />
+            </motion.div>
+          ))}
+        </MenuGrid>
+      </motion.div>
 
       {activeItem !== null && (
         <ProductSheet

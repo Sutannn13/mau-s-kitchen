@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { Inbox, ReceiptText } from "lucide-react";
+import { BadgeCheck, Inbox, ReceiptText } from "lucide-react";
 
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { OrderFilters } from "@/components/admin/OrderFilters";
-import { QuickActionButton } from "@/components/admin/QuickActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { StatusSelect } from "@/components/admin/StatusSelect";
 import { getTodayStats, listOrders } from "@/lib/admin/orders";
 import { formatRupiah } from "@/lib/format";
-import { getQuickActionTarget, isOrderStatus } from "@/lib/order-status";
+import { isOrderStatus } from "@/lib/order-status";
 import { paymentMethodLabels } from "@/lib/whatsapp";
 
 interface PesananAdminPageProps {
@@ -111,14 +111,14 @@ export default async function AdminPesananPage({
       </div>
 
       {statCards.length > 0 ? (
-        <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <dl className="stagger-in mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
           {statCards.map((card) => (
             <div
               key={card.label}
-              className="rounded-2xl border border-gold/20 bg-cream-soft p-4"
+              className="min-w-0 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3 sm:p-4"
             >
-              <dt className="text-xs font-semibold text-brown/60">{card.label}</dt>
-              <dd className="mt-1 text-xl font-bold tabular-nums text-brown-deep">
+              <dt className="text-[11px] sm:text-xs font-semibold text-brown/60 truncate">{card.label}</dt>
+              <dd className="mt-1 text-base sm:text-xl font-bold tabular-nums text-brown-deep truncate">
                 {card.value}
               </dd>
             </div>
@@ -161,25 +161,52 @@ export default async function AdminPesananPage({
       ) : (
         <ul className="mt-6 space-y-3">
           {result.orders.map((order) => {
-            const quickTarget = getQuickActionTarget(order.status);
             const itemCount = order.items.reduce(
               (total, item) => total + item.quantity,
               0,
             );
+            const awaitingVerification =
+              Boolean(order.paymentClaimedAt) && order.status === "BARU";
             return (
               <li
-                key={order.code}
+                // Key menyertakan status + klaim bayar: perubahan salah satunya
+                // me-remount kartu sehingga animasi card-update/card-new
+                // memutar sekali — admin langsung tahu kartu mana yang berubah
+                // di tengah auto-refresh 30 detik (docs/14 §14.2).
+                key={`${order.code}-${order.status}-${awaitingVerification ? "claim" : "no-claim"}`}
                 className={`rounded-2xl border p-4 ${
                   order.status === "BARU"
-                    ? "border-flame/50 bg-flame/5"
-                    : "border-gold/20 bg-cream-soft"
+                    ? "animate-card-new border-flame/50 bg-flame/5"
+                    : "animate-card-update border-gold/20 bg-cream-soft"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-mono text-base font-bold text-brown-deep">
                     {order.code}
                   </p>
-                  <StatusBadge status={order.status} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {awaitingVerification ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-bold text-success">
+                        <BadgeCheck
+                          aria-hidden="true"
+                          className="size-3.5"
+                          strokeWidth={2.25}
+                        />
+                        Klaim sudah bayar
+                      </span>
+                    ) : null}
+                    {order.paymentMethod === "tunai" && order.status === "BARU" ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-800">
+                        ⚠️ Tunai (Konfirmasi WA)
+                      </span>
+                    ) : null}
+                    {order.customer.scheduledAt ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                        🗓️ Jadwal: {formatJakartaTime(order.customer.scheduledAt)}
+                      </span>
+                    ) : null}
+                    <StatusBadge status={order.status} />
+                  </div>
                 </div>
                 <p className="mt-1 text-sm text-brown/75">
                   {formatJakartaTime(order.createdAt)} WIB · {order.customer.name} ·{" "}
@@ -201,9 +228,11 @@ export default async function AdminPesananPage({
                     />
                     Lihat Detail
                   </Link>
-                  {quickTarget ? (
-                    <QuickActionButton code={order.code} target={quickTarget} />
-                  ) : null}
+                  <StatusSelect
+                    key={`${order.code}-${order.status}`}
+                    code={order.code}
+                    status={order.status}
+                  />
                 </div>
               </li>
             );

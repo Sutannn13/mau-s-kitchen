@@ -51,6 +51,7 @@ const validBaseInput = {
     },
   ],
   paymentMethod: "qris" as const,
+  privacyConsent: true,
 };
 
 describe("createOrderSchema", () => {
@@ -105,6 +106,27 @@ describe("createOrderSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("mewajibkan persetujuan privasi", () => {
+    expect(
+      createOrderSchema.safeParse({ ...validBaseInput, privacyConsent: false }).success,
+    ).toBe(false);
+  });
+
+  it("menolak terlalu banyak baris dan add-on duplikat", () => {
+    expect(
+      createOrderSchema.safeParse({
+        ...validBaseInput,
+        items: Array.from({ length: 21 }, () => validBaseInput.items[0]),
+      }).success,
+    ).toBe(false);
+    expect(
+      createOrderSchema.safeParse({
+        ...validBaseInput,
+        items: [{ ...validBaseInput.items[0], addOnIds: ["extra", "extra"] }],
+      }).success,
+    ).toBe(false);
+  });
+
   it("menolak kuantitas melebihi batas dan metode tak dikenal", () => {
     const result = createOrderSchema.safeParse({
       ...validBaseInput,
@@ -127,7 +149,7 @@ describe("patchOrderSchema (docs/11 §11.5)", () => {
     ).toBe(true);
     expect(
       patchOrderSchema.safeParse({ deliveryFee: null }).success,
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("menolak body kosong dan ongkir tidak valid", () => {

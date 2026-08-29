@@ -2,6 +2,40 @@ import { createServerClient } from "@supabase/ssr";
 
 import { getSupabaseEnv } from "@/lib/supabase/config";
 
+interface AdminIdentity {
+  id: string;
+  email: string;
+}
+
+interface AuthenticatedUser {
+  id: string;
+  email?: string;
+  app_metadata?: Record<string, unknown>;
+}
+
+function configuredAdminEmails(): Set<string> {
+  return new Set(
+    (process.env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+export function getAdminIdentity(user: AuthenticatedUser | null): AdminIdentity | null {
+  if (!user?.email) {
+    return null;
+  }
+
+  const email = user.email.trim().toLowerCase();
+  const hasAdminRole = user.app_metadata?.role === "admin";
+  if (!hasAdminRole && !configuredAdminEmails().has(email)) {
+    return null;
+  }
+
+  return { id: user.id, email };
+}
+
 // Klien berbasis cookie untuk memverifikasi sesi admin di middleware dan
 // route handler. Mengembalikan null bila Supabase belum dikonfigurasi —
 // pemanggil wajib menangani mode itu (admin tidak tersedia).
@@ -31,7 +65,7 @@ export function createSessionClientFromCookies(
 // Verifikasi sesi admin. Mengembalikan user bila valid, null bila tidak.
 export async function verifyAdminSession(
   cookieGetter: () => Array<{ name: string; value: string }>,
-): Promise<{ id: string; email: string } | null> {
+): Promise<AdminIdentity | null> {
   const supabase = createSessionClientFromCookies(cookieGetter);
   if (!supabase) {
     return null;
@@ -42,11 +76,11 @@ export async function verifyAdminSession(
     error,
   } = await supabase.auth.getUser();
 
-  if (error || !user?.email) {
+  if (error) {
     return null;
   }
 
-  return { id: user.id, email: user.email };
+  return getAdminIdentity(user);
 }
 
 // Helper untuk route handler: verifikasi sesi admin langsung dari objek
@@ -54,7 +88,7 @@ export async function verifyAdminSession(
 // mengekspos cookie API seperti NextRequest).
 export async function verifyAdminRequest(
   request: Request,
-): Promise<{ id: string; email: string } | null> {
+): Promise<AdminIdentity | null> {
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookies = cookieHeader
     .split(";")

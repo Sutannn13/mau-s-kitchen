@@ -1,12 +1,31 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 
 import { getWhatsAppUrl } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 const fabClassName =
-  "fixed bottom-5 right-4 z-40 flex size-14 items-center justify-center rounded-full shadow-warm-lg transition-transform md:bottom-8 md:right-8";
+  // z-fab (40) di bawah sticky bar/toast/dialog. Pada seluler (di bawah md)
+  // mobile nav bar menempati dasar layar, sehingga FAB diangkat ke atasnya
+  // (bottom-20 ≈ 80px, melebihi tinggi batang ~64px + safe-area). Desktop
+  // kembali ke bottom-8 (batang nav sembunyi pada md+).
+  "fixed right-4 z-fab flex size-14 items-center justify-center rounded-full shadow-warm-lg transition-transform bottom-20 md:bottom-8 md:right-8";
 
 export function WhatsAppFab() {
+  const pathname = usePathname() ?? "/";
+
+  // Sembunyikan FAB pada halaman dengan sticky CTA bar (produk detail, checkout, pembayaran)
+  // agar tidak tumpang tindih dengan tombol pesan/kuantitas.
+  if (
+    pathname.startsWith("/produk") ||
+    pathname.startsWith("/checkout") ||
+    pathname.startsWith("/pembayaran")
+  ) {
+    return null;
+  }
+
   const whatsappUrl = getWhatsAppUrl(
     "Halo MAU'S Kitchen, aku mau lihat menu dan pesan.",
   );

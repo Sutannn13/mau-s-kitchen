@@ -38,7 +38,7 @@ export function CartSummary({ subtotal }: CartSummaryProps) {
         href="/checkout"
         className="mt-5 flex min-h-12 items-center justify-center rounded-full bg-gold px-6 text-sm font-bold text-brown-deep shadow-warm transition-colors hover:bg-gold-light"
       >
-        Lanjut ke Checkout
+        Lanjut Buat Pesanan
       </Link>
       <Link
         href="/menu"

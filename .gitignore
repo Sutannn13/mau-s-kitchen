@@ -10,6 +10,12 @@
 /.next/
 /out/
 
+# OpenNext build output (Cloudflare Workers)
+/.open-next/
+/.wrangler/
+/.dev.vars
+/cloudflare-env.d.ts
+
 # production
 /build
 
@@ -28,3 +34,9 @@ next-env.d.ts
 .DS_Store
 Thumbs.db
 *.swp
+
+# local agent and browser QA artifacts
+/.gsk/
+/.kilo/
+/gui-test-screenshots/
+/workflow-gate.json

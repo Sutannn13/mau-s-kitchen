@@ -66,7 +66,7 @@
 | 2 | Alamat dapur / titik ambil pesanan | SEO lokal, opsi ambil sendiri |
 | 3 | Area & tarif ongkir | Perhitungan total |
 | 4 | Minimum order untuk pengiriman | Aturan checkout |
-| 5 | Gambar QRIS statis resolusi tinggi | Halaman pembayaran |
+| 5 | ~~Gambar QRIS statis resolusi tinggi~~ (diterima 24 Agustus 2026) | Uji transaksi kecil sebelum aktif produksi |
 | 6 | Nomor rekening BCA + nama pemilik | Opsi transfer |
 | 7 | Apakah menerima COD? | Metode pembayaran |
 | 8 | Akun Instagram / TikTok resmi | Footer & SEO |
@@ -125,11 +125,21 @@ Verifikasi Sprint 1:
 
 ### Catatan pemeliharaan dependensi
 
-Audit produksi pada 15 Agustus 2026 melaporkan tiga kerentanan tinggi dari
-dependensi transitif Next.js (`postcss` dan `sharp`). Perintah perbaikan otomatis
-meminta upgrade breaking ke Next.js 16, sehingga tidak dijalankan karena stack
-proyek dikunci di Next.js 15. Audit wajib diulang sebelum deployment dan patch
-kompatibel Next.js 15 perlu diterapkan saat tersedia.
+Pada 16 Agustus 2026 proyek dimigrasikan ke Next.js 16.3.1 dan konfigurasi
+ESLint flat terbaru. Keputusan Next 15→16 diterima pemilik 2026-08-16 untuk
+menutup tiga advisori tinggi (PostCSS/Sharp) yang mendasari kunci Next 15
+lama pada dokumen ini sebelumnya. Hardening keamanan terverifikasi ulang:
+`tsc --noEmit` bersih, ESLint bersih, 77/77 uji unit lulus (13 berkas), dan
+`npm audit --omit=dev` kembali nol vulnerability. Konvensi middleware juga
+dimigrasikan ke `src/proxy.ts` dan output Railway memakai standalone.
+
+### Data pemilik yang masih wajib sebelum go-live
+
+- `NEXT_PUBLIC_BUSINESS_HOURS` dan `NEXT_PUBLIC_BUSINESS_ADDRESS`.
+- Email admin yang sah untuk `ADMIN_EMAILS`.
+- Keputusan `ORDER_RETENTION_DAYS` (30–3650 hari).
+- Gambar QRIS serta rekening hanya bila metode tersebut hendak diaktifkan.
+- Domain HTTPS final untuk `NEXT_PUBLIC_SITE_URL`.
 
 ---
 

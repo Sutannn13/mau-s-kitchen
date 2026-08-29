@@ -1,6 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import { CreditCard, Flame, Home, Leaf } from "lucide-react";
 
+import { Card } from "@/components/ui";
+
 interface BrandValue {
   title: string;
   description: string;
@@ -25,7 +27,7 @@ const brandValues: BrandValue[] = [
   },
   {
     title: "Bayar Mudah",
-    description: "Pilih QRIS, transfer, atau tunai sesuai kebutuhan pesananmu.",
+    description: "Pilih metode pembayaran yang sedang tersedia saat checkout.",
     Icon: CreditCard,
   },
 ];
@@ -45,10 +47,7 @@ export function BrandValuesSection() {
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {brandValues.map((value) => (
-            <article
-              key={value.title}
-              className="rounded-2xl border border-gold/20 bg-cream p-5 shadow-warm"
-            >
+            <Card as="article" key={value.title} className="p-5">
               <span className="flex size-11 items-center justify-center rounded-full bg-gold/15 text-gold">
                 <value.Icon
                   aria-hidden="true"
@@ -62,7 +61,7 @@ export function BrandValuesSection() {
               <p className="mt-2 text-sm leading-6 text-brown/70">
                 {value.description}
               </p>
-            </article>
+            </Card>
           ))}
         </div>
       </div>

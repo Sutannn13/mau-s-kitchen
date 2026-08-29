@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { CheckoutForm } from "@/components/checkout/CheckoutForm";
-import { useCart, useRehydrateCart } from "@/lib/cart-store";
+import { Skeleton } from "@/components/ui";
+import { useCart, useCartHydrated, useRehydrateCart } from "@/lib/cart-store";
 import { formatRupiah } from "@/lib/format";
 import { cartSubtotal } from "@/lib/pricing";
 
@@ -17,10 +18,7 @@ export default function CheckoutPage() {
   // redirect "keranjang kosong" menimpa navigasi ke halaman pembayaran.
   const [hasSubmittedOrder, setSubmittedOrder] = useState(false);
 
-  const [isReady, setReady] = useState(false);
-  useEffect(() => {
-    setReady(true);
-  }, []);
+  const isReady = useCartHydrated();
 
   // Keranjang kosong → redirect ke menu (docs/16_TESTING_QA.md E2E-09).
   useEffect(() => {
@@ -33,11 +31,17 @@ export default function CheckoutPage() {
 
   if (!isReady || items.length === 0) {
     return (
-      <main className="mx-auto w-full max-w-content px-4 pb-16 pt-8 md:px-8 md:pt-12">
+      <main className="mx-auto w-full max-w-content px-4 pb-6 pt-6 md:px-8 md:pb-16 md:pt-12">
         <h1 className="font-serif text-3xl font-bold text-brown-deep">
-          Checkout
+          Buat Pesanan
         </h1>
-        <p className="mt-4 text-brown/70">Memuat data pesanan…</p>
+        <p className="sr-only">Memuat data pesanan…</p>
+        {/* Skeleton cermin struktur form (docs/08 §8.9 — A7). */}
+        <div className="mt-8 space-y-4" aria-hidden="true">
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-36 rounded-2xl" />
+          <Skeleton className="h-12 rounded-full" />
+        </div>
       </main>
     );
   }
@@ -82,11 +86,11 @@ export default function CheckoutPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-content px-4 pb-16 pt-8 md:px-8 md:pt-12">
-      <h1 className="font-serif text-3xl font-bold text-brown-deep">Checkout</h1>
+    <main className="mx-auto w-full max-w-content px-4 pb-6 pt-6 md:px-8 md:pb-16 md:pt-12">
+      <h1 className="font-serif text-3xl font-bold text-brown-deep">Buat Pesanan</h1>
       <p className="mt-2 text-sm leading-6 text-brown/70">
-        Isi data di bawah, lalu pesananmu langsung terkirim ke WhatsApp admin
-        MAU&apos;S Kitchen.
+        Isi data di bawah. Pesananmu akan langsung tercatat dan kamu lanjut ke
+        langkah pembayaran berikutnya.
       </p>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">

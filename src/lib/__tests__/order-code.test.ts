@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { buildOrderCode } from "@/lib/order-code";
+import { buildOrderCode, isValidOrderCode } from "@/lib/order-code";
+
+describe("isValidOrderCode", () => {
+  it("menerima format kode pesanan resmi", () => {
+    expect(isValidOrderCode("MK-260827-001")).toBe(true);
+  });
+
+  it.each(["1", "2", "MK-260827-1", "MK-260827-0001", "../orders"])(
+    "menolak path atau kode tidak valid: %s",
+    (value) => {
+      expect(isValidOrderCode(value)).toBe(false);
+    },
+  );
+});
 
 describe("buildOrderCode", () => {
   it("membuat format MK-YYMMDD-XXX sesuai zona Jakarta", () => {

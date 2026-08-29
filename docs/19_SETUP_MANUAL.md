@@ -34,6 +34,12 @@
 7. **Storage → New bucket**:
    - Name: `payment-proofs` (harus persis)
    - Public bucket: **TIDAK** dicentang (private)
+   - Allowed MIME types: `image/jpeg`, `image/png`, `image/webp` (maks 1MiB
+     untuk file hasil kompresi; pelanggan dapat memilih sumber maks 4MB).
+     `schema.sql` sudah mengaturnya; bila project pernah menjalankan
+     `20260816_security_hardening.sql`, jalankan juga
+     `supabase/migrations/20260823_proof_bucket_mime_align.sql`, lalu
+     `supabase/migrations/20260824212500_limit_payment_proofs_to_one_mb.sql`.
 8. Salin 3 nilai dari **Project Settings → API**:
    - `Project URL` → untuk `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` → untuk `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -62,7 +68,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 # Pembayaran — masih TBD sampai pemilik konfirmasi:
-NEXT_PUBLIC_QRIS_IMAGE_PATH=/assets/payment/qris.png
+NEXT_PUBLIC_QRIS_IMAGE_PATH=/assets/payment/qris.jpeg
+NEXT_PUBLIC_QRIS_MERCHANT_NAME="SATE TAICHAN HANNA"
 NEXT_PUBLIC_BANK_NAME=BCA
 NEXT_PUBLIC_BANK_ACCOUNT_NUMBER=TBD
 NEXT_PUBLIC_BANK_ACCOUNT_NAME=TBD
@@ -74,7 +81,7 @@ NEXT_PUBLIC_BANK_ACCOUNT_NAME=TBD
 ### Menaruh file QRIS asli
 
 Upload gambar QRIS statis (resolusi tinggi) ke:
-`public/assets/payment/qris.png` — halaman pembayaran otomatis menampilkannya.
+`public/assets/payment/qris.jpeg` — halaman pembayaran otomatis menampilkannya.
 
 ---
 
@@ -98,7 +105,9 @@ Buat repositori kosong `maus-kitchen-web` di GitHub dulu (tanpa README).
 ## Langkah 4 — Deploy ke Vercel
 
 1. <https://vercel.com/new> → Import repository `maus-kitchen-web`.
-2. Framework Preset: **Next.js** (terdeteksi otomatis). Biarkan default.
+2. Framework Preset: **Next.js** (terdeteksi otomatis). Atur Build Command ke
+   `npm run build:vercel`; Preview memakai build biasa, sedangkan Production
+   otomatis menjalankan security preflight.
 3. Buka **Environment Variables** dan masukkan SEMUA variabel dari Langkah 2
    (ganti `NEXT_PUBLIC_SITE_URL` dengan domain final, atau sementara
    `https://maus-kitchen.vercel.app`).
@@ -120,7 +129,7 @@ Buat repositori kosong `maus-kitchen-web` di GitHub dulu (tanpa README).
 Lakukan dari **HP** dengan situs sudah live:
 
 1. Buka `/menu` → tambah item ke keranjang → checkout sampai selesai.
-2. Pastikan pesan WhatsApp otomatis terkirim ke admin (0816-1769-1585).
+2. Pastikan checkout tidak membuka WhatsApp dan pesanan uji tersimpan di dashboard admin.
 3. Buka `/admin` di HP → login → pesanan uji tampil di daftar.
 4. Ubah status lewat tombol aksi → cek `/pesanan/[kode]` ikut berubah.
 5. Buka `/admin/menu` → matikan satu item → tunggu ≤60 detik → item tampil
@@ -161,4 +170,53 @@ Lakukan dari **HP** dengan situs sudah live:
 
 ---
 
-➡️ Kembali ke `README.md` atau `docs/17_DEPLOYMENT.md` untuk detail teknis.
+## Upgrade keamanan untuk project Supabase yang sudah ada
+
+1. Buka SQL Editor dan jalankan seluruh isi
+   `supabase/migrations/20260816_security_hardening.sql`.
+2. Authentication → Providers → Email: matikan **Allow new users to sign up**.
+3. Verifikasi semua user di Authentication → Users; hapus/nonaktifkan akun yang
+   bukan milik pemilik/admin.
+4. Isi `ADMIN_EMAILS`, `RATE_LIMIT_SALT`, dan `ORDER_RETENTION_DAYS` pada host.
+5. Jalankan `npm run security:preflight`; jangan deploy bila hasilnya gagal.
+6. Jadwalkan `npm run data:purge` setiap hari.
+
+Untuk mengizinkan admin melalui claim alih-alih allowlist, set
+`app_metadata.role=admin` memakai dashboard/API admin yang aman. Jangan memakai
+`user_metadata`, karena field itu dapat diubah oleh user sendiri.
+
+---
+
+## Migrasi klaim pembayaran pelanggan
+
+Tombol "Saya Sudah Bayar & Kirim Bukti" menyimpan waktu klaim di kolom baru
+`orders.payment_claimed_at`.
+
+- **Project baru**: sudah termasuk di `supabase/schema.sql`.
+- **Project lama**: buka SQL Editor dan jalankan
+  `supabase/migrations/20260823_payment_claim.sql` (idempoten, aman diulang).
+
+Tanpa migrasi ini tombol klaim gagal. Jika RPC integritas order tanggal 24
+sudah dipasang, checkout juga gagal saat runtime karena RPC tersebut membaca
+kolom `payment_claimed_at`.
+
+## Migrasi integritas order dan menu
+
+Untuk project baru maupun lama, jalankan SQL berikut berurutan:
+
+1. `supabase/schema.sql`
+2. `supabase/migrations/20260817_menu_crud.sql`
+3. `supabase/migrations/20260823_payment_claim.sql`
+4. `supabase/migrations/20260824_order_integrity.sql`
+
+Jika nomor 4 sudah dijalankan tetapi nomor 3 terlewat, jalankan repair
+idempoten `supabase/migrations/20260824000100_payment_claim_repair.sql` sebelum
+menguji checkout lagi.
+
+Migrasi ini menambah unique idempotency key checkout serta RPC transaksi
+`insert_order_with_items` dan `admin_update_menu_item`. Deploy kode tanpa
+migrasi ini akan membuat checkout dan edit menu gagal tertutup (`5xx`), bukan
+diam-diam menulis data parsial. File migrasi aman dijalankan ulang.
+
+➡️ Kembali ke `README.md`, `docs/17_DEPLOYMENT.md`, atau
+`docs/20_SECURITY_GO_LIVE.md` untuk detail teknis.

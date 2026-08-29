@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": "allow",
+  "model": "router/genspark-claude-sonnet-4-6",
+  "small_model": "router/genspark-claude-haiku-4-5",
+  "provider": {
+    "router": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "9Router",
+      "options": {
+        "baseURL": "http://localhost:20128/v1",
+        "apiKey": "sk-a4eda039b4025fc9-sl8e44-e95f5e0f"
+      }
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 20000
+  }
+}

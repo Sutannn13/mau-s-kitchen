@@ -1,17 +1,42 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { AdminError, listOrders } from "@/lib/admin/orders";
-import { menu } from "@/lib/menu";
-import { getFreshAvailabilityOverrides, isItemAvailable } from "@/lib/menu-availability";
-import { generateOrderCode, saveOrder } from "@/lib/order-store";
+import {
+  isPaymentMethodEnabled,
+  requiresPrepayment,
+} from "@/config/payment";
+import {
+  getFreshMenu,
+  MenuStoreUnavailableError,
+} from "@/lib/menu-data";
+import { buildPublicOrderUrl, generateOrderAccessToken } from "@/lib/order-access";
+import {
+  generateOrderCode,
+  IdempotencyKeyReuseError,
+  OrderStoreUnavailableError,
+  saveOrder,
+} from "@/lib/order-store";
+import { isValidIdempotencyKey } from "@/lib/order-idempotency";
 import { isOrderStatus } from "@/lib/order-status";
 import { cartSubtotal } from "@/lib/pricing";
+import {
+  calculateOrderTotal,
+  getInitialDeliveryFee,
+} from "@/lib/order-pricing";
+import { isPrivacyConfigurationReady } from "@/lib/privacy";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+import {
+  readRequestBytesWithLimit,
+  RequestBodyTooLargeError,
+} from "@/lib/request-body";
 import { verifyAdminRequest } from "@/lib/supabase/auth";
 import { buildOrderMessage, buildWhatsAppUrl } from "@/lib/whatsapp";
 import { createOrderSchema } from "@/lib/validations";
-import type { MenuVariant } from "@/types/menu";
-import type { CartItem } from "@/types/order";
+import type { MenuItem, MenuVariant } from "@/types/menu";
+import type { CartItem, Order } from "@/types/order";
+
+const MAX_ORDER_BODY_BYTES = 64 * 1024;
 
 interface CreateOrderRequestBody {
   customer?: unknown;
@@ -31,10 +56,18 @@ function jsonError(
   );
 }
 
-// POST /api/orders — harga SELALU dihitung ulang dari data/menu.json,
-// klien tidak mengirim nilai harga. Lihat docs/11_API_SPEC.md §11.2.
+function omitPublicToken(order: Order): Omit<Order, "publicToken"> {
+  const { publicToken, ...safeOrder } = order;
+  void publicToken;
+  return safeOrder;
+}
+
+// POST /api/orders — harga SELALU dihitung ulang dari tabel menu_items,
+// klien tidak mengirim nilai harga. Bila DB tidak dapat diakses saat checkout,
+// tolak dengan 503 MENU_STORE_UNAVAILABLE (jangan pakai fallback JSON yang
+// mungkin stale). Lihat docs/11_API_SPEC.md §11.2.
 export async function POST(request: Request): Promise<NextResponse> {
-  if (isRateLimited(getClientIp(request.headers))) {
+  if (await isRateLimited(`order:${getClientIp(request.headers)}`)) {
     return jsonError(
       429,
       "RATE_LIMITED",
@@ -42,12 +75,47 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
+  if (!isPrivacyConfigurationReady()) {
+    return jsonError(
+      503,
+      "PRIVACY_CONFIG_INCOMPLETE",
+      "Pemesanan online belum aktif. Hubungi admin melalui WhatsApp ya.",
+    );
+  }
+
+  const idempotencyKey = request.headers.get("idempotency-key")?.trim() ?? "";
+  if (!isValidIdempotencyKey(idempotencyKey)) {
+    return jsonError(
+      400,
+      "INVALID_IDEMPOTENCY_KEY",
+      "Permintaan checkout tidak valid. Muat ulang halaman lalu coba lagi.",
+    );
+  }
+
+  const contentLength = Number.parseInt(
+    request.headers.get("content-length") ?? "0",
+    10,
+  );
+  if (Number.isFinite(contentLength) && contentLength > MAX_ORDER_BODY_BYTES) {
+    return jsonError(413, "PAYLOAD_TOO_LARGE", "Data pesanan terlalu besar.");
+  }
+
   let body: CreateOrderRequestBody;
+  let rawBody: string;
   try {
-    body = (await request.json()) as CreateOrderRequestBody;
-  } catch {
+    const rawBytes = await readRequestBytesWithLimit(
+      request,
+      MAX_ORDER_BODY_BYTES,
+    );
+    rawBody = new TextDecoder().decode(rawBytes);
+    body = JSON.parse(rawBody) as CreateOrderRequestBody;
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return jsonError(413, "PAYLOAD_TOO_LARGE", "Data pesanan terlalu besar.");
+    }
     return jsonError(400, "VALIDATION_ERROR", "Format permintaan tidak valid.");
   }
+  const requestFingerprint = createHash("sha256").update(rawBody).digest("hex");
 
   const parsed = createOrderSchema.safeParse(body);
   if (!parsed.success) {
@@ -65,9 +133,29 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const payload = parsed.data;
 
-  // Ketersediaan segar dari menu_overrides (no-store) agar toggle "Habis"
-  // admin langsung memblokir checkout (docs/14 §14.4).
-  const availabilityOverrides = await getFreshAvailabilityOverrides();
+  if (!isPaymentMethodEnabled(payload.paymentMethod)) {
+    return jsonError(
+      409,
+      "PAYMENT_UNAVAILABLE",
+      "Metode pembayaran tersebut belum tersedia. Pilih metode lain.",
+    );
+  }
+
+  // Harga & ketersediaan dari DB (no-store, fail-closed) agar perubahan admin
+  // langsung berlaku saat checkout (docs/14 §14.4).
+  let menuItems: MenuItem[];
+  try {
+    menuItems = (await getFreshMenu()).items;
+  } catch (error) {
+    if (error instanceof MenuStoreUnavailableError) {
+      return jsonError(
+        503,
+        "MENU_STORE_UNAVAILABLE",
+        "Menu sedang tidak dapat dimuat. Coba lagi sebentar ya.",
+      );
+    }
+    throw error;
+  }
 
   // Validasi item terhadap data menu; item tak dikenal → 400, item habis → 409
   // dengan daftar id (docs/11_API_SPEC.md §11.2).
@@ -76,12 +164,12 @@ export async function POST(request: Request): Promise<NextResponse> {
   let unknownItemId: string | null = null;
 
   for (const line of payload.items) {
-    const menuItem = menu.items.find((item) => item.id === line.itemId);
+    const menuItem = menuItems.find((item) => item.id === line.itemId);
     if (!menuItem) {
       unknownItemId = line.itemId;
       break;
     }
-    if (!isItemAvailable(menuItem, availabilityOverrides)) {
+    if (!menuItem.available) {
       unavailableIds.push(menuItem.id);
       continue;
     }
@@ -154,38 +242,65 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const now = new Date();
   const subtotal = cartSubtotal(cartItems);
-  // Ongkir Fase 1 selalu null (dikonfirmasi admin, BR-05).
-  const order = {
-    code: await generateOrderCode(now),
-    createdAt: now.toISOString(),
-    customer: {
-      ...payload.customer,
-      address: payload.customer.address || undefined,
-      addressNote: payload.customer.addressNote || undefined,
-      scheduledAt: payload.customer.scheduledAt || undefined,
-      note: payload.customer.note || undefined,
-    },
-    items: cartItems,
-    subtotal,
-    deliveryFee: null,
-    total: subtotal,
-    paymentMethod: payload.paymentMethod,
-    status: "BARU" as const,
-    updatedAt: now.toISOString(),
-  };
+  const deliveryFee = getInitialDeliveryFee(payload.customer.orderType);
+  let order: Order;
+  try {
+    const draft: Order = {
+      code: await generateOrderCode(now),
+      publicToken: generateOrderAccessToken(),
+      createdAt: now.toISOString(),
+      customer: {
+        ...payload.customer,
+        address: payload.customer.address || undefined,
+        addressNote: payload.customer.addressNote || undefined,
+        scheduledAt: payload.customer.scheduledAt || undefined,
+        note: payload.customer.note || undefined,
+      },
+      items: cartItems,
+      subtotal,
+      deliveryFee,
+      deliveryProvider: null,
+      courierCost: null,
+      total: calculateOrderTotal(subtotal, deliveryFee),
+      paymentMethod: payload.paymentMethod,
+      status: "BARU",
+      updatedAt: now.toISOString(),
+    };
+    order = await saveOrder(draft, {
+      key: idempotencyKey,
+      fingerprint: requestFingerprint,
+    });
+  } catch (error) {
+    if (error instanceof IdempotencyKeyReuseError) {
+      return jsonError(
+        409,
+        "IDEMPOTENCY_CONFLICT",
+        "Data checkout berubah saat dikirim ulang. Silakan coba sekali lagi.",
+      );
+    }
+    if (error instanceof OrderStoreUnavailableError) {
+      return jsonError(
+        503,
+        "ORDER_STORE_UNAVAILABLE",
+        "Pemesanan sedang tidak tersedia. Hubungi admin melalui WhatsApp ya.",
+      );
+    }
+    console.error("[POST /api/orders]", error);
+    return jsonError(500, "INTERNAL_ERROR", "Gagal menyimpan pesanan.");
+  }
 
-  await saveOrder(order);
-
-  const paymentUrl =
-    order.paymentMethod === "tunai"
-      ? `/pesanan/${order.code}`
-      : `/pembayaran/${order.code}`;
+  const trackingUrl = buildPublicOrderUrl("pesanan", order.code, order.publicToken);
+  const paymentUrl = requiresPrepayment(order.paymentMethod)
+    ? buildPublicOrderUrl("pembayaran", order.code, order.publicToken)
+    : trackingUrl;
 
   return NextResponse.json(
     {
       success: true,
       data: {
         code: order.code,
+        token: order.publicToken,
+        trackingUrl,
         createdAt: order.createdAt,
         subtotal: order.subtotal,
         deliveryFee: order.deliveryFee,
@@ -248,7 +363,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({
       success: true,
       data: {
-        orders: result.orders,
+        orders: result.orders.map(omitPublicToken),
         pagination: {
           page: result.page,
           limit: result.limit,

@@ -13,6 +13,7 @@
 ├── /checkout               Form data pemesan
 ├── /pembayaran/[kode]      Instruksi pembayaran (QRIS / transfer)
 ├── /pesanan/[kode]         Status & ringkasan pesanan
+├── /invoice/[kode]         Invoice privat siap cetak/PDF (token wajib)
 ├── /tentang                Cerita brand MAU'S Kitchen
 ├── /kontak                 Kontak, jam buka, lokasi
 └── /admin                  Dashboard admin (terproteksi)
@@ -29,11 +30,12 @@
 | `/` | Static | – | P0 | Hero, highlight, best seller, testimoni |
 | `/menu` | Static | – | P0 | Semua kategori dengan anchor navigation |
 | `/menu/[kategori]` | Static (generateStaticParams) | – | P0 | Filter per kategori |
-| `/produk/[slug]` | Static | – | P1 | Detail + varian + add-on |
+| `/produk/[slug]` | Static | – | P1 | Detail + pemilihan varian/add-on inline + sticky CTA + rekomendasi "Lengkapi Pesananmu" |
 | `/keranjang` | Client | – | P0 | Baca `localStorage` |
 | `/checkout` | Client | – | P0 | Form + validasi |
 | `/pembayaran/[kode]` | Dynamic | – | P0 | QRIS + nominal + tombol konfirmasi |
 | `/pesanan/[kode]` | Dynamic | – | P1 | Lacak status pesanan |
+| `/invoice/[kode]` | Dynamic | Token privat | P1 | Invoice sejak DIKONFIRMASI, siap cetak/PDF |
 | `/tentang` | Static | – | P1 | Cerita brand |
 | `/kontak` | Static | – | P1 | WhatsApp, jam buka, peta |
 | `/admin/*` | Dynamic | ✅ | P1 | Dashboard admin |

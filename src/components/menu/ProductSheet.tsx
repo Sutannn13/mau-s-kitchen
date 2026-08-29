@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { ShoppingBag, X } from "lucide-react";
 
 import { QuantityStepper } from "@/components/common/QuantityStepper";
+import { useCartFly } from "@/components/cart/CartFlyContext";
+import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { formatRupiah } from "@/lib/format";
 import { lineSubtotal } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
@@ -19,15 +21,16 @@ const NOTE_MAX_LENGTH = 200;
 // Ambang swipe-down untuk menutup sheet. Lihat docs/08_UI_UX_SPEC.md §8.3.
 const SWIPE_CLOSE_THRESHOLD_PX = 80;
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
   const titleId = useId();
   const radioGroupName = useId();
   const noteId = useId();
 
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // A11y (role=dialog/trap/Esc/focus-restore/scroll-lock) dipusatkan di
+  // useDialogA11y — dipakai bersama admin MenuItemEditor (Batch 5). Swipe &
+  // posisi sheet tetap di sini (tidak diubah).
+  const { dialogRef, handleKeyDown } = useDialogA11y({ onClose });
+
   const touchStartYRef = useRef<number | null>(null);
 
   const [variantId, setVariantId] = useState<string | null>(null);
@@ -38,23 +41,6 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
   const [note, setNote] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Fokus awal + kunci scroll body; pulihkan fokus & scroll saat sheet tutup.
-  useEffect(() => {
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement
-        ? document.activeElement
-        : null;
-    dialogRef.current?.focus();
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus();
-    };
-  }, []);
 
   const requiresVariant = item.variants.length > 0;
   const selectedVariant =
@@ -73,37 +59,6 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
       })
     : null;
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>): void {
-    if (event.key === "Escape") {
-      onClose();
-      return;
-    }
-
-    if (event.key !== "Tab") {
-      return;
-    }
-
-    // Focus trap: Tab berputar di dalam dialog. Lihat docs/08_UI_UX_SPEC.md §8.8.
-    const focusables = dialogRef.current?.querySelectorAll<HTMLElement>(
-      FOCUSABLE_SELECTOR,
-    );
-    if (!focusables || focusables.length === 0) {
-      return;
-    }
-    const first = focusables[0];
-    const last = focusables[focusables.length - 1];
-    if (!first || !last) {
-      return;
-    }
-    if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    } else if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    }
-  }
-
   function toggleAddOn(addOnId: string): void {
     setSelectedAddOnIds((previous) => {
       const next = new Set(previous);
@@ -116,9 +71,16 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
     });
   }
 
-  function handleAdd(): void {
+  const { flyFromElement } = useCartFly();
+
+  function handleAdd(event?: React.MouseEvent<HTMLButtonElement>): void {
     if (!isVariantValid) {
       return;
+    }
+    // Thumbnail "terbang" ke keranjang sebelum sheet ditutup parent —
+    // elemen terbang fixed-position global jadi tetap terlihat.
+    if (event?.currentTarget) {
+      flyFromElement(event.currentTarget, item.image);
     }
     onAdd({
       variant: selectedVariant,
@@ -159,14 +121,14 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
 
   const optionRowClass = (checked: boolean): string =>
     cn(
-      "flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-2 transition-colors",
+      "flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-2xl border-2 px-5 py-3 transition-all duration-200",
       checked
-        ? "border-gold bg-gold/15"
-        : "border-gold/25 bg-cream hover:border-gold/50",
+        ? "border-gold bg-gold/10 shadow-warm"
+        : "border-gold/20 bg-cream hover:border-gold/40 hover:bg-gold/5",
     );
 
   return (
-    <div className="fixed inset-0 z-[70]">
+    <div className="fixed inset-0 z-dialog">
       <div
         aria-hidden="true"
         onClick={onClose}

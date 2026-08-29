@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
-import { getMenuItemById } from "@/lib/menu";
+import { getMenu } from "@/lib/menu-data";
 import { getServiceClient } from "@/lib/supabase/admin";
 import { verifyAdminRequest } from "@/lib/supabase/auth";
 import { patchMenuItemSchema } from "@/lib/validations";
@@ -18,8 +18,9 @@ function jsonError(
 }
 
 // PATCH /api/menu/[itemId] — toggle ketersediaan oleh admin (docs/11 §11.1).
-// Disimpan ke menu_overrides; halaman katalog di-revalidate agar perubahan
-// tampil lebih cepat dari jendela ISR 60 detik (docs/14 §14.4).
+// Setelah migrasi, field `available` disimpan langsung di menu_items.available.
+// Endpoint ini tetap dipertahankan untuk toggle cepat; CRUD penuh ada di
+// /api/admin/menu/items/[id].
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ itemId: string }> },
@@ -30,9 +31,6 @@ export async function PATCH(
   }
 
   const { itemId } = await context.params;
-  if (!getMenuItemById(itemId)) {
-    return jsonError(404, "NOT_FOUND", "Item menu tidak dikenal.");
-  }
 
   let body: unknown;
   try {
@@ -55,17 +53,32 @@ export async function PATCH(
     );
   }
 
-  const saved = await supabase.from("menu_overrides").upsert({
-    item_id: itemId,
-    available: parsed.data.available,
-    updated_at: new Date().toISOString(),
-  });
+  // Validasi eksistensi item langsung dari DB (termasuk arsip — admin tetap
+  // boleh toggle item yang sedang diarsip untuk persiapan unggah ulang).
+  const existing = await supabase
+    .from("menu_items")
+    .select("id")
+    .eq("id", itemId)
+    .maybeSingle();
+
+  if (existing.error || !existing.data) {
+    return jsonError(404, "NOT_FOUND", "Item menu tidak dikenal.");
+  }
+
+  const saved = await supabase
+    .from("menu_items")
+    .update({ available: parsed.data.available })
+    .eq("id", itemId);
 
   if (saved.error) {
     console.error("[PATCH /api/menu/:itemId]", saved.error.message);
     return jsonError(500, "INTERNAL_ERROR", "Gagal menyimpan perubahan.");
   }
 
+  // Referensi async agar pemeriksaan item lama tetap valid (mis. saat DB down).
+  await getMenu({ noStore: true }).catch(() => {
+    // fail-open: ISR tetap di-bust di bawah.
+  });
   revalidatePath("/", "layout");
 
   return NextResponse.json({

@@ -5,9 +5,7 @@ import {
   Plus_Jakarta_Sans,
 } from "next/font/google";
 
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
-import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
+import { ChromeShell } from "@/components/layout/ChromeShell";
 import { JsonLd } from "@/components/common/JsonLd";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -41,7 +39,7 @@ export const metadata: Metadata = {
     template: "%s | MAU'S Kitchen",
   },
   description:
-    "Sate taichan pedas, minuman segar, dan ChocoBerry buah coklat premium. Pesan online, bayar QRIS. Homemade with Love.",
+    "Sate taichan pedas, minuman segar, dan ChocoBerry buah coklat premium. Pesan online tanpa login. Homemade with Love.",
   keywords: ["taichan", "sate taichan", "chocoberry", "thai tea", "MAU'S Kitchen"],
   openGraph: {
     type: "website",
@@ -78,7 +76,7 @@ interface RootLayoutProps {
 }
 
 // Structured data Restaurant per docs/15_SEO_CONTENT.md §15.3.
-// addressLocality sengaja TBD sampai alamat dikonfirmasi pemilik.
+// Alamat hanya diterbitkan jika sudah dikonfirmasi pemilik.
 function restaurantJsonLd(): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
@@ -92,11 +90,15 @@ function restaurantJsonLd(): Record<string, unknown> {
     servesCuisine: ["Indonesian", "Street Food", "Dessert"],
     priceRange: "Rp5.000 - Rp48.000",
     acceptsReservations: false,
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "ID",
-      addressLocality: "TBD",
-    },
+    ...(siteConfig.businessAddress
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            addressCountry: "ID",
+            streetAddress: siteConfig.businessAddress,
+          },
+        }
+      : {}),
     potentialAction: {
       "@type": "OrderAction",
       target: `${siteConfig.siteUrl}/menu`,
@@ -104,9 +106,15 @@ function restaurantJsonLd(): Record<string, unknown> {
   };
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  // Penyembunyian chrome publik pada rute /admin/* kini deteksi pathname
+  // di ChromeShell (client) — sebelumnya via header `x-admin-route` yang
+  // ditempel proxy, tetapi proxy Next 16 memaksa runtime Node.js yang
+  // tidak didukung OpenNext Cloudflare (Edge-only), jadi proxy dihapus.
+  // Autentikasi admin tetap dijaga di (panel)/layout.tsx (lapisan kedua).
+
   return (
-    <html lang="id">
+    <html lang="id" data-scroll-behavior="smooth">
       <body
         className={cn(
           plusJakartaSans.variable,
@@ -115,12 +123,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         )}
       >
         <JsonLd data={restaurantJsonLd()} />
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </div>
-        <WhatsAppFab />
+        <ChromeShell>{children}</ChromeShell>
       </body>
     </html>
   );

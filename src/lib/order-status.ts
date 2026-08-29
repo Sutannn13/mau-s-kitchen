@@ -1,30 +1,37 @@
 import type { OrderStatus } from "@/types/order";
 
-// State machine status pesanan. Lihat docs/04_BUSINESS_FLOW.md §4.3.
-const allowedTransitions: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
-  BARU: ["DIKONFIRMASI", "BATAL"],
-  DIKONFIRMASI: ["DIPROSES", "BATAL"],
-  DIPROSES: ["DIKIRIM"],
-  DIKIRIM: ["SELESAI"],
-  SELESAI: [],
-  BATAL: [],
-};
+// Urutan alur hidup pesanan. Lihat docs/04_BUSINESS_FLOW.md §4.3.
+const pipeline: readonly OrderStatus[] = [
+  "BARU",
+  "DIKONFIRMASI",
+  "DIPROSES",
+  "DIKIRIM",
+  "SELESAI",
+];
 
+const finalStatuses: readonly OrderStatus[] = ["SELESAI", "BATAL"];
+
+// Admin boleh lompat maju ke status mana pun setelah status saat ini
+// (tidak wajib maju satu-satu) dan membatalkan pesanan selama belum
+// final. BR-07 (larangan batal setelah DIPROSES) berlaku untuk
+// pembatalan oleh pelanggan, bukan override admin.
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
-  return allowedTransitions[from].includes(to);
+  if (from === to) {
+    return false;
+  }
+  if (finalStatuses.includes(from)) {
+    return false;
+  }
+  if (to === "BATAL") {
+    return true;
+  }
+  return pipeline.indexOf(to) > pipeline.indexOf(from);
 }
 
-// Aksi cepat di daftar pesanan: satu status "berikutnya" paling sering
-// dipakai admin (docs/14_ADMIN_DASHBOARD.md §14.2 baris 4).
-const quickActionTarget: Partial<Record<OrderStatus, OrderStatus>> = {
-  BARU: "DIKONFIRMASI",
-  DIKONFIRMASI: "DIPROSES",
-  DIPROSES: "DIKIRIM",
-  DIKIRIM: "SELESAI",
-};
-
-export function getQuickActionTarget(status: OrderStatus): OrderStatus | null {
-  return quickActionTarget[status] ?? null;
+// Daftar status yang bisa dipilih admin dari status saat ini; dipakai
+// dropdown status di daftar pesanan (docs/14_ADMIN_DASHBOARD.md §14.2).
+export function getAdminTargets(status: OrderStatus): readonly OrderStatus[] {
+  return orderStatuses.filter((target) => canTransition(status, target));
 }
 
 export const statusLabels: Record<OrderStatus, string> = {

@@ -3,10 +3,11 @@ import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
 
 import { formatRupiah } from "@/lib/format";
-import { menu } from "@/lib/menu";
+import { getCachedMenu } from "@/lib/menu-data";
 
-export function BestSellerSection() {
-  const bestSellers = menu.items
+export async function BestSellerSection() {
+  const loaded = await getCachedMenu();
+  const bestSellers = loaded.items
     .filter((item) => item.isBestSeller && !item.isAddOnItem)
     .slice(0, 6);
 
@@ -44,7 +45,7 @@ export function BestSellerSection() {
                   fill
                   quality={70}
                   sizes="(max-width: 479px) 82vw, (max-width: 1023px) 50vw, 33vw"
-                  className="object-cover transition duration-300 group-hover:scale-105"
+                  className="object-cover transition duration-300 motion-safe:group-hover:scale-105"
                 />
                 <span className="absolute left-3 top-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-cream/95 px-3 text-xs font-bold text-brown-deep shadow-warm">
                   <Star

@@ -10,6 +10,7 @@ const config = defineConfig({
   },
   test: {
     environment: "node",
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
 });
 

@@ -36,6 +36,15 @@ export function LoginForm() {
         return;
       }
 
+      const authorization = await fetch("/api/admin/session", {
+        cache: "no-store",
+      });
+      if (!authorization.ok) {
+        await supabase.auth.signOut();
+        setError("Akun ini tidak memiliki akses admin.");
+        return;
+      }
+
       router.replace("/admin/pesanan");
       router.refresh();
     } catch {

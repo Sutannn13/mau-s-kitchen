@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { Input } from "@/components/ui";
+
 export type RekapPreset = "hari-ini" | "7-hari" | "bulan-ini" | "custom";
 
 interface RekapFiltersProps {
@@ -68,14 +70,14 @@ export function RekapFilters({ preset, dari, sampai }: RekapFiltersProps) {
             >
               Dari
             </label>
-            <input
+            <Input
               id="rekap-dari"
               type="date"
               value={dariValue}
               onChange={(event) => {
                 setDariValue(event.target.value);
               }}
-              className="mt-1 min-h-11 rounded-xl border border-gold/30 bg-cream px-3 text-sm text-brown-deep"
+              className="mt-1 px-3"
             />
           </div>
           <div>
@@ -85,14 +87,14 @@ export function RekapFilters({ preset, dari, sampai }: RekapFiltersProps) {
             >
               Sampai
             </label>
-            <input
+            <Input
               id="rekap-sampai"
               type="date"
               value={sampaiValue}
               onChange={(event) => {
                 setSampaiValue(event.target.value);
               }}
-              className="mt-1 min-h-11 rounded-xl border border-gold/30 bg-cream px-3 text-sm text-brown-deep"
+              className="mt-1 px-3"
             />
           </div>
           <button

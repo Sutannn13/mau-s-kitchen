@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { AdminError, updateOrder } from "@/lib/admin/orders";
-import { getOrderByCode } from "@/lib/order-store";
+import { isValidOrderAccessToken } from "@/lib/order-access";
+import { isValidOrderCode } from "@/lib/order-code";
+import {
+  getOrderByPublicAccess,
+  OrderStoreUnavailableError,
+} from "@/lib/order-store";
+import { getClientIp, isPublicReadRateLimited } from "@/lib/rate-limit";
 import { verifyAdminRequest } from "@/lib/supabase/auth";
 import { patchOrderSchema } from "@/lib/validations";
 import type { Order } from "@/types/order";
@@ -13,55 +19,84 @@ function jsonError(
 ): NextResponse {
   return NextResponse.json(
     { success: false, error, message },
-    { status },
+    { status, headers: { "Cache-Control": "private, no-store, max-age=0" } },
   );
 }
 
-// Data sensitif disamarkan untuk pelacakan publik: nomor WhatsApp dan alamat
-// hanya tampil sebagian. Lihat docs/11_API_SPEC.md §11.4.
-function maskWhatsapp(whatsapp: string): string {
-  if (whatsapp.length < 7) {
-    return "****";
-  }
-  return `${whatsapp.slice(0, 4)}****${whatsapp.slice(-3)}`;
-}
-
-function maskAddress(address: string | undefined): string | undefined {
-  if (!address) {
-    return undefined;
-  }
-  return address.length <= 12 ? address : `${address.slice(0, 12)}…`;
+function omitPublicToken(order: Order): Omit<Order, "publicToken"> {
+  const { publicToken, ...safeOrder } = order;
+  void publicToken;
+  return safeOrder;
 }
 
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ kode: string }> },
 ): Promise<NextResponse> {
   const { kode } = await context.params;
-  const order = await getOrderByCode(kode);
+  const token = new URL(request.url).searchParams.get("token") ?? "";
+  if (!isValidOrderCode(kode) || !isValidOrderAccessToken(token)) {
+    return jsonError(404, "NOT_FOUND", "Pesanan tidak ditemukan.");
+  }
+  if (
+    await isPublicReadRateLimited(
+      "ORDER_READ_RATE_LIMITER",
+      `order-read:${getClientIp(request.headers)}`,
+      { maxRequests: 120, windowSeconds: 60 },
+    )
+  ) {
+    return jsonError(
+      429,
+      "RATE_LIMITED",
+      "Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.",
+    );
+  }
+
+  let order;
+  try {
+    order = await getOrderByPublicAccess(kode, token);
+  } catch (error) {
+    if (error instanceof OrderStoreUnavailableError) {
+      return jsonError(
+        503,
+        "ORDER_STORE_UNAVAILABLE",
+        "Pelacakan pesanan sedang tidak tersedia.",
+      );
+    }
+    throw error;
+  }
 
   if (!order) {
     return jsonError(404, "NOT_FOUND", "Pesanan tidak ditemukan.");
   }
 
-  const maskedOrder: Order = {
-    ...order,
-    customer: {
-      ...order.customer,
-      whatsapp: maskWhatsapp(order.customer.whatsapp),
-      address: maskAddress(order.customer.address),
-      addressNote: undefined,
-      note: undefined,
-    },
-    adminNote: undefined,
+  const publicOrder = {
+    code: order.code,
+    createdAt: order.createdAt,
+    items: order.items.map((item) => ({
+      name: item.name,
+      variantName: item.variantName,
+      unitPrice: item.unitPrice,
+      addOns: item.addOns.map(({ name, price }) => ({ name, price })),
+      quantity: item.quantity,
+    })),
+    subtotal: order.subtotal,
+    deliveryFee: order.deliveryFee,
+    deliveryProvider: order.deliveryProvider,
+    total: order.total,
+    paymentMethod: order.paymentMethod,
+    paymentProofSubmitted: Boolean(order.paymentProofUrl),
+    paymentClaimed: Boolean(order.paymentClaimedAt),
+    status: order.status,
+    updatedAt: order.updatedAt,
   };
 
-  return NextResponse.json({ success: true, data: maskedOrder });
+  return NextResponse.json(
+    { success: true, data: publicOrder },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } },
+  );
 }
 
-// PATCH oleh admin: ubah status / catatan admin / ongkir. Transisi status
-// divalidasi terhadap state machine; total dihitung ulang server saat ongkir
-// diisi (docs/11_API_SPEC.md §11.5).
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ kode: string }> },
@@ -94,7 +129,7 @@ export async function PATCH(
     if (!updated) {
       return jsonError(404, "NOT_FOUND", "Pesanan tidak ditemukan.");
     }
-    return NextResponse.json({ success: true, data: updated });
+    return NextResponse.json({ success: true, data: omitPublicToken(updated) });
   } catch (error) {
     if (error instanceof AdminError) {
       return jsonError(error.statusCode, error.code, error.message);

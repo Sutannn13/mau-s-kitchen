@@ -1,9 +1,12 @@
-# 12 — Pembayaran: QRIS Dinamis (DANA / BCA / GoPay)
+# 12 — Pembayaran: QRIS Statis Manual dan Rencana QRIS Dinamis
 
 ## 12.1 Kondisi saat ini
 
-MAU'S Kitchen sudah menerima pembayaran non-tunai melalui **QRIS dinamis** yang
-dihasilkan dari aplikasi merchant:
+Website memakai **QRIS statis** resmi dengan nama merchant
+**SATE TAICHAN HANNA**. Pelanggan memindai QR yang sama untuk setiap pesanan,
+memasukkan nominal secara manual, lalu admin memverifikasi bukti/mutasi.
+
+QRIS dinamis tetap dapat dibuat manual melalui aplikasi merchant:
 
 | Penyedia | Jenis | Cara pakai saat ini |
 |---|---|---|
@@ -42,11 +45,21 @@ WhatsApp terbuka dengan pesan konfirmasi otomatis
 Admin cek mutasi → konfirmasi pesanan
 ```
 
+**Aturan total sebelum bayar:**
+
+- Ambil Sendiri langsung memakai ongkir Rp0 dan total final.
+- Antar dengan `delivery_fee = null` hanya menampilkan subtotal sementara.
+  QRIS/transfer, klaim bayar, dan upload bukti disembunyikan serta ditolak API.
+- Setelah admin menyimpan ongkir, halaman diperbarui otomatis dan menampilkan
+  total final. Rp0 tetap dianggap ongkir final yang sah.
+- Ongkir tidak dapat diubah setelah klaim/bukti pembayaran atau status
+  `DIKONFIRMASI`.
+
 **Kebutuhan aset:**
 
 | Aset | Keterangan |
 |---|---|
-| `public/assets/payment/qris.png` | Gambar QRIS statis merchant (minta ke pemilik) |
+| `public/assets/payment/qris.jpeg` | Gambar QRIS statis resmi merchant |
 | `NEXT_PUBLIC_BANK_ACCOUNT_NUMBER` | Nomor rekening BCA untuk opsi transfer |
 | `NEXT_PUBLIC_BANK_ACCOUNT_NAME` | Nama pemilik rekening |
 
@@ -127,8 +140,8 @@ Checkout → POST /api/payments/qris
 export const paymentConfig = {
   qris: {
     enabled: true,
-    imagePath: process.env.NEXT_PUBLIC_QRIS_IMAGE_PATH ?? "/assets/payment/qris.png",
-    merchantName: "MAU'S Kitchen",
+    imagePath: process.env.NEXT_PUBLIC_QRIS_IMAGE_PATH ?? "/assets/payment/qris.jpeg",
+    merchantName: process.env.NEXT_PUBLIC_QRIS_MERCHANT_NAME ?? "SATE TAICHAN HANNA",
     supportedApps: ["DANA", "GoPay", "OVO", "ShopeePay", "LinkAja", "m-banking"],
     note: "Bisa dibayar dari aplikasi e-wallet atau m-banking apa pun.",
   },
@@ -167,7 +180,26 @@ export const paymentConfig = {
 
 ## 12.7 Yang WAJIB ditanyakan ke pemilik usaha
 
-- [ ] File gambar QRIS statis merchant (format PNG resolusi tinggi)
+- [x] File gambar QRIS statis merchant (`public/assets/payment/qris.jpeg`)
+
+### Pengaman konfigurasi
+
+QRIS dan transfer default-nya nonaktif. Aktifkan hanya melalui
+`NEXT_PUBLIC_ENABLE_QRIS=true` atau `NEXT_PUBLIC_ENABLE_TRANSFER=true` setelah
+aset/rekening dikonfirmasi pemilik. API memvalidasi ulang pilihan pelanggan;
+nilai `TBD` tidak pernah dianggap rekening aktif. Tunai/COD dikendalikan oleh
+`NEXT_PUBLIC_ENABLE_CASH`.
+
+Untuk QRIS, kedua syarat berikut wajib dipenuhi sebelum flag diaktifkan:
+
+1. File resmi tersedia tepat di `public/assets/payment/qris.jpeg` (atau path
+   lain yang sama dengan `NEXT_PUBLIC_QRIS_IMAGE_PATH`).
+2. Gambar sudah diuji pindai dengan nominal kecil oleh pemilik.
+3. Nama merchant pada layar pembayaran cocok dengan
+   `NEXT_PUBLIC_QRIS_MERCHANT_NAME` (`SATE TAICHAN HANNA`).
+
+Jika file belum ada, biarkan `NEXT_PUBLIC_ENABLE_QRIS=false`; jangan menawarkan
+metode QRIS yang hanya berakhir di placeholder.
 - [ ] Nomor rekening BCA + nama pemilik rekening
 - [ ] Apakah boleh menggunakan skema nominal unik 3 digit?
 - [ ] Minimum order untuk pengiriman

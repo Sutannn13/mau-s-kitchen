@@ -8,8 +8,23 @@ import {
   type OrderRow,
 } from "@/lib/order-db";
 import { canTransition } from "@/lib/order-status";
+import {
+  isCashDeliveryProviderAllowed,
+  isDeliveryPlanReady,
+} from "@/lib/order-delivery";
+import {
+  calculateOrderTotal,
+  canEditDeliveryFee,
+  statusRequiresFinalTotal,
+} from "@/lib/order-pricing";
 import { getServiceClient } from "@/lib/supabase/admin";
-import type { Order, OrderStatus, PaymentMethod } from "@/types/order";
+import { getAuthorizedAdminServiceClient } from "@/lib/supabase/current-admin";
+import type {
+  DeliveryProvider,
+  Order,
+  OrderStatus,
+  PaymentMethod,
+} from "@/types/order";
 
 // Semua fungsi di file ini hanya untuk dashboard admin dan wajib dipanggil
 // setelah sesi admin terverifikasi. Tanpa Supabase, kembalikan null dan
@@ -44,6 +59,17 @@ export interface ListOrdersResult {
 
 function jakartaDateToUtcStart(date: string): Date {
   return new Date(`${date}T00:00:00+07:00`);
+}
+
+// Konversi `created_at` ISO ke tanggal kalender Jakarta (YYYY-MM-DD) untuk
+// pengelompokan harian. en-CA menghasilkan format YYYY-MM-DD secara stabil.
+function toJakartaDateString(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
 }
 
 // Karakter khusus bisa memecah sintaks .or() PostgREST — buang saja.
@@ -85,7 +111,7 @@ async function fetchItemRows(
 export async function listOrders(
   filter: ListOrdersFilter,
 ): Promise<ListOrdersResult | null> {
-  const supabase = getServiceClient();
+  const supabase = await getAuthorizedAdminServiceClient();
   if (!supabase) {
     return null;
   }
@@ -154,7 +180,7 @@ export interface TodayStats {
 // "Sedang diproses" = DIKONFIRMASI + DIPROSES; omzet hanya pesanan SELESAI
 // (docs/14 §14.5).
 export async function getTodayStats(): Promise<TodayStats | null> {
-  const supabase = getServiceClient();
+  const supabase = await getAuthorizedAdminServiceClient();
   if (!supabase) {
     return null;
   }
@@ -204,7 +230,7 @@ export async function getTodayStats(): Promise<TodayStats | null> {
 export async function getAdminOrder(
   code: string,
 ): Promise<Order | null> {
-  const supabase = getServiceClient();
+  const supabase = await getAuthorizedAdminServiceClient();
   if (!supabase) {
     return null;
   }
@@ -216,7 +242,45 @@ export async function getAdminOrder(
 export interface UpdateOrderPatch {
   status?: OrderStatus;
   adminNote?: string;
-  deliveryFee?: number | null;
+  deliveryFee?: number;
+  deliveryProvider?: DeliveryProvider;
+  courierCost?: number;
+}
+
+// Compare-and-swap pada updated_at mencegah dua tab admin saling menimpa.
+// Guard status tambahan membuat transisi state machine eksplisit di query.
+export async function persistOrderUpdate(
+  supabase: SupabaseClient,
+  code: string,
+  current: Pick<OrderRow, "status" | "updated_at">,
+  update: Record<string, unknown>,
+  guardsStatus: boolean,
+): Promise<OrderRow> {
+  if (!current.updated_at) {
+    throw new AdminError(500, "INTERNAL_ERROR", "Versi pesanan tidak tersedia.");
+  }
+
+  let updateQuery = supabase
+    .from("orders")
+    .update(update)
+    .eq("code", code)
+    .eq("updated_at", current.updated_at);
+  if (guardsStatus) {
+    updateQuery = updateQuery.eq("status", current.status);
+  }
+  const updated = await updateQuery.select("*").maybeSingle();
+
+  if (updated.error) {
+    throw new AdminError(500, "INTERNAL_ERROR", "Gagal menyimpan perubahan.");
+  }
+  if (!updated.data) {
+    throw new AdminError(
+      409,
+      "ORDER_CONFLICT",
+      "Pesanan sudah diubah admin lain. Muat ulang sebelum mencoba lagi.",
+    );
+  }
+  return updated.data as OrderRow;
 }
 
 // Ubah status/catatan admin/ongkir. Transisi divalidasi ulang terhadap
@@ -226,7 +290,7 @@ export async function updateOrder(
   code: string,
   patch: UpdateOrderPatch,
 ): Promise<Order | null> {
-  const supabase = getServiceClient();
+  const supabase = await getAuthorizedAdminServiceClient();
   if (!supabase) {
     return null;
   }
@@ -238,12 +302,45 @@ export async function updateOrder(
 
   const update: Record<string, unknown> = {};
 
+  const effectiveDeliveryFee =
+    patch.deliveryFee !== undefined
+      ? patch.deliveryFee
+      : current.row.delivery_fee;
+  const effectiveDeliveryProvider =
+    patch.deliveryProvider !== undefined
+      ? patch.deliveryProvider
+      : current.row.delivery_provider;
+  const effectiveCourierCost =
+    patch.courierCost !== undefined
+      ? patch.courierCost
+      : current.row.courier_cost;
+  const deliveryPlanChanged =
+    patch.deliveryFee !== undefined ||
+    patch.deliveryProvider !== undefined ||
+    patch.courierCost !== undefined;
+  const deliveryPlanReady = isDeliveryPlanReady({
+    orderType: current.row.order_type,
+    deliveryFee: effectiveDeliveryFee,
+    deliveryProvider: effectiveDeliveryProvider,
+    courierCost: effectiveCourierCost,
+  });
+
   if (patch.status !== undefined) {
     if (!canTransition(current.row.status, patch.status)) {
       throw new AdminError(
         400,
         "INVALID_STATUS_TRANSITION",
         `Pesanan tidak bisa berubah dari ${current.row.status} ke ${patch.status}.`,
+      );
+    }
+    if (
+      statusRequiresFinalTotal(patch.status) &&
+      !deliveryPlanReady
+    ) {
+      throw new AdminError(
+        409,
+        "DELIVERY_PLAN_PENDING",
+        "Tetapkan pengantar, ongkir pelanggan, dan biaya kurir sebelum mengonfirmasi pesanan Antar.",
       );
     }
     update.status = patch.status;
@@ -253,28 +350,61 @@ export async function updateOrder(
     update.admin_note = patch.adminNote.trim() || null;
   }
 
-  if (patch.deliveryFee !== undefined) {
-    if (patch.deliveryFee !== null && (patch.deliveryFee < 0 || !Number.isInteger(patch.deliveryFee))) {
-      throw new AdminError(400, "VALIDATION_ERROR", "Ongkir tidak valid.");
+  if (deliveryPlanChanged) {
+    if (current.row.order_type !== "antar") {
+      throw new AdminError(
+        409,
+        "PICKUP_FEE_FIXED",
+        "Pesanan Ambil Sendiri tidak memiliki pengantar atau ongkir.",
+      );
     }
-    update.delivery_fee = patch.deliveryFee;
-    update.total = current.row.subtotal + (patch.deliveryFee ?? 0);
+    if (!canEditDeliveryFee({
+      orderType: current.row.order_type,
+      status: current.row.status,
+      paymentClaimedAt: current.row.payment_claimed_at,
+      paymentProofUrl: current.row.payment_proof_url,
+    })) {
+      throw new AdminError(
+        409,
+        "ORDER_FINANCIALS_LOCKED",
+        "Pengantar dan ongkir tidak dapat diubah setelah pembayaran diklaim, bukti dikirim, atau status dikonfirmasi.",
+      );
+    }
+    if (!deliveryPlanReady) {
+      throw new AdminError(
+        400,
+        "DELIVERY_PLAN_INCOMPLETE",
+        "Pengantar, ongkir pelanggan, dan biaya kurir wajib diisi bersama.",
+      );
+    }
+    if (!isCashDeliveryProviderAllowed({
+      orderType: current.row.order_type,
+      paymentMethod: current.row.payment_method,
+      deliveryProvider: effectiveDeliveryProvider,
+    })) {
+      throw new AdminError(
+        409,
+        "COD_REQUIRES_INTERNAL_DELIVERY",
+        "Pesanan Tunai/COD hanya boleh diantar langsung oleh MAU'S Kitchen.",
+      );
+    }
+    update.delivery_fee = effectiveDeliveryFee;
+    update.delivery_provider = effectiveDeliveryProvider;
+    update.courier_cost = effectiveCourierCost;
+    update.total = calculateOrderTotal(current.row.subtotal, effectiveDeliveryFee);
   }
 
   if (Object.keys(update).length === 0) {
     throw new AdminError(400, "VALIDATION_ERROR", "Tidak ada perubahan.");
   }
 
-  const updated = await supabase
-    .from("orders")
-    .update(update)
-    .eq("code", code)
-    .select("*")
-    .maybeSingle();
-
-  if (updated.error || !updated.data) {
-    throw new AdminError(500, "INTERNAL_ERROR", "Gagal menyimpan perubahan.");
-  }
+  await persistOrderUpdate(
+    supabase,
+    code,
+    current.row,
+    update,
+    patch.status !== undefined,
+  );
 
   const after = await findOrderRowsByCode(supabase, code);
   return after ? rowToOrder(after.row, after.itemRows) : null;
@@ -293,10 +423,24 @@ export async function attachPaymentProof(
   const updated = await supabase
     .from("orders")
     .update({ payment_proof_url: path })
-    .eq("code", code);
+    .eq("code", code)
+    .eq("status", "BARU")
+    .is("payment_proof_url", null)
+    .or(
+      "order_type.eq.ambil,and(delivery_fee.not.is.null,delivery_provider.not.is.null,courier_cost.not.is.null)",
+    )
+    .select("id")
+    .maybeSingle();
 
   if (updated.error) {
     throw new AdminError(500, "INTERNAL_ERROR", "Gagal menyimpan bukti bayar.");
+  }
+  if (!updated.data) {
+    throw new AdminError(
+      409,
+      "PROOF_NOT_ALLOWED",
+      "Bukti pembayaran sudah dikirim atau status pesanan telah berubah.",
+    );
   }
 }
 
@@ -304,7 +448,7 @@ export async function attachPaymentProof(
 export async function getProofSignedUrl(
   path: string,
 ): Promise<string | null> {
-  const supabase = getServiceClient();
+  const supabase = await getAuthorizedAdminServiceClient();
   if (!supabase) {
     return null;
   }
@@ -335,7 +479,7 @@ export async function getRekapData(
   dari: string,
   sampai: string,
 ): Promise<RekapData | null> {
-  const supabase = getServiceClient();
+  const supabase = await getAuthorizedAdminServiceClient();
   if (!supabase) {
     return null;
   }
@@ -414,4 +558,91 @@ export async function getRekapData(
     .slice(0, 5);
 
   return rekap;
+}
+
+export interface DailySeriesPoint {
+  date: string; // YYYY-MM-DD zona Asia/Jakarta
+  pesanan: number; // jumlah seluruh pesanan hari itu
+  omzet: number; // sum total pesanan berstatus SELESAI hari itu
+}
+
+export interface DailySeriesRow {
+  created_at: string;
+  total: number;
+  status: OrderStatus;
+}
+
+// Agregasi murni deret harian: kelompokkan baris orders per tanggal Jakarta
+// dan isi tanggal kosong dengan 0 agar kurva tidak ada celah. Dipisah dari
+// Supabase agar dapat diuji unit tanpa mock (selaras pola test di src/lib).
+export function aggregateDailySeries(
+  rows: readonly DailySeriesRow[],
+  dari: string,
+  sampai: string,
+): DailySeriesPoint[] {
+  const points = new Map<string, DailySeriesPoint>();
+
+  // Seed seluruh tanggal dari `dari` s.d. `sampai` (inklusif) dengan 0. Pakai
+  // Date UTC tengah malam supaya toISOString().slice(0,10) stabil tanpa
+  // pergeseran zona waktu.
+  const startUtc = Date.UTC(
+    Number(dari.slice(0, 4)),
+    Number(dari.slice(5, 7)) - 1,
+    Number(dari.slice(8, 10)),
+  );
+  const endUtc = Date.UTC(
+    Number(sampai.slice(0, 4)),
+    Number(sampai.slice(5, 7)) - 1,
+    Number(sampai.slice(8, 10)),
+  );
+  for (let ms = startUtc; ms <= endUtc; ms += 86_400_000) {
+    const key = new Date(ms).toISOString().slice(0, 10);
+    points.set(key, { date: key, pesanan: 0, omzet: 0 });
+  }
+
+  for (const row of rows) {
+    const point = points.get(toJakartaDateString(row.created_at));
+    if (!point) {
+      // Baris di luar rentang — seharusnya tidak terjadi karena query sudah
+      // membatasi, tapi tetap ditangani defensif.
+      continue;
+    }
+    point.pesanan += 1;
+    if (row.status === "SELESAI") {
+      point.omzet += row.total;
+    }
+  }
+
+  return [...points.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Deret harian untuk kurva area dashboard (docs/14 §14.0). Query minimalkan
+// field ke created_at/total/status; zona Asia/Jakarta; omzet hanya SELESAI
+// (konsisten dengan getRekapData).
+export async function getDailySeries(
+  dari: string,
+  sampai: string,
+): Promise<DailySeriesPoint[] | null> {
+  const supabase = await getAuthorizedAdminServiceClient();
+  if (!supabase) {
+    return null;
+  }
+
+  const start = jakartaDateToUtcStart(dari).toISOString();
+  const endExclusive = new Date(
+    jakartaDateToUtcStart(sampai).getTime() + 86_400_000,
+  ).toISOString();
+
+  const result = await supabase
+    .from("orders")
+    .select("created_at, total, status")
+    .gte("created_at", start)
+    .lt("created_at", endExclusive);
+
+  if (result.error) {
+    throw new AdminError(500, "INTERNAL_ERROR", "Gagal memuat deret harian.");
+  }
+
+  const rows = (result.data ?? []) as DailySeriesRow[];
+  return aggregateDailySeries(rows, dari, sampai);
 }

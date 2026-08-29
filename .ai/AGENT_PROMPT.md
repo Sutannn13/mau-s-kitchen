@@ -150,7 +150,7 @@ Desain untuk lebar 360px dulu, baru lebarkan ke desktop.
 **Alur pemesanan:**
 ```
 Menu → Keranjang → Checkout → Kode pesanan MK-YYMMDD-XXX
-     → WhatsApp otomatis terbuka berisi rincian pesanan
+     → Pesanan tersimpan tanpa membuka WhatsApp otomatis
      → Halaman pembayaran QRIS
      → Admin verifikasi
 

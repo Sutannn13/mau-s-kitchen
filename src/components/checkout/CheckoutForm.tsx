@@ -8,10 +8,22 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { PaymentMethodPicker } from "@/components/checkout/PaymentMethodPicker";
+import { Spinner } from "@/components/common/Spinner";
 import { Toast } from "@/components/common/Toast";
+import { Input, Label, Textarea } from "@/components/ui";
+import { getDefaultPaymentMethod } from "@/config/payment";
 import { useCart, useRehydrateCart } from "@/lib/cart-store";
 import { formatRupiah } from "@/lib/format";
+import {
+  CHECKOUT_IDEMPOTENCY_STORAGE_KEY,
+  getCheckoutIdempotencyKey,
+} from "@/lib/order-idempotency";
+import {
+  useOrderHistory,
+  useRehydrateOrderHistory,
+} from "@/lib/order-history-store";
 import { phoneSchema } from "@/lib/validations";
+import type { OrderStatus, PaymentMethod } from "@/types/order";
 
 // Skema form checkout: field UI (mode jadwal) dipisah dari skema API;
 // payload dikonversi ke createOrderSchema saat submit.
@@ -26,6 +38,9 @@ const checkoutFormSchema = z
     scheduledAt: z.string().trim().optional(),
     note: z.string().trim().max(200).optional(),
     paymentMethod: z.enum(["qris", "transfer", "tunai"]),
+    privacyConsent: z.boolean().refine((value) => value, {
+      message: "Centang persetujuan privasi untuk melanjutkan",
+    }),
   })
   .superRefine((values, ctx) => {
     if (values.orderType === "antar" && (values.address?.length ?? 0) < 10) {
@@ -57,7 +72,12 @@ interface OrderSuccessResponse {
   success: true;
   data: {
     code: string;
-    whatsappUrl: string;
+    token: string;
+    trackingUrl: string;
+    createdAt: string;
+    total: number;
+    paymentMethod: PaymentMethod;
+    status: OrderStatus;
     paymentUrl: string;
   };
 }
@@ -74,15 +94,14 @@ export function CheckoutForm({
   onOrderCreated,
 }: CheckoutFormProps) {
   useRehydrateCart();
+  useRehydrateOrderHistory();
   const router = useRouter();
   const items = useCart((state) => state.items);
   const clearCart = useCart((state) => state.clear);
+  const addOrder = useOrderHistory((state) => state.addOrder);
 
   const [isSubmitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ id: number; message: string } | null>(
-    null,
-  );
-  const [whatsappFallbackUrl, setWhatsappFallbackUrl] = useState<string | null>(
     null,
   );
   const toastIdRef = useRef(0);
@@ -106,10 +125,14 @@ export function CheckoutForm({
       scheduleMode: "secepatnya",
       scheduledAt: "",
       note: "",
-      paymentMethod: "qris",
+      paymentMethod: getDefaultPaymentMethod(),
+      privacyConsent: false,
     },
   });
 
+  // React Hook Form mengelola subscription internal; komponen ini sengaja
+  // tidak dimemoisasi oleh React Compiler.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const orderType = watch("orderType");
   const scheduleMode = watch("scheduleMode");
 
@@ -142,37 +165,44 @@ export function CheckoutForm({
     setToast({ id: toastIdRef.current, message });
   }
 
-  async function submitOrder(
-    values: CheckoutFormValues,
-    waTab: Window | null,
-  ): Promise<void> {
+  async function submitOrder(values: CheckoutFormValues): Promise<void> {
     setSubmitting(true);
     try {
+      const requestBody = JSON.stringify({
+        customer: {
+          name: values.name,
+          whatsapp: values.whatsapp,
+          orderType: values.orderType,
+          address: values.address || undefined,
+          addressNote: values.addressNote || undefined,
+          scheduledAt:
+            values.scheduleMode === "jadwalkan" && values.scheduledAt
+              ? new Date(values.scheduledAt).toISOString()
+              : null,
+          note: values.note || undefined,
+        },
+        items: items.map((item) => ({
+          itemId: item.itemId,
+          variantId: item.variantId,
+          addOnIds: item.addOns.map((addOn) => addOn.id),
+          quantity: item.quantity,
+          note: item.note ?? null,
+        })),
+        paymentMethod: values.paymentMethod,
+        privacyConsent: values.privacyConsent,
+      });
+      const idempotencyKey = await getCheckoutIdempotencyKey(
+        requestBody,
+        window.sessionStorage,
+        window.crypto,
+      );
       const response = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer: {
-            name: values.name,
-            whatsapp: values.whatsapp,
-            orderType: values.orderType,
-            address: values.address || undefined,
-            addressNote: values.addressNote || undefined,
-            scheduledAt:
-              values.scheduleMode === "jadwalkan" && values.scheduledAt
-                ? new Date(values.scheduledAt).toISOString()
-                : null,
-            note: values.note || undefined,
-          },
-          items: items.map((item) => ({
-            itemId: item.itemId,
-            variantId: item.variantId,
-            addOnIds: item.addOns.map((addOn) => addOn.id),
-            quantity: item.quantity,
-            note: item.note ?? null,
-          })),
-          paymentMethod: values.paymentMethod,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: requestBody,
       });
 
       const json = (await response.json()) as
@@ -190,41 +220,32 @@ export function CheckoutForm({
             ? json.message
             : "Gagal membuat pesanan. Coba lagi ya.",
         );
-        waTab?.close();
         return;
       }
 
-      // Arahkan tab yang dibuka lebih dulu (pola anti popup-blocker
-      // docs/13_WHATSAPP_INTEGRATION.md §13.4).
-      if (waTab) {
-        waTab.location.href = json.data.whatsappUrl;
-      } else {
-        setWhatsappFallbackUrl(json.data.whatsappUrl);
-      }
+      addOrder({
+        code: json.data.code,
+        token: json.data.token,
+        status: json.data.status,
+        paymentMethod: json.data.paymentMethod,
+        total: json.data.total,
+        createdAt: json.data.createdAt,
+      });
       onOrderCreated();
       clearCart();
       window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+      window.sessionStorage.removeItem(CHECKOUT_IDEMPOTENCY_STORAGE_KEY);
       router.push(json.data.paymentUrl);
     } catch (error) {
       console.error("[checkout]", error);
       showToast("Gagal membuat pesanan. Coba lagi sebentar lagi ya.");
-      waTab?.close();
     } finally {
       setSubmitting(false);
     }
   }
 
-  // Tab kosong dibuka di event klik asli (bukan setelah await validasi)
-  // agar tidak diblokir popup blocker. Bila validasi gagal, tab ditutup
-  // kembali. Lihat docs/13 §13.4.
-  function onSubmit(event: React.FormEvent<HTMLFormElement>): void {
-    const waTab = window.open("", "_blank");
-    void handleSubmit(
-      (values) => submitOrder(values, waTab),
-      () => {
-        waTab?.close();
-      },
-    )(event);
+  function onSubmit(values: CheckoutFormValues): void {
+    void submitOrder(values);
   }
 
   const submitLabel = useMemo(
@@ -236,44 +257,24 @@ export function CheckoutForm({
   );
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-6">
-      {whatsappFallbackUrl !== null && (
-        <div
-          role="alert"
-          className="rounded-2xl border border-gold/40 bg-gold/10 p-4 text-sm text-brown-deep"
-        >
-          <p className="font-semibold">Pesanan berhasil dibuat.</p>
-          <p className="mt-1">
-            Tab WhatsApp gagal terbuka otomatis. Buka pesannya lewat tombol ini:
-          </p>
-          <a
-            href={whatsappFallbackUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-3 inline-flex min-h-11 items-center rounded-full bg-brown-deep px-5 text-xs font-bold text-cream"
-          >
-            Buka Pesan WhatsApp
-          </a>
-        </div>
-      )}
-
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <fieldset className="space-y-4 rounded-2xl border border-gold/20 bg-cream-soft p-5">
         <legend className="px-1 text-sm font-bold text-brown-deep">
           Data Pemesan
         </legend>
 
         <div>
-          <label htmlFor="name" className="text-sm font-semibold text-brown-deep">
-            Nama Lengkap <span className="text-chili">*</span>
-          </label>
-          <input
+          <Label htmlFor="name" required>
+            Nama Lengkap
+          </Label>
+          <Input
             id="name"
             type="text"
             autoComplete="name"
             {...register("name")}
-            aria-invalid={Boolean(errors.name)}
+            invalid={Boolean(errors.name)}
             aria-describedby={errors.name ? "name-error" : undefined}
-            className="mt-2 min-h-11 w-full rounded-xl border border-gold/25 bg-cream px-4 text-sm text-brown-deep focus:border-gold"
+            className="mt-2"
           />
           {errors.name ? (
             <p id="name-error" role="alert" className="mt-1.5 text-sm font-semibold text-chili">
@@ -283,19 +284,19 @@ export function CheckoutForm({
         </div>
 
         <div>
-          <label htmlFor="whatsapp" className="text-sm font-semibold text-brown-deep">
-            Nomor WhatsApp <span className="text-chili">*</span>
-          </label>
-          <input
+          <Label htmlFor="whatsapp" required>
+            Nomor WhatsApp
+          </Label>
+          <Input
             id="whatsapp"
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             placeholder="08xx / 628xx / +628xx"
             {...register("whatsapp")}
-            aria-invalid={Boolean(errors.whatsapp)}
+            invalid={Boolean(errors.whatsapp)}
             aria-describedby={errors.whatsapp ? "whatsapp-error" : undefined}
-            className="mt-2 min-h-11 w-full rounded-xl border border-gold/25 bg-cream px-4 text-sm text-brown-deep focus:border-gold"
+            className="mt-2"
           />
           {errors.whatsapp ? (
             <p id="whatsapp-error" role="alert" className="mt-1.5 text-sm font-semibold text-chili">
@@ -333,30 +334,30 @@ export function CheckoutForm({
 
         {orderType === "antar" ? (
           <div>
-            <label htmlFor="address" className="text-sm font-semibold text-brown-deep">
-              Alamat Lengkap <span className="text-chili">*</span>
-            </label>
-            <textarea
+            <Label htmlFor="address" required>
+              Alamat Lengkap
+            </Label>
+            <Textarea
               id="address"
               rows={2}
               {...register("address")}
-              aria-invalid={Boolean(errors.address)}
+              invalid={Boolean(errors.address)}
               aria-describedby={errors.address ? "address-error" : undefined}
-              className="mt-2 w-full resize-none rounded-xl border border-gold/25 bg-cream px-4 py-3 text-sm text-brown-deep focus:border-gold"
+              className="mt-2 resize-none"
             />
             {errors.address ? (
               <p id="address-error" role="alert" className="mt-1.5 text-sm font-semibold text-chili">
                 {errors.address.message}
               </p>
             ) : null}
-            <label htmlFor="addressNote" className="mt-3 block text-sm font-semibold text-brown-deep">
+            <Label htmlFor="addressNote" optional="opsional" className="mt-3">
               Patokan / Catatan Alamat
-            </label>
-            <input
+            </Label>
+            <Input
               id="addressNote"
               type="text"
               {...register("addressNote")}
-              className="mt-2 min-h-11 w-full rounded-xl border border-gold/25 bg-cream px-4 text-sm text-brown-deep focus:border-gold"
+              className="mt-2"
             />
           </div>
         ) : null}
@@ -388,16 +389,16 @@ export function CheckoutForm({
           </div>
           {scheduleMode === "jadwalkan" ? (
             <div className="mt-3">
-              <label htmlFor="scheduledAt" className="text-sm font-semibold text-brown-deep">
+              <Label htmlFor="scheduledAt" required>
                 Waktu Pengambilan / Pengantaran
-              </label>
-              <input
+              </Label>
+              <Input
                 id="scheduledAt"
                 type="datetime-local"
                 {...register("scheduledAt")}
-                aria-invalid={Boolean(errors.scheduledAt)}
+                invalid={Boolean(errors.scheduledAt)}
                 aria-describedby={errors.scheduledAt ? "scheduledAt-error" : undefined}
-                className="mt-2 min-h-11 w-full rounded-xl border border-gold/25 bg-cream px-4 text-sm text-brown-deep focus:border-gold"
+                className="mt-2"
               />
               {errors.scheduledAt ? (
                 <p id="scheduledAt-error" role="alert" className="mt-1.5 text-sm font-semibold text-chili">
@@ -409,42 +410,69 @@ export function CheckoutForm({
         </div>
 
         <div>
-          <label htmlFor="note" className="text-sm font-semibold text-brown-deep">
-            Catatan Pesanan <span className="font-normal text-brown/60">(opsional)</span>
-          </label>
-          <textarea
+          <Label htmlFor="note" optional="opsional">
+            Catatan Pesanan
+          </Label>
+          <Textarea
             id="note"
             rows={2}
             maxLength={200}
             {...register("note")}
-            className="mt-2 w-full resize-none rounded-xl border border-gold/25 bg-cream px-4 py-3 text-sm text-brown-deep focus:border-gold"
+            className="mt-2 resize-none"
           />
         </div>
       </fieldset>
 
       <PaymentMethodPicker
         value={watch("paymentMethod")}
+        orderType={orderType}
         onChange={(value) => {
           setValue("paymentMethod", value);
         }}
       />
 
-      <button
-        type="submit"
-        disabled={isSubmitting || items.length === 0}
-        className="flex min-h-12 w-full items-center justify-center rounded-full bg-gold px-6 text-sm font-bold text-brown-deep shadow-warm transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
-      >
-        {submitLabel}
-      </button>
+      {/* Persetujuan privasi SEBELUM CTA agar syarat wajib terlihat sebelum
+          tombol kirim (terutama saat CTA menempel di bawah pada seluler). */}
+      <label className="flex items-start gap-3 rounded-xl border border-gold/20 bg-cream-soft px-4 py-3 text-xs leading-5 text-brown/75">
+        <input
+          type="checkbox"
+          {...register("privacyConsent")}
+          className="mt-0.5 size-4 shrink-0 accent-gold"
+        />
+        <span>
+          Saya setuju data pesanan dipakai untuk memproses pesanan dan saya
+          dihubungi lewat WhatsApp. Baca{" "}
+          <Link
+            href="/privasi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold underline underline-offset-2"
+          >
+            kebijakan privasi
+          </Link>
+          .
+        </span>
+      </label>
+      {errors.privacyConsent ? (
+        <p role="alert" className="text-sm font-semibold text-chili">
+          {errors.privacyConsent.message}
+        </p>
+      ) : null}
 
-      <p className="text-center text-xs leading-5 text-brown/60">
-        Dengan membuat pesanan, kamu setuju dikontak admin lewat WhatsApp.
-        Lihat juga{" "}
-        <Link href="/keranjang" className="font-semibold underline underline-offset-2">
-          keranjangmu
-        </Link>
-        .
-      </p>
+      {/* Sticky CTA mobile: menempel di atas MobileBottomBar (~56px+safe-area).
+          z-sticky (50) di atas FAB (z-fab 40) sesuai tangga z-index — bar
+          berlatar solid menutup FAB saat tumpang tindih (docs/08 §8.1, A4).
+          Desktop kembali inline statis. */}
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+3.5rem)] z-sticky -mx-4 border-t border-gold/20 bg-cream/95 px-4 py-3 backdrop-blur-xl lg:static lg:z-auto lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
+        <button
+          type="submit"
+          disabled={isSubmitting || items.length === 0}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gold px-6 text-sm font-bold text-brown-deep shadow-warm transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+        >
+          {isSubmitting ? <Spinner className="size-4" /> : null}
+          {submitLabel}
+        </button>
+      </div>
 
       {toast !== null && (
         <Toast

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -70,4 +70,19 @@ export function useRehydrateCart(): void {
   useEffect(() => {
     void useCart.persist.rehydrate();
   }, []);
+}
+
+export function useCartHydrated(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const unsubscribeStart = useCart.persist.onHydrate(onStoreChange);
+      const unsubscribeFinish = useCart.persist.onFinishHydration(onStoreChange);
+      return () => {
+        unsubscribeStart();
+        unsubscribeFinish();
+      };
+    },
+    () => useCart.persist.hasHydrated(),
+    () => false,
+  );
 }

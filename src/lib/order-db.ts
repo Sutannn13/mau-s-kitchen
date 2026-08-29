@@ -3,12 +3,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMenuItemById } from "@/lib/menu";
 import { buildOrderCode } from "@/lib/order-code";
 import type { MenuAddOn } from "@/types/menu";
-import type { CartItem, Order } from "@/types/order";
+import type { CartItem, DeliveryProvider, Order } from "@/types/order";
 
 // Baris tabel orders/order_items (docs/10_DATA_MODEL.md §10.3).
 export interface OrderRow {
   id?: string;
   code: string;
+  public_token: string;
+  idempotency_key?: string | null;
+  request_fingerprint?: string | null;
   created_at?: string;
   updated_at?: string;
   customer_name: string;
@@ -20,11 +23,19 @@ export interface OrderRow {
   customer_note: string | null;
   subtotal: number;
   delivery_fee: number | null;
+  delivery_provider: DeliveryProvider | null;
+  courier_cost: number | null;
   total: number;
   payment_method: "qris" | "transfer" | "tunai";
   payment_proof_url: string | null;
+  payment_claimed_at?: string | null;
   status: Order["status"];
   admin_note: string | null;
+}
+
+export interface OrderIdempotency {
+  key: string;
+  fingerprint: string;
 }
 
 export interface OrderItemRow {
@@ -41,9 +52,19 @@ export interface OrderItemRow {
   subtotal: number;
 }
 
-function orderToRow(order: Order): OrderRow {
+function orderToRow(
+  order: Order,
+  idempotency?: OrderIdempotency,
+): OrderRow {
   return {
     code: order.code,
+    public_token: order.publicToken,
+    ...(idempotency
+      ? {
+          idempotency_key: idempotency.key,
+          request_fingerprint: idempotency.fingerprint,
+        }
+      : {}),
     customer_name: order.customer.name,
     customer_wa: order.customer.whatsapp,
     order_type: order.customer.orderType,
@@ -53,9 +74,12 @@ function orderToRow(order: Order): OrderRow {
     customer_note: order.customer.note ?? null,
     subtotal: order.subtotal,
     delivery_fee: order.deliveryFee,
+    delivery_provider: order.deliveryProvider,
+    courier_cost: order.courierCost,
     total: order.total,
     payment_method: order.paymentMethod,
     payment_proof_url: order.paymentProofUrl ?? null,
+    payment_claimed_at: order.paymentClaimedAt ?? null,
     status: order.status,
     admin_note: order.adminNote ?? null,
   };
@@ -118,6 +142,7 @@ export function rowToOrder(row: OrderRow, itemRows: readonly OrderItemRow[]): Or
 
   return {
     code: row.code,
+    publicToken: row.public_token,
     createdAt: row.created_at ?? new Date().toISOString(),
     customer: {
       name: row.customer_name,
@@ -131,10 +156,15 @@ export function rowToOrder(row: OrderRow, itemRows: readonly OrderItemRow[]): Or
     items,
     subtotal: row.subtotal,
     deliveryFee: row.delivery_fee,
+    deliveryProvider: row.delivery_provider ?? null,
+    courierCost: row.courier_cost ?? null,
     total: row.total,
     paymentMethod: row.payment_method,
     ...(row.payment_proof_url
       ? { paymentProofUrl: row.payment_proof_url }
+      : {}),
+    ...(row.payment_claimed_at
+      ? { paymentClaimedAt: row.payment_claimed_at }
       : {}),
     status: row.status,
     ...(row.admin_note ? { adminNote: row.admin_note } : {}),
@@ -142,33 +172,97 @@ export function rowToOrder(row: OrderRow, itemRows: readonly OrderItemRow[]): Or
   };
 }
 
-// Insert pesanan + itemnya. supabase-js tidak mendukung transaksi, jadi
-// kegagaln insert item dikompensasi dengan menghapus header pesanan.
+export class OrderCodeConflictError extends Error {
+  constructor() {
+    super("Kode pesanan sudah dipakai.");
+  }
+}
+
+export class OrderIdempotencyConflictError extends Error {
+  constructor() {
+    super("Idempotency key sudah dipakai.");
+  }
+}
+
+export class OrderDatabaseError extends Error {
+  readonly operation: string;
+  readonly details: unknown;
+
+  constructor(operation: string, details: unknown) {
+    super(`Operasi database pesanan gagal: ${operation}.`);
+    this.operation = operation;
+    this.details = details;
+  }
+}
+
+// RPC membungkus header + item dalam satu transaksi. Ini juga memastikan
+// retry dengan idempotency key tidak pernah membaca pesanan setengah jadi.
 export async function insertOrder(
   supabase: SupabaseClient,
   order: Order,
+  idempotency?: OrderIdempotency,
 ): Promise<void> {
-  const inserted = await supabase
-    .from("orders")
-    .insert(orderToRow(order))
-    .select("id")
-    .single();
+  const inserted = await supabase.rpc("insert_order_with_items", {
+    p_order: orderToRow(order, idempotency),
+    p_items: itemsToRows("", order.items),
+  });
 
-  if (inserted.error || !inserted.data) {
-    throw new Error(
-      `Gagal menyimpan pesanan: ${inserted.error?.message ?? "unknown"}`,
-    );
+  if (inserted.error || typeof inserted.data !== "string") {
+    if (
+      inserted.error?.code === "23505" &&
+      inserted.error.message.includes("orders_code")
+    ) {
+      throw new OrderCodeConflictError();
+    }
+    if (
+      inserted.error?.code === "23505" &&
+      inserted.error.message.includes("idempotency")
+    ) {
+      throw new OrderIdempotencyConflictError();
+    }
+    throw new OrderDatabaseError("menyimpan pesanan", inserted.error);
   }
+}
 
-  const orderId = inserted.data.id as string;
-  const savedItems = await supabase
+async function findItemRowsForOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<OrderItemRow[]> {
+  const itemResult = await supabase
     .from("order_items")
-    .insert(itemsToRows(orderId, order.items));
+    .select("*")
+    .eq("order_id", orderId);
 
-  if (savedItems.error) {
-    await supabase.from("orders").delete().eq("id", orderId);
-    throw new Error(`Gagal menyimpan item pesanan: ${savedItems.error.message}`);
+  if (itemResult.error) {
+    throw new OrderDatabaseError("membaca item pesanan", itemResult.error);
   }
+  return (itemResult.data ?? []) as OrderItemRow[];
+}
+
+export async function findOrderRowsByPublicAccess(
+  supabase: SupabaseClient,
+  code: string,
+  publicToken: string,
+): Promise<{ row: OrderRow; itemRows: OrderItemRow[] } | null> {
+  const orderResult = await supabase
+    .from("orders")
+    .select("*")
+    .eq("code", code)
+    .eq("public_token", publicToken)
+    .maybeSingle();
+
+  if (orderResult.error) {
+    throw new OrderDatabaseError("membaca pesanan publik", orderResult.error);
+  }
+  const row = orderResult.data as OrderRow | null;
+  if (!row) {
+    return null;
+  }
+
+  return {
+    row,
+    itemRows: await findItemRowsForOrder(supabase, row.id as string),
+  };
 }
 
 export async function findOrderRowsByCode(
@@ -181,25 +275,40 @@ export async function findOrderRowsByCode(
     .eq("code", code)
     .maybeSingle();
 
+  if (orderResult.error) {
+    throw new OrderDatabaseError("membaca pesanan admin", orderResult.error);
+  }
   const row = orderResult.data as OrderRow | null;
   if (!row) {
     return null;
   }
 
-  const itemResult = await supabase
-    .from("order_items")
-    .select("*")
-    .eq("order_id", row.id as string);
-
-  if (itemResult.error) {
-    throw new Error(
-      `Gagal membaca item pesanan: ${itemResult.error.message}`,
-    );
-  }
-
   return {
     row,
-    itemRows: (itemResult.data ?? []) as OrderItemRow[],
+    itemRows: await findItemRowsForOrder(supabase, row.id as string),
+  };
+}
+
+export async function findOrderRowsByIdempotencyKey(
+  supabase: SupabaseClient,
+  key: string,
+): Promise<{ row: OrderRow; itemRows: OrderItemRow[] } | null> {
+  const orderResult = await supabase
+    .from("orders")
+    .select("*")
+    .eq("idempotency_key", key)
+    .maybeSingle();
+
+  if (orderResult.error) {
+    throw new OrderDatabaseError("membaca retry pesanan", orderResult.error);
+  }
+  const row = orderResult.data as OrderRow | null;
+  if (!row) {
+    return null;
+  }
+  return {
+    row,
+    itemRows: await findItemRowsForOrder(supabase, row.id as string),
   };
 }
 

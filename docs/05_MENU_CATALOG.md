@@ -105,7 +105,16 @@
 
 ## 5.6 Aturan implementasi untuk developer / AI agent
 
-1. **Jangan hardcode harga** di komponen React. Selalu baca dari `data/menu.json`.
+> **Sumber kebenaran sejak FR-27:** nama, deskripsi, dan harga menu kini hidup
+> di tabel Supabase `menu_items` + relasi (dikelola admin lewat dashboard
+> `/admin/menu`). `data/menu.json` tetap menjadi **seed awal + fallback
+> read-only** bila Supabase tidak tersedia. Dokumen ini mencatat snapshot seed
+> awal; bila admin mengubah menu lewat dashboard, dokumen ini **tidak otomatis
+> tersinkron** — anggap tabel DB sebagai sumber hidup.
+
+1. **Jangan hardcode harga** di komponen React. Baca dari DB lewat
+   `src/lib/menu-data.ts` (`getCachedMenu` untuk tampilan, `getFreshMenu`
+   untuk checkout). Fallback ke `data/menu.json` hanya saat DB down.
 2. Struktur harga menggunakan **integer rupiah** (contoh `35000`), bukan string, bukan desimal.
 3. Format tampilan menggunakan helper:
    ```ts
@@ -118,7 +127,10 @@
    ```
 4. Item dengan `variants` **wajib** memilih varian sebelum masuk keranjang.
 5. Add-on hanya boleh muncul pada item yang `addOns`-nya tidak kosong.
-6. Jika ada perubahan harga: ubah `data/menu.json` **dan** dokumen ini, lalu naikkan `version`.
+6. Perubahan menu oleh admin dilakukan lewat dashboard (`/admin/menu`) atau
+   endpoint `/api/admin/menu/*` — bukan dengan mengedit `data/menu.json`.
+   `data/menu.json` hanya diubah saat pemilik merevisi snapshot seed resmi
+   (naikkan `version` saat itu terjadi).
 
 ---
 

@@ -1,33 +1,34 @@
 import Link from "next/link";
 
-import { menu } from "@/lib/menu";
 import { cn } from "@/lib/utils";
-import type { CategoryId } from "@/types/menu";
+import type { MenuCategory } from "@/types/menu";
 
-type ActiveTab = "semua" | CategoryId;
+type ActiveTab = "semua" | string;
 
 interface CategoryTabsProps {
   active: ActiveTab;
+  categories: MenuCategory[];
 }
 
-// Sticky tepat di bawah header 72px; z-40 agar berada di bawah header (z-50).
-export function CategoryTabs({ active }: CategoryTabsProps) {
-  const categories = [...menu.categories].sort((a, b) => a.order - b.order);
+// Sticky tepat di bawah header 72px; z-dropdown (30) agar berada di bawah
+// header sticky (z-sticky = 50) menurut tangga z-index (docs/08 §8.1).
+export function CategoryTabs({ active, categories }: CategoryTabsProps) {
+  const sorted = [...categories].sort((a, b) => a.order - b.order);
 
-  // Di /menu tab kategori memakai hash agar scroll mulus ke section
-  // (docs/07_INFORMATION_ARCHITECTURE.md §7.2); di halaman kategori
-  // memakai rute penuh dan "Semua" kembali ke /menu.
+  // Semua tab kategori memakai rute penuh /menu/{kategori} agar klik selalu
+  // pindah halaman dan chip aktif ter-highlight konsisten di semua halaman
+  // (permintaan pemilik); "Semua" kembali ke /menu.
   const tabs: Array<{ id: ActiveTab; label: string; href: string }> = [
     { id: "semua", label: "Semua", href: "/menu" },
-    ...categories.map((category) => ({
+    ...sorted.map((category) => ({
       id: category.id as ActiveTab,
       label: category.name,
-      href: active === "semua" ? `#${category.id}` : `/menu/${category.id}`,
+      href: `/menu/${category.id}`,
     })),
   ];
 
   return (
-    <div className="sticky top-[72px] z-40 border-b border-gold/20 bg-cream/95 backdrop-blur-xl">
+    <div className="sticky top-[72px] z-dropdown border-b border-gold/20 bg-cream/95 backdrop-blur-xl">
       <nav aria-label="Kategori menu" className="mx-auto w-full max-w-content">
         <ul className="flex gap-2 overflow-x-auto px-4 py-2.5 md:justify-center md:px-8">
           {tabs.map((tab) => {

@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
 
-import { getAllItemsWithOverrides } from "@/lib/menu-availability";
-import { menu } from "@/lib/menu";
+import { getCachedMenu } from "@/lib/menu-data";
 
 // GET /api/menu — katalog + status ketersediaan terkini (docs/11 §11.7).
+// Sumber kebenaran: tabel menu_items di Supabase dengan fallback JSON.
 export async function GET(): Promise<NextResponse> {
-  const items = await getAllItemsWithOverrides();
+  const loaded = await getCachedMenu();
 
   return NextResponse.json(
     {
       success: true,
       data: {
-        version: menu.version,
-        updatedAt: menu.updatedAt,
-        currency: menu.currency,
-        categories: menu.categories,
-        items,
+        version: loaded.version,
+        updatedAt: loaded.updatedAt,
+        currency: loaded.currency,
+        brand: loaded.brand,
+        categories: loaded.categories,
+        items: loaded.items,
       },
     },
     {

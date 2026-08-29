@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
+import { getCachedMenu } from "@/lib/menu-data";
 import { siteConfig } from "@/config/site";
-import { menu } from "@/lib/menu";
 
 // Daftar halaman publik untuk mesin pencari. Lihat docs/15_SEO_CONTENT.md §15.7.
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     "",
     "/menu",
@@ -17,18 +17,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === "" ? 1 : 0.8,
   }));
 
-  const categoryRoutes: MetadataRoute.Sitemap = menu.categories.map(
+  const loaded = await getCachedMenu();
+  const lastModified = new Date(loaded.updatedAt);
+
+  const categoryRoutes: MetadataRoute.Sitemap = loaded.categories.map(
     (category) => ({
       url: `${siteConfig.siteUrl}/menu/${category.id}`,
-      lastModified: new Date(menu.updatedAt),
+      lastModified,
       changeFrequency: "weekly",
       priority: 0.7,
     }),
   );
 
-  const productRoutes: MetadataRoute.Sitemap = menu.items.map((item) => ({
+  const productRoutes: MetadataRoute.Sitemap = loaded.items.map((item) => ({
     url: `${siteConfig.siteUrl}/produk/${item.id}`,
-    lastModified: new Date(menu.updatedAt),
+    lastModified,
     changeFrequency: "monthly",
     priority: 0.6,
   }));

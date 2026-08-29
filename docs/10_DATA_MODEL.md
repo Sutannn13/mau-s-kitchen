@@ -5,7 +5,9 @@
 ```ts
 // types/menu.ts
 
-export type CategoryId = "taichan" | "minuman" | "chocoberry"
+// CategoryId sekarang dinamis (admin bisa buat kategori baru lewat dashboard).
+// Tetap di-export sebagai alias string agar kode lama tetap kompilasi.
+export type CategoryId = string
 
 export interface MenuCategory {
   id: CategoryId
@@ -13,12 +15,14 @@ export interface MenuCategory {
   tagline: string
   image: string
   order: number
+  updatedAt?: string
 }
 
 export interface MenuVariant {
   id: string          // "small" | "medium"
   name: string        // "Small" | "Medium"
   price: number       // rupiah penuh, contoh 35000
+  sortOrder?: number
 }
 
 export interface MenuAddOn {
@@ -39,7 +43,9 @@ export interface MenuItem {
   available: boolean
   isBestSeller: boolean
   isAddOnItem?: boolean       // true untuk Lontong & Sambel Taichan
-  unit: "porsi" | "cup"
+  unit: "porsi" | "cup" | "item"
+  sortOrder?: number
+  updatedAt?: string
 }
 
 export interface MenuData {
@@ -57,6 +63,11 @@ export interface MenuData {
   archivedItems: { id: string; name: string; reason: string }[]
 }
 ```
+
+> Setelah fitur FR-27 (Admin CRUD Menu), sumber kebenaran utama pindah ke tabel
+> `menu_items` di Supabase. `data/menu.json` tetap sebagai seed awal + fallback
+> read-only bila Supabase tidak tersedia. `CategoryId` diubah dari union literal
+> menjadi `string` karena kategori sekarang dinamis.
 
 ## 10.2 Tipe TypeScript — Keranjang & Pesanan
 
@@ -105,9 +116,12 @@ export interface Order {
   items: CartItem[]
   subtotal: number
   deliveryFee: number | null // null = dikonfirmasi admin
+  deliveryProvider: 'internal' | 'gosend' | 'grabexpress' | 'other' | null
+  courierCost: number | null // biaya aktual internal; tidak diekspos ke pelanggan
   total: number
   paymentMethod: PaymentMethod
   paymentProofUrl?: string
+  paymentClaimedAt?: string   // klaim pelanggan "sudah bayar", bukan verifikasi admin
   status: OrderStatus
   adminNote?: string
   updatedAt: string
@@ -121,6 +135,9 @@ export interface Order {
 create table public.orders (
   id              uuid primary key default gen_random_uuid(),
   code            text unique not null,               -- MK-260814-001
+  public_token    text unique not null,                -- bearer token guest access
+  idempotency_key uuid,                                -- satu key per percobaan checkout
+  request_fingerprint text,                            -- SHA-256 payload (64 hex)
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
 
@@ -133,11 +150,16 @@ create table public.orders (
   customer_note   text,
 
   subtotal        integer not null check (subtotal >= 0),
-  delivery_fee    integer,
+  delivery_fee    integer check (delivery_fee is null or delivery_fee >= 0),
+  delivery_provider text check (delivery_provider is null or delivery_provider in ('internal','gosend','grabexpress','other')),
+  courier_cost    integer check (courier_cost is null or courier_cost >= 0),
   total           integer not null check (total >= 0),
 
   payment_method  text not null check (payment_method in ('qris','transfer','tunai')),
   payment_proof_url text,
+  -- Waktu pelanggan menekan "Saya Sudah Bayar" di /pembayaran/[kode].
+  -- Klaim saja: status tetap BARU sampai admin memverifikasi (§4.3).
+  payment_claimed_at timestamptz,
 
   status          text not null default 'BARU'
                   check (status in ('BARU','DIKONFIRMASI','DIPROSES','DIKIRIM','SELESAI','BATAL')),
@@ -167,6 +189,87 @@ create table public.menu_overrides (
   updated_at  timestamptz not null default now()
 );
 
+-- ==== FR-27: Admin CRUD Menu Mandiri ====
+-- Sumber kebenaran katalog pindah dari data/menu.json ke tabel berikut.
+-- Lihat supabase/migrations/20260817_menu_crud.sql untuk definisi penuh
+-- (RLS, trigger updated_at, seed dari data/menu.json, bucket menu-images).
+
+create table public.menu_categories (
+  id          text primary key,
+  name        text not null,
+  tagline     text not null default '',
+  image       text not null default '',
+  sort_order  integer not null default 0,
+  archived    boolean not null default false,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create table public.menu_items (
+  id             text primary key,
+  category_id    text not null references public.menu_categories(id) on delete restrict,
+  name           text not null,
+  description    text not null default '',
+  base_price     integer not null check (base_price >= 0),
+  image_path     text not null default '',
+  available      boolean not null default true,
+  is_best_seller boolean not null default false,
+  is_addon_item  boolean not null default false,
+  unit           text not null check (unit in ('porsi','cup','item')),
+  sort_order     integer not null default 0,
+  archived       boolean not null default false,
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+create table public.menu_variants (
+  id         text not null,
+  item_id    text not null references public.menu_items(id) on delete cascade,
+  name       text not null,
+  price      integer not null check (price >= 0),
+  sort_order integer not null default 0,
+  primary key (item_id, id)
+);
+
+create table public.menu_addons (
+  id    text primary key,
+  name  text not null,
+  price integer not null check (price >= 0)
+);
+
+create table public.menu_item_addons (
+  item_id  text not null references public.menu_items(id) on delete cascade,
+  addon_id text not null references public.menu_addons(id) on delete restrict,
+  primary key (item_id, addon_id)
+);
+```
+
+Invariant biaya pada database:
+
+- `ambil` wajib `delivery_fee = 0`.
+- `ambil` wajib `delivery_provider = null` dan `courier_cost = null`.
+- `total = subtotal + coalesce(delivery_fee, 0)`.
+- Provider `internal` wajib `courier_cost = 0`; provider eksternal wajib memiliki
+  biaya aktual, termasuk nilai Rp0 bila memang promo/gratis.
+- Delivery Tunai/COD hanya boleh memakai provider `internal`.
+- Delivery dengan klaim/bukti pembayaran wajib memiliki ongkir, provider, dan
+  biaya kurir aktual.
+- Delivery tidak boleh melewati status `BARU` tanpa rencana lengkap, kecuali
+  `BATAL`. Pesanan final sebelum migrasi fulfillment tetap disimpan sebagai
+  histori tanpa mengarang provider yang tidak pernah dicatat.
+
+> **Catatan transisi:** tabel `menu_overrides` sengaja tidak dihapus pada
+> migration `20260817_menu_crud.sql` untuk kompatibilitas mundur singkat.
+> Setelah semua kode membaca `menu_items.available` langsung, hapus via
+> migration cleanup terpisah. Loader `src/lib/menu-data.ts` sudah tidak
+> membaca `menu_overrides`.
+>
+> Storage bucket publik `menu-images` (3MB, JPG/PNG/WebP) menyimpan foto
+> menu hasil optimasi sharp ke WebP. `brand`/`version`/`updatedAt` dari
+> `data/menu.json` tetap dipakai sebagai konfigurasi statis (tidak pindah ke
+> tabel) dan disertakan oleh loader fallback.
+
+```sql
 -- Index
 create index orders_created_at_idx on public.orders (created_at desc);
 create index orders_status_idx     on public.orders (status);
@@ -260,6 +363,44 @@ export const buildOrderCode = (date: Date, sequence: number): string => {
 Urutan harian diambil dari `count(*) + 1` pesanan pada tanggal berjalan (zona Asia/Jakarta).
 Sebelum database aktif (Fase 1), gunakan 3 karakter acak sebagai gantinya dan tandai `TODO`.
 
+## 10.7 Invoice
+
+Invoice tidak menambah tabel atau nomor baru. `orders.code` menjadi nomor invoice,
+sedangkan rincian memakai snapshot `orders` + `order_items` agar perubahan menu
+setelah checkout tidak mengubah dokumen lama. Invoice hanya dirender bila status
+`DIKONFIRMASI`, `DIPROSES`, `DIKIRIM`, atau `SELESAI`, dan akses pelanggan tetap
+memerlukan pasangan kode + `public_token`.
+
 ---
+
+### Security hardening produksi
+
+- `orders.public_token` menyimpan token akses acak terpisah dari `code` yang
+  mudah dibaca. Token tidak boleh muncul pada daftar admin, log, atau response
+  publik selain URL yang diterima pembuat pesanan.
+- Konflik unique kode akibat checkout bersamaan di-retry saat insert.
+- `orders.idempotency_key` memiliki unique index parsial. Header dan seluruh
+  `order_items` ditulis oleh RPC `insert_order_with_items` dalam satu transaksi;
+  retry payload yang sama mengembalikan order pertama, sedangkan key yang sama
+  dengan fingerprint berbeda ditolak.
+- Update item menu beserta replace varian/add-on memakai RPC
+  `admin_update_menu_item`, sehingga kegagalan satu relasi me-rollback semuanya.
+- `rate_limits` dan RPC `check_rate_limit` menyediakan limit atomik lintas
+  instance; key IP disimpan sebagai hash HMAC.
+- Policy `orders`/`order_items` memerlukan `app_metadata.role=admin`.
+- Perubahan untuk project lama ada di
+  `supabase/migrations/20260816_security_hardening.sql` dan
+  `supabase/migrations/20260824_order_integrity.sql`.
+- Project yang terlanjur menjalankan migrasi integritas sebelum migrasi klaim
+  pembayaran wajib menjalankan
+  `supabase/migrations/20260824000100_payment_claim_repair.sql`. Tanpa kolom
+  `orders.payment_claimed_at`, RPC checkout baru gagal saat dipanggil walau
+  pembuatan fungsi sebelumnya dilaporkan sukses.
+- Kontrak ongkir pickup/delivery dan repair total historis ada di
+  `supabase/migrations/20260824114955_delivery_pricing_integrity.sql`; validasi
+  legacy dilanjutkan oleh `20260824115452_validate_legacy_delivery_pricing.sql`.
+- Setelah klien service-role Supabase terkonfigurasi, error database tidak boleh
+  jatuh ke penyimpanan RAM. Checkout harus gagal eksplisit agar tidak tercipta
+  pesanan bayangan yang tidak dapat dilihat atau diperbarui admin.
 
 ➡️ Lanjut ke `11_API_SPEC.md`

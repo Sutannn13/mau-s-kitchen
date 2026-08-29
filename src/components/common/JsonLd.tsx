@@ -1,14 +1,18 @@
-// Renderer JSON-LD generik. data dimasukkan via JSON.stringify agar aman
-// dari injeksi markup; konten berasal dari data internal, bukan input user.
 interface JsonLdProps {
   data: Record<string, unknown>;
+}
+
+// JSON.stringify tidak mengamankan `</script>` di HTML. Escape setiap `<`
+// agar data menu yang dapat diedit admin tidak bisa menutup elemen script.
+export function serializeJsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
 }
 
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }}
     />
   );
 }

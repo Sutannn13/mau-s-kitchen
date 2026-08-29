@@ -1,5 +1,7 @@
 import { siteConfig } from "@/config/site";
 import { formatRupiah } from "@/lib/format";
+import { deliveryProviderLabels } from "@/lib/order-delivery";
+import { isOrderTotalFinal } from "@/lib/order-pricing";
 import type { Order, PaymentMethod } from "@/types/order";
 
 // Nomor WhatsApp selalu dari config (env); fallback sesuai docs/13 §13.1.
@@ -49,6 +51,14 @@ export function buildOrderMessage(order: Order): string {
     order.deliveryFee === null
       ? "Ongkir   : dikonfirmasi admin"
       : `Ongkir   : ${formatRupiah(order.deliveryFee)}`;
+  const pengantar =
+    order.customer.orderType === "antar"
+      ? `Pengantar: ${
+          order.deliveryProvider
+            ? deliveryProviderLabels[order.deliveryProvider]
+            : "dikonfirmasi admin"
+        }`
+      : "Pengantar: Ambil Sendiri";
 
   const waktu = order.customer.scheduledAt
     ? formatJakarta(order.customer.scheduledAt, {
@@ -56,6 +66,10 @@ export function buildOrderMessage(order: Order): string {
         timeStyle: "short",
       }) + " WIB"
     : "Secepatnya";
+  const totalFinal = isOrderTotalFinal(
+    order.customer.orderType,
+    order.deliveryFee,
+  );
 
   return [
     "🍽️ *PESANAN BARU — MAU'S KITCHEN*",
@@ -74,11 +88,18 @@ export function buildOrderMessage(order: Order): string {
     "",
     `Subtotal : ${formatRupiah(order.subtotal)}`,
     ongkir,
-    `*TOTAL   : ${formatRupiah(order.total)}*`,
+    pengantar,
+    `*${totalFinal ? "TOTAL" : "TOTAL SEMENTARA"}   : ${formatRupiah(order.total)}*`,
     "",
     "💳 *PEMBAYARAN*",
     `Metode: ${paymentMethodLabels[order.paymentMethod]}`,
-    `Status: ${order.paymentMethod === "tunai" ? "Bayar di tempat" : "Menunggu pembayaran"}`,
+    `Status: ${
+      !totalFinal
+        ? "Menunggu ongkir sebelum pembayaran"
+        : order.paymentMethod === "tunai"
+          ? "Bayar di tempat"
+          : "Menunggu pembayaran"
+    }`,
     ...(order.customer.note ? ["", "📝 *CATATAN*", order.customer.note] : []),
     "",
     "— Dikirim otomatis dari website MAU'S Kitchen",
@@ -106,10 +127,23 @@ export function buildWhatsAppUrl(message: string): string {
 // Template balasan admin ke pelanggan (docs/14_ADMIN_DASHBOARD.md §14.3).
 // Estimasi dibiarkan "…" agar admin melengkapi sebelum mengirim.
 export function buildAdminReplyMessage(order: Order): string {
+  const totalFinal = isOrderTotalFinal(
+    order.customer.orderType,
+    order.deliveryFee,
+  );
   return [
     `Halo kak ${order.customer.name}`,
     `Pesanan *${order.code}* sudah kami terima.`,
-    `Total: ${formatRupiah(order.total)} (termasuk ongkir ${formatRupiah(order.deliveryFee ?? 0)})`,
+    totalFinal
+      ? `Total: ${formatRupiah(order.total)} (termasuk ongkir ${formatRupiah(order.deliveryFee ?? 0)})`
+      : `Subtotal sementara: ${formatRupiah(order.subtotal)}. Ongkir belum ditetapkan.`,
+    order.customer.orderType === "antar"
+      ? `Pengantar: ${
+          order.deliveryProvider
+            ? deliveryProviderLabels[order.deliveryProvider]
+            : "akan dikonfirmasi admin"
+        }.`
+      : "Pengambilan: Ambil Sendiri.",
     "Estimasi siap: … menit.",
     "Terima kasih sudah pesan di MAU'S Kitchen",
   ].join("\n");

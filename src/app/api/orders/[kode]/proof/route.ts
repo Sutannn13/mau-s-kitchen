@@ -1,17 +1,25 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { AdminError, attachPaymentProof } from "@/lib/admin/orders";
-import { getOrderByCode } from "@/lib/order-store";
+import { isValidOrderAccessToken } from "@/lib/order-access";
+import { isDeliveryPlanReady } from "@/lib/order-delivery";
+import {
+  getOrderByPublicAccess,
+  OrderStoreUnavailableError,
+} from "@/lib/order-store";
+import {
+  MAX_PROOF_SIZE_BYTES,
+  validateProofImage,
+} from "@/lib/proof-image";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+import {
+  readRequestBytesWithLimit,
+  RequestBodyTooLargeError,
+} from "@/lib/request-body";
 import { getServiceClient } from "@/lib/supabase/admin";
 
-// Batas unggah bukti bayar (docs/11_API_SPEC.md §11.6).
-const MAX_PROOF_SIZE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_PROOF_TYPES: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
+const MAX_MULTIPART_SIZE_BYTES = MAX_PROOF_SIZE_BYTES + 128 * 1024;
 
 function jsonError(
   status: number,
@@ -20,7 +28,7 @@ function jsonError(
 ): NextResponse {
   return NextResponse.json(
     { success: false, error, message },
-    { status },
+    { status, headers: { "Cache-Control": "private, no-store, max-age=0" } },
   );
 }
 
@@ -29,7 +37,7 @@ export async function POST(
   context: { params: Promise<{ kode: string }> },
 ): Promise<NextResponse> {
   const rateKey = `proof:${getClientIp(request.headers)}`;
-  if (isRateLimited(rateKey)) {
+  if (await isRateLimited(rateKey, { maxRequests: 6, windowSeconds: 600 })) {
     return jsonError(
       429,
       "RATE_LIMITED",
@@ -37,10 +45,56 @@ export async function POST(
     );
   }
 
+  const contentLength = Number.parseInt(
+    request.headers.get("content-length") ?? "0",
+    10,
+  );
+  if (
+    Number.isFinite(contentLength) &&
+    contentLength > MAX_MULTIPART_SIZE_BYTES
+  ) {
+    return jsonError(413, "PAYLOAD_TOO_LARGE", "Ukuran berkas maksimal 1MB.");
+  }
+
   const { kode } = await context.params;
-  const order = await getOrderByCode(kode);
+  const token = new URL(request.url).searchParams.get("token") ?? "";
+  if (!isValidOrderAccessToken(token)) {
+    return jsonError(404, "NOT_FOUND", "Pesanan tidak ditemukan.");
+  }
+
+  let order;
+  try {
+    order = await getOrderByPublicAccess(kode, token);
+  } catch (error) {
+    if (error instanceof OrderStoreUnavailableError) {
+      return jsonError(503, "ORDER_STORE_UNAVAILABLE", "Unggahan sedang tidak tersedia.");
+    }
+    throw error;
+  }
   if (!order) {
     return jsonError(404, "NOT_FOUND", "Pesanan tidak ditemukan.");
+  }
+  if (order.paymentMethod === "tunai") {
+    return jsonError(409, "PROOF_NOT_ALLOWED", "Pesanan tunai tidak memerlukan bukti bayar.");
+  }
+  if (!isDeliveryPlanReady({
+    orderType: order.customer.orderType,
+    deliveryFee: order.deliveryFee,
+    deliveryProvider: order.deliveryProvider,
+    courierCost: order.courierCost,
+  })) {
+    return jsonError(
+      409,
+      "DELIVERY_PLAN_PENDING",
+      "Pengantar dan ongkir belum lengkap. Tunggu total akhir sebelum mengirim bukti bayar.",
+    );
+  }
+  if (order.paymentProofUrl || order.status !== "BARU") {
+    return jsonError(
+      409,
+      "PROOF_NOT_ALLOWED",
+      "Bukti pembayaran sudah dikirim atau status pesanan telah berubah.",
+    );
   }
 
   const supabase = getServiceClient();
@@ -54,8 +108,25 @@ export async function POST(
 
   let formData: FormData;
   try {
-    formData = await request.formData();
-  } catch {
+    const rawBytes = await readRequestBytesWithLimit(
+      request,
+      MAX_MULTIPART_SIZE_BYTES,
+    );
+    const boundedBody = new Uint8Array(rawBytes.byteLength);
+    boundedBody.set(rawBytes);
+    const boundedHeaders = new Headers(request.headers);
+    boundedHeaders.delete("content-length");
+    boundedHeaders.delete("transfer-encoding");
+    const boundedRequest = new Request(request.url, {
+      method: "POST",
+      headers: boundedHeaders,
+      body: boundedBody.buffer,
+    });
+    formData = await boundedRequest.formData();
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return jsonError(413, "PAYLOAD_TOO_LARGE", "Ukuran berkas maksimal 1MB.");
+    }
     return jsonError(400, "VALIDATION_ERROR", "Format unggahan tidak valid.");
   }
 
@@ -63,27 +134,25 @@ export async function POST(
   if (!(file instanceof File)) {
     return jsonError(400, "VALIDATION_ERROR", "Berkas bukti bayar wajib dilampirkan.");
   }
+  if (file.size > MAX_PROOF_SIZE_BYTES) {
+    return jsonError(413, "PAYLOAD_TOO_LARGE", "Ukuran berkas maksimal 1MB.");
+  }
 
-  const extension = ALLOWED_PROOF_TYPES[file.type];
-  if (!extension) {
+  const image = await validateProofImage(file);
+  if (!image) {
     return jsonError(
       400,
       "VALIDATION_ERROR",
-      "Format berkas harus JPG, PNG, atau WebP.",
+      "Isi berkas harus berupa gambar JPG, PNG, atau WebP yang valid.",
     );
   }
-  if (file.size > MAX_PROOF_SIZE_BYTES) {
-    return jsonError(400, "VALIDATION_ERROR", "Ukuran berkas maksimal 5MB.");
-  }
 
-  // Nama file {kode}-{timestamp}.{ext} (docs/11_API_SPEC.md §11.6).
-  const timestamp = Date.now();
-  const path = `${order.code}-${timestamp}.${extension}`;
-
+  const path = `${randomUUID()}.${image.extension}`;
   const uploaded = await supabase.storage
     .from("payment-proofs")
-    .upload(path, await file.arrayBuffer(), {
-      contentType: file.type,
+    .upload(path, image.bytes, {
+      cacheControl: "0",
+      contentType: image.mimeType,
       upsert: false,
     });
 
@@ -103,12 +172,8 @@ export async function POST(
     return jsonError(500, "INTERNAL_ERROR", "Gagal menautkan bukti bayar.");
   }
 
-  const { data } = await supabase.storage
-    .from("payment-proofs")
-    .createSignedUrl(path, 60 * 60);
-
-  return NextResponse.json({
-    success: true,
-    data: { url: data?.signedUrl ?? null },
-  });
+  return NextResponse.json(
+    { success: true, data: { submitted: true } },
+    { headers: { "Cache-Control": "private, no-store, max-age=0" } },
+  );
 }

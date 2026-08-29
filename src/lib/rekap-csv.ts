@@ -1,17 +1,32 @@
 import type { RekapData } from "@/lib/admin/orders";
+import {
+  calculateDeliveryMargin,
+  deliveryProviderLabels,
+} from "@/lib/order-delivery";
 
-// Pemisah koma + UTF-8 BOM agar rapi dibuka Excel (docs/14 §14.5).
-// Murni tanpa dependensi server sehingga bisa dipakai komponen client.
+export function escapeCsvCell(value: string | number): string {
+  let text = String(value);
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = `'${text}`;
+  }
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+// CSV sengaja hanya berisi satu tabel mentah. Ringkasan, gaya, dan rumus
+// tersedia pada ekspor XLSX karena format CSV tidak dapat menyimpannya.
 export function rekapToCsv(rekap: RekapData): string {
   const header = [
-    "kode",
-    "tanggal",
-    "nama",
-    "status",
-    "metode_bayar",
-    "subtotal",
-    "ongkir",
-    "total",
+    "Kode Pesanan",
+    "Tanggal (ISO)",
+    "Nama Pelanggan",
+    "Status",
+    "Metode Pembayaran",
+    "Subtotal",
+    "Ongkir Pelanggan",
+    "Pengantar",
+    "Biaya Kurir Aktual",
+    "Selisih Ongkir",
+    "Total Pesanan",
   ];
   const lines = rekap.orders.map((order) =>
     [
@@ -22,21 +37,18 @@ export function rekapToCsv(rekap: RekapData): string {
       order.paymentMethod,
       order.subtotal,
       order.deliveryFee ?? "",
+      order.deliveryProvider
+        ? deliveryProviderLabels[order.deliveryProvider]
+        : "",
+      order.courierCost ?? "",
+      calculateDeliveryMargin(order.deliveryFee, order.courierCost) ?? "",
       order.total,
     ]
-      .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+      .map((value) => escapeCsvCell(value))
       .join(","),
   );
 
-  return [
-    `Ringkasan ${rekap.dari} s.d. ${rekap.sampai}`,
-    `Total pesanan,${rekap.totalPesanan}`,
-    `Pesanan selesai,${rekap.pesananSelesai}`,
-    `Pesanan batal,${rekap.pesananBatal}`,
-    `Omzet,${rekap.omzet}`,
-    `Rata-rata per transaksi,${rekap.rataRataTransaksi}`,
-    "",
-    header.join(","),
-    ...lines,
-  ].join("\r\n");
+  return [header.map((value) => escapeCsvCell(value)).join(","), ...lines].join(
+    "\r\n",
+  );
 }

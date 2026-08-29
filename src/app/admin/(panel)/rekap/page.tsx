@@ -1,9 +1,13 @@
 import { BarChart3 } from "lucide-react";
 
-import { CsvDownloadButton } from "@/components/admin/CsvDownloadButton";
-import { RekapFilters, type RekapPreset } from "@/components/admin/RekapFilters";
+import {
+  RekapFilters,
+  type RekapPreset,
+} from "@/components/admin/RekapFilters";
+import { RekapDownloadButtons } from "@/components/admin/RekapDownloadButtons";
 import { getRekapData } from "@/lib/admin/orders";
 import { formatRupiah } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { paymentMethodLabels } from "@/lib/whatsapp";
 import type { PaymentMethod } from "@/types/order";
 
@@ -83,7 +87,7 @@ export default async function AdminRekapPage({ searchParams }: RekapPageProps) {
     : [];
 
   return (
-    <main className="mx-auto w-full max-w-content px-4 pt-6 md:px-8">
+    <main className="stagger-in mx-auto w-full max-w-content px-4 pt-6 md:px-8">
       <div className="mx-auto max-w-2xl">
         <h1 className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
           Rekap Penjualan
@@ -114,19 +118,24 @@ export default async function AdminRekapPage({ searchParams }: RekapPageProps) {
               <p className="text-sm font-semibold text-brown-deep">
                 Periode {rekap.dari} s.d. {rekap.sampai}
               </p>
-              <CsvDownloadButton rekap={rekap} />
+              <RekapDownloadButtons rekap={rekap} />
             </div>
 
-            <dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-              {metrics.map((metric) => (
+            <dl className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-5">
+              {metrics.map((metric, index) => (
                 <div
                   key={metric.label}
-                  className="rounded-2xl border border-gold/20 bg-cream-soft p-4"
+                  className={cn(
+                    "min-w-0 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3 sm:p-4",
+                    index === metrics.length - 1 &&
+                      metrics.length % 2 === 1 &&
+                      "col-span-2 sm:col-span-1 lg:col-span-1",
+                  )}
                 >
-                  <dt className="text-xs font-semibold text-brown/60">
+                  <dt className="text-[11px] sm:text-xs font-semibold text-brown/60 truncate">
                     {metric.label}
                   </dt>
-                  <dd className="mt-1 text-lg font-bold tabular-nums text-brown-deep">
+                  <dd className="mt-1 text-base sm:text-lg font-bold tabular-nums text-brown-deep truncate">
                     {metric.value}
                   </dd>
                 </div>

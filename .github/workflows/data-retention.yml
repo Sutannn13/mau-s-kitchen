@@ -1,0 +1,41 @@
+name: Data Retention Purge
+
+# Menjalankan `npm run data:purge` terjadwal. Tanpa ini, ORDER_RETENTION_DAYS
+# hanya jadi janji di dokumen: data pesanan (nama, telepon, alamat) dan bukti
+# bayar tersimpan selamanya di Supabase. Cloudflare Workers tidak menjalankan
+# cron dari repo ini, jadi penjadwalannya di GitHub Actions.
+on:
+  schedule:
+    # 18:00 UTC = 01:00 WIB — di luar jam operasional.
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-retention
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Purge expired orders
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Purge expired orders
+        run: npm run data:purge
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ORDER_RETENTION_DAYS: ${{ secrets.ORDER_RETENTION_DAYS }}

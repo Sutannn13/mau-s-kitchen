@@ -1,73 +1,82 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Clock3, MessageCircle, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
-import { WhatsAppLink } from "@/components/common/WhatsAppLink";
+import { StoreStatusBadge } from "@/components/common/StoreStatusBadge";
 
 export function HeroSection() {
   return (
-    <section className="relative isolate overflow-hidden bg-gradient-to-b from-cream to-cream-soft">
-      <div
-        aria-hidden="true"
-        className="absolute -left-20 top-12 size-64 rounded-full bg-rose/25 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -right-24 bottom-0 size-72 rounded-full bg-gold/20 blur-3xl"
-      />
+    <section className="relative overflow-hidden bg-cream py-10 md:py-16 lg:py-20">
+      <div className="mx-auto w-full max-w-content px-4 md:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          {/* Kolom Teks & CTA */}
+          <div className="flex flex-col items-start">
+            <div className="mb-4 motion-safe:animate-reveal">
+              <StoreStatusBadge />
+            </div>
 
-      <div className="relative mx-auto flex w-full max-w-content flex-col items-center px-4 py-14 text-center md:px-8 md:py-24">
-        <div className="relative">
-          <div
-            aria-hidden="true"
-            className="absolute inset-2 rounded-full border border-gold/40"
-          />
-          <Image
-            src="/assets/brand/logo-maus-kitchen.jpeg"
-            alt="Logo MAU'S Kitchen dengan tagline Homemade with Love"
-            width={160}
-            height={160}
-            quality={70}
-            sizes="(max-width: 767px) 120px, 160px"
-            className="relative size-[120px] rounded-full border-4 border-cream-soft object-cover shadow-warm md:size-40"
-            priority
-          />
-        </div>
+            <p
+              className="mb-4 flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-brown motion-safe:animate-reveal"
+              style={{ animationDelay: "80ms" }}
+            >
+              <span className="h-px w-8 bg-gold" aria-hidden="true" />
+              Homemade with Love
+            </p>
 
-        <div className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/30 bg-white/60 px-4 text-xs font-semibold text-brown backdrop-blur sm:text-sm">
-          <Clock3 aria-hidden="true" className="size-4 text-gold" strokeWidth={1.75} />
-          Jam operasional: TBD
-        </div>
+            <h1 className="font-serif text-3xl font-bold tracking-tight text-brown-deep sm:text-4xl md:text-5xl lg:text-[3.25rem] lg:leading-[1.15]">
+              Manisnya Bikin Senyum.
+              <br className="hidden sm:inline" />
+              <span className="text-chili">Pedasnya Bikin Nagih.</span>
+            </h1>
 
-        <p className="mt-6 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-brown sm:text-sm">
-          <Sparkles aria-hidden="true" className="size-4 text-gold" />
-          Homemade with Love
-        </p>
+            <p
+              className="mt-5 max-w-xl text-[15px] leading-relaxed text-brown/85 sm:text-base md:text-lg motion-safe:animate-reveal"
+              style={{ animationDelay: "160ms" }}
+            >
+              Nikmati keseimbangan rasa otentik dari MAU&apos;S Kitchen. Mulai
+              dari kelezatan Choco Berry yang manis menyegarkan, hingga
+              sengatan Sate Taichan yang menggugah selera. Dibuat dengan
+              dedikasi untuk setiap gigitan dan tegukan.
+            </p>
 
-        <h1 className="mt-4 max-w-4xl font-serif text-[2rem] font-bold leading-tight text-brown-deep sm:text-4xl md:text-5xl lg:text-[3.25rem]">
-          Taichan Pedas, Minuman Segar, Dessert Coklat Premium
-        </h1>
+            <div
+              className="mt-8 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center motion-safe:animate-reveal"
+              style={{ animationDelay: "240ms" }}
+            >
+              <Link
+                href="/menu"
+                className="btn-press group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1A110B] px-8 text-sm font-semibold text-white shadow-warm transition-all duration-300 hover:bg-[#2E1F16]"
+              >
+                Pesan Sekarang
+                <ArrowRight
+                  aria-hidden="true"
+                  className="size-4 transition-transform duration-300 group-hover:translate-x-1"
+                />
+              </Link>
+              <Link
+                href="/menu"
+                className="btn-press inline-flex min-h-12 items-center justify-center rounded-full border border-[#D1C7BD] bg-transparent px-8 text-sm font-semibold text-brown-deep transition-all duration-300 hover:border-[#1A110B] hover:bg-white/40"
+              >
+                Lihat Menu
+              </Link>
+            </div>
+          </div>
 
-        <p className="mt-5 max-w-2xl text-[15px] leading-7 text-brown/80 md:text-base">
-          Dibuat segar setiap hari dari dapur rumahan kami. Pilih yang pedas,
-          segar, atau manis sesuai suasana hati kamu.
-        </p>
-
-        <div className="mt-8 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/menu"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-gold px-6 text-sm font-bold text-brown-deep shadow-warm transition-transform hover:-translate-y-0.5 hover:bg-gold-light"
-          >
-            Lihat Menu
-            <ArrowRight aria-hidden="true" className="size-4" />
-          </Link>
-          <WhatsAppLink
-            message="Halo MAU'S Kitchen, aku mau lihat menu dan pesan."
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-brown/40 bg-transparent px-6 text-sm font-bold text-brown-deep transition-colors hover:border-brown hover:bg-brown-deep hover:text-cream"
-          >
-            <MessageCircle aria-hidden="true" className="size-4" />
-            Pesan via WhatsApp
-          </WhatsAppLink>
+          {/* Kolom Foto Hero (Framed Card) */}
+          <div className="relative">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-[#EAE3DB] bg-white shadow-warm-lg sm:aspect-[4/3] lg:aspect-[4/3]">
+              <Image
+                src="/assets/stitch/hero-food-plate.jpg"
+                alt="Sajian Sate Taichan dan minuman ChocoBerry dari MAU'S Kitchen"
+                fill
+                loading="eager"
+                fetchPriority="high"
+                quality={75}
+                sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 64px), (max-width: 1263px) calc((100vw - 120px) / 2), 572px"
+                className="object-cover motion-safe:animate-kenburns"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>

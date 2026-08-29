@@ -22,7 +22,13 @@ sub_brand: "ChocoBerry by Mau's Kitchen"
 
 ---
 
-## Menu lengkap (SOURCE OF TRUTH)
+## Menu lengkap (snapshot seed awal)
+
+> **Sumber kebenaran hidup sejak FR-27:** tabel `menu_items` + relasi di
+> Supabase, dikelola admin lewat dashboard `/admin/menu` + endpoint
+> `/api/admin/menu/*`. Daftar di bawah hanya snapshot seed awal dari
+> `data/menu.json` (seed + fallback read-only). Jangan menambah/mengubah item
+> menu dari kode — gunakan dashboard. Lihat `docs/05_MENU_CATALOG.md` §5.6.
 
 ### Taichan — tagline: "Pedesnya nampol, rasanya nagih!"
 
@@ -65,7 +71,10 @@ total = subtotal_pesanan + ongkir
 ```
 
 - Semua uang **integer**, tanpa desimal, tanpa pajak tambahan.
-- `ongkir = null` → tampilkan "dikonfirmasi admin", bukan `Rp0`.
+- Pesanan `ambil` selalu `ongkir = 0` dan total langsung final.
+- Pesanan `antar` mulai dengan `ongkir = null`; tampilkan subtotal sementara dan
+  larang pembayaran sampai admin menyimpan ongkir (Rp0 tetap nilai final yang sah).
+- Ongkir terkunci setelah klaim/bukti pembayaran atau status `DIKONFIRMASI`.
 - Harga **selalu** dihitung ulang di server saat membuat pesanan.
 
 ---
@@ -85,7 +94,7 @@ total = subtotal_pesanan + ongkir
 
 ```
 Menu → Keranjang → Checkout → Kode Pesanan (MK-YYMMDD-XXX)
-     → Pesan WhatsApp otomatis ke admin
+     → Pesanan tersimpan ke dashboard admin (WhatsApp hanya aksi opsional)
      → Halaman pembayaran QRIS
      → Admin verifikasi → status: BARU → DIKONFIRMASI → DIPROSES → DIKIRIM → SELESAI
 ```
@@ -118,7 +127,8 @@ Aturan section: Hero/Tentang = cream · Taichan & Minuman = ink + chili/flame ·
 ## Larangan keras
 
 1. ❌ Jangan mengarang harga, menu, alamat, jam buka, atau nomor rekening.
-2. ❌ Jangan hardcode harga di komponen — selalu baca `data/menu.json`.
+2. ❌ Jangan hardcode harga di komponen — baca lewat `src/lib/menu-data.ts`
+   (DB utama, fallback `data/menu.json` saat Supabase down).
 3. ❌ Jangan menulis "Maus Kitchen" — selalu **MAU'S Kitchen**.
 4. ❌ Jangan memakai bahasa Inggris di UI pelanggan.
 5. ❌ Jangan mewajibkan login untuk pelanggan.
@@ -130,6 +140,6 @@ Aturan section: Hero/Tentang = cream · Taichan & Minuman = ink + chili/flame ·
 ## Nilai `TBD` yang belum dikonfirmasi
 
 `jam_operasional` · `alamat` · `tarif_ongkir` · `minimum_order` ·
-`nomor_rekening_bca` · `gambar_qris` · `akun_instagram` · `domain`
+`nomor_rekening_bca` · `akun_instagram`
 
 Gunakan placeholder `TBD` dan catat, jangan mengisi dengan tebakan.

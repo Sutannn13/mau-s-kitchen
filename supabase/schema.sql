@@ -8,6 +8,12 @@
 create table if not exists public.orders (
   id              uuid primary key default gen_random_uuid(),
   code            text unique not null,               -- MK-260814-001
+  public_token    text unique not null default
+                  (replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')),
+  idempotency_key uuid,
+  request_fingerprint text check (
+                        request_fingerprint is null or length(request_fingerprint) = 64
+                      ),
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
 
@@ -20,16 +26,102 @@ create table if not exists public.orders (
   customer_note   text,
 
   subtotal        integer not null check (subtotal >= 0),
-  delivery_fee    integer,
+  delivery_fee    integer check (delivery_fee is null or delivery_fee >= 0),
+  delivery_provider text check (
+                      delivery_provider is null
+                      or delivery_provider in ('internal','gosend','grabexpress','other')
+                    ),
+  courier_cost    integer check (courier_cost is null or courier_cost >= 0),
   total           integer not null check (total >= 0),
 
   payment_method  text not null check (payment_method in ('qris','transfer','tunai')),
   payment_proof_url text,
+  -- Waktu pelanggan menekan "Saya Sudah Bayar" (klaim, bukan verifikasi admin).
+  payment_claimed_at timestamptz,
 
   status          text not null default 'BARU'
                   check (status in ('BARU','DIKONFIRMASI','DIPROSES','DIKIRIM','SELESAI','BATAL')),
-  admin_note      text
+  admin_note      text,
+
+  constraint orders_pickup_delivery_fee_zero
+    check (order_type <> 'ambil' or delivery_fee = 0),
+  constraint orders_delivery_fulfillment_coherent
+    check (
+      (order_type = 'ambil' and delivery_provider is null and courier_cost is null)
+      or (
+        order_type = 'antar'
+        and (
+          (delivery_provider is null and courier_cost is null)
+          or (delivery_provider = 'internal' and courier_cost = 0)
+          or (delivery_provider in ('gosend','grabexpress','other') and courier_cost is not null)
+        )
+      )
+    ),
+  constraint orders_cash_delivery_internal_only
+    check (
+      order_type <> 'antar'
+      or payment_method <> 'tunai'
+      or delivery_provider is null
+      or delivery_provider = 'internal'
+    ),
+  constraint orders_total_matches_components
+    check (total = subtotal + coalesce(delivery_fee, 0)),
+  constraint orders_payment_requires_final_total
+    check (
+      order_type <> 'antar'
+      or (
+        delivery_fee is not null
+        and delivery_provider is not null
+        and courier_cost is not null
+      )
+      or (payment_claimed_at is null and payment_proof_url is null)
+    ),
+  constraint orders_confirmed_delivery_requires_plan
+    check (
+      order_type <> 'antar'
+      or status in ('BARU', 'BATAL')
+      or (
+        delivery_fee is not null
+        and delivery_provider is not null
+        and courier_cost is not null
+      )
+    )
 );
+
+-- Aman dijalankan untuk project lama yang dibuat sebelum token publik ada.
+alter table public.orders add column if not exists public_token text;
+update public.orders
+set public_token = replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '')
+where public_token is null;
+alter table public.orders alter column public_token set default
+  (replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', ''));
+alter table public.orders alter column public_token set not null;
+create unique index if not exists orders_public_token_idx on public.orders (public_token);
+
+-- Retry checkout memakai key yang sama agar kegagalan jaringan tidak membuat
+-- dua pesanan. Nullable menjaga kompatibilitas dengan baris lama.
+alter table public.orders add column if not exists idempotency_key uuid;
+alter table public.orders add column if not exists request_fingerprint text;
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'orders_request_fingerprint_check'
+      and conrelid = 'public.orders'::regclass
+  ) then
+    alter table public.orders
+      add constraint orders_request_fingerprint_check
+      check (request_fingerprint is null or length(request_fingerprint) = 64);
+  end if;
+end $$;
+create unique index if not exists orders_idempotency_key_idx
+  on public.orders (idempotency_key)
+  where idempotency_key is not null;
+
+-- Aman untuk project lama: kolom klaim pembayaran pelanggan.
+alter table public.orders add column if not exists payment_claimed_at timestamptz;
+alter table public.orders add column if not exists delivery_provider text;
+alter table public.orders add column if not exists courier_cost integer;
 
 -- Tabel item pesanan
 create table if not exists public.order_items (
@@ -58,6 +150,10 @@ create table if not exists public.menu_overrides (
 create index if not exists orders_created_at_idx on public.orders (created_at desc);
 create index if not exists orders_status_idx     on public.orders (status);
 create index if not exists order_items_order_idx on public.order_items (order_id);
+-- Antrean verifikasi admin: pesanan yang sudah diklaim bayar pelanggan.
+create index if not exists orders_payment_claimed_idx
+  on public.orders (payment_claimed_at desc)
+  where payment_claimed_at is not null;
 
 -- Trigger updated_at
 create or replace function public.touch_updated_at()
@@ -80,23 +176,93 @@ alter table public.orders         enable row level security;
 alter table public.order_items    enable row level security;
 alter table public.menu_overrides enable row level security;
 
+-- Rate limiter terdistribusi. Tabel ini hanya diakses lewat service role.
+create table if not exists public.rate_limits (
+  key_hash          text primary key,
+  window_started_at timestamptz not null default now(),
+  hit_count         integer not null default 1 check (hit_count > 0),
+  updated_at        timestamptz not null default now()
+);
+alter table public.rate_limits enable row level security;
+
+create or replace function public.check_rate_limit(
+  p_key_hash text,
+  p_window_seconds integer,
+  p_max_requests integer
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_count integer;
+begin
+  if p_window_seconds < 1 or p_max_requests < 1 then
+    raise exception 'Invalid rate limit configuration';
+  end if;
+
+  insert into public.rate_limits (key_hash, window_started_at, hit_count, updated_at)
+  values (p_key_hash, now(), 1, now())
+  on conflict (key_hash) do update
+  set
+    hit_count = case
+      when public.rate_limits.window_started_at <= now() - make_interval(secs => p_window_seconds)
+        then 1
+      else public.rate_limits.hit_count + 1
+    end,
+    window_started_at = case
+      when public.rate_limits.window_started_at <= now() - make_interval(secs => p_window_seconds)
+        then now()
+      else public.rate_limits.window_started_at
+    end,
+    updated_at = now()
+  returning hit_count into current_count;
+
+  delete from public.rate_limits
+  where updated_at < now() - interval '1 day';
+
+  return current_count > p_max_requests;
+end;
+$$;
+
+revoke all on table public.rate_limits from anon, authenticated;
+revoke all on function public.check_rate_limit(text, integer, integer) from public, anon, authenticated;
+grant execute on function public.check_rate_limit(text, integer, integer) to service_role;
+
 -- Publik boleh membaca ketersediaan menu (dipakai halaman katalog ISR)
 drop policy if exists menu_overrides_public_read on public.menu_overrides;
 create policy "menu_overrides_public_read"
   on public.menu_overrides for select using (true);
 
--- Hanya user terautentikasi (admin) yang boleh membaca & mengubah pesanan
+-- Hanya user dengan custom claim app_metadata.role=admin. Route dashboard
+-- tetap memakai service role setelah allowlist email diverifikasi di server.
 drop policy if exists orders_admin_all on public.orders;
 create policy "orders_admin_all"
   on public.orders for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 drop policy if exists order_items_admin_all on public.order_items;
 create policy "order_items_admin_all"
   on public.order_items for all
-  using (auth.role() = 'authenticated')
-  with check (auth.role() = 'authenticated');
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- Bucket bukti bayar privat dengan batas yang sama seperti API.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'payment-proofs',
+  'payment-proofs',
+  false,
+  1048576,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update
+set
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 -- ============================================================
 -- Catatan langkah manual berikutnya (dashboard Supabase):

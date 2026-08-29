@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { Trash2 } from "lucide-react";
+import { motion } from "motion/react";
 
 import { QuantityStepper } from "@/components/common/QuantityStepper";
+import { ConfirmButton } from "@/components/ui";
 import { formatRupiah } from "@/lib/format";
 import { lineSubtotal } from "@/lib/pricing";
 import type { CartItem } from "@/types/order";
@@ -22,19 +24,22 @@ export function CartItemRow({
   const unitWithAddOns =
     item.unitPrice + item.addOns.reduce((total, addOn) => total + addOn.price, 0);
 
-  function handleQuantity(nextQuantity: number): void {
-    // Mengurangi dari 1 menawarkan konfirmasi hapus. Lihat docs/08_UI_UX_SPEC.md §8.4.
-    if (nextQuantity < 1) {
-      if (window.confirm(`Hapus ${item.name} dari keranjang?`)) {
-        onRemove();
-      }
-      return;
-    }
-    onQuantityChange(nextQuantity);
-  }
-
+  // Saat dihapus, baris collapse (tinggi + opacity turun 250ms) dan
+  // baris lain meluncur naik (layout animation) — dipasang di bawah
+  // AnimatePresence milik halaman keranjang. reducedMotion="user" dari
+  // MotionConfig otomatis mematikan animasi transform/layout ini.
   return (
-    <article className="flex gap-4 rounded-2xl border border-gold/20 bg-cream-soft p-4 shadow-warm">
+    <motion.article
+      layout
+      exit={{
+        opacity: 0,
+        height: 0,
+        padding: 0,
+        scale: 0.98,
+        transition: { duration: 0.25, ease: "easeOut" },
+      }}
+      className="flex gap-4 overflow-hidden rounded-2xl border border-gold/20 bg-cream-soft p-4 shadow-warm"
+    >
       <div className="relative size-20 shrink-0 overflow-hidden rounded-xl sm:size-24">
         <Image
           src={item.image}
@@ -74,27 +79,24 @@ export function CartItemRow({
             ) : null}
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(`Hapus ${item.name} dari keranjang?`)) {
-                onRemove();
-              }
-            }}
+          {/* Hapus memakai konfirmasi dua langkah inline (pola bersama,
+              docs/08 §8.4) — penghapusan punya satu affordance yang jelas. */}
+          <ConfirmButton
+            onConfirm={onRemove}
+            label={<Trash2 aria-hidden="true" className="size-5" strokeWidth={1.75} />}
+            confirmLabel="Ya, Hapus"
             aria-label={`Hapus ${item.name} dari keranjang`}
             className="flex size-11 shrink-0 items-center justify-center rounded-full text-brown/60 transition-colors hover:bg-chili/10 hover:text-chili"
-          >
-            <Trash2 aria-hidden="true" className="size-5" strokeWidth={1.75} />
-          </button>
+          />
         </div>
 
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <QuantityStepper
             value={item.quantity}
-            onChange={handleQuantity}
-            // min 0 agar tombol − tetap aktif di jumlah 1 dan memicu
-            // konfirmasi hapus (docs/08_UI_UX_SPEC.md §8.4).
-            min={0}
+            onChange={onQuantityChange}
+            // min 1: tombol − nonaktif di jumlah 1; penghapusan lewat tombol
+            // sampah dua langkah di atas (docs/08_UI_UX_SPEC.md §8.4).
+            min={1}
             label={`Jumlah ${item.name}`}
           />
           <p className="text-base font-bold tabular-nums text-brown-deep">
@@ -102,6 +104,6 @@ export function CartItemRow({
           </p>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }

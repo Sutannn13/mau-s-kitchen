@@ -1,21 +1,13 @@
-import { BestSellerSection } from "@/components/home/BestSellerSection";
-import { BrandValuesSection } from "@/components/home/BrandValuesSection";
-import { CategorySection } from "@/components/home/CategorySection";
-import { ChocoBerryHighlight } from "@/components/home/ChocoBerryHighlight";
-import { ClosingCta } from "@/components/home/ClosingCta";
+import { FeaturedMenuSection } from "@/components/home/FeaturedMenuSection";
 import { HeroSection } from "@/components/home/HeroSection";
-import { HowToOrderSection } from "@/components/home/HowToOrderSection";
+import { KitchenStorySection } from "@/components/home/KitchenStorySection";
 
 export default function HomePage() {
   return (
     <main>
       <HeroSection />
-      <CategorySection />
-      <BestSellerSection />
-      <ChocoBerryHighlight />
-      <BrandValuesSection />
-      <HowToOrderSection />
-      <ClosingCta />
+      <FeaturedMenuSection />
+      <KitchenStorySection />
     </main>
   );
 }

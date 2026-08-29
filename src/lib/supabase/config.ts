@@ -16,6 +16,18 @@ export function getSupabaseEnv(): SupabaseEnv | null {
     return null;
   }
 
+  try {
+    const parsedUrl = new URL(url);
+    if (!/^https?:$/.test(parsedUrl.protocol)) {
+      return null;
+    }
+    if (process.env.NODE_ENV === "production" && parsedUrl.protocol !== "https:") {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
   return {
     url: url.replace(/\/+$/, ""),
     anonKey,
@@ -30,4 +42,16 @@ export function isSupabaseConfigured(): boolean {
 // Service role wajib tersedia untuk operasi tulis server (pesanan, storage).
 export function hasServiceRoleKey(): boolean {
   return getSupabaseEnv()?.serviceRoleKey !== undefined;
+}
+
+export function hasAdminAuthorizationConfigured(): boolean {
+  return Boolean(process.env.ADMIN_EMAILS?.trim());
+}
+
+export function isAdminDataAccessConfigured(): boolean {
+  return (
+    isSupabaseConfigured() &&
+    hasServiceRoleKey() &&
+    hasAdminAuthorizationConfigured()
+  );
 }

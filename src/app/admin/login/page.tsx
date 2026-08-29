@@ -3,7 +3,10 @@ import Link from "next/link";
 import { DatabaseZap, Lock } from "lucide-react";
 
 import { LoginForm } from "@/components/admin/LoginForm";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import {
+  hasAdminAuthorizationConfigured,
+  isSupabaseConfigured,
+} from "@/lib/supabase/config";
 
 export const metadata: Metadata = {
   title: "Login Admin",
@@ -11,12 +14,13 @@ export const metadata: Metadata = {
 };
 
 export default function AdminLoginPage() {
-  const configured = isSupabaseConfigured();
+  const configured =
+    isSupabaseConfigured() && hasAdminAuthorizationConfigured();
 
   return (
     <main className="mx-auto w-full max-w-content px-4 pb-16 pt-12 md:px-8">
       <div className="mx-auto max-w-md">
-        <div className="rounded-2xl border border-gold/25 bg-cream-soft p-6 shadow-warm md:p-8">
+        <div className="fade-up rounded-2xl border border-gold/25 bg-cream-soft p-6 shadow-warm md:p-8">
           <div className="flex items-center gap-3">
             <span className="flex size-12 items-center justify-center rounded-2xl bg-gold/20">
               <Lock
@@ -56,6 +60,7 @@ export default function AdminLoginPage() {
                 <code className="font-mono text-xs">
                   NEXT_PUBLIC_SUPABASE_ANON_KEY
                 </code>
+                , serta <code className="font-mono text-xs">ADMIN_EMAILS</code>
                 .
               </p>
             </div>

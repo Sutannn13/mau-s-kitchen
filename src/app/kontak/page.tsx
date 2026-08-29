@@ -1,39 +1,39 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Clock, MapPin, MessageCircle } from "lucide-react";
+import { MapPin, MessageCircle } from "lucide-react";
 
+import { StoreStatusBadge } from "@/components/common/StoreStatusBadge";
 import { WhatsAppLink } from "@/components/common/WhatsAppLink";
+import { Card } from "@/components/ui";
 import { siteConfig } from "@/config/site";
 
-// Jam operasional & alamat masih TBD (docs/18_ROADMAP.md §18.4 no 1–2);
-// tampilkan placeholder jujur, jangan menebak.
+// Jika data operasional belum dikonfirmasi, arahkan pelanggan ke WhatsApp.
 export const metadata: Metadata = {
   title: "Kontak & Jam Buka",
   description: `Hubungi ${siteConfig.name} lewat WhatsApp ${siteConfig.whatsappDisplay} untuk pesan atau tanya menu.`,
 };
 
 interface ContactRow {
-  icon: typeof Clock;
+  icon: typeof MapPin;
   label: string;
   value: string;
 }
 
 export default function KontakPage() {
+  // Baris jam operasional diganti StoreStatusBadge live (A5 konsistensi);
+  // baris alamat tetap teks jujur dengan fallback TBD (AGENTS #3).
   const contactRows: ContactRow[] = [
-    {
-      icon: Clock,
-      label: "Jam operasional",
-      value: "TBD — akan diumumkan admin",
-    },
     {
       icon: MapPin,
       label: "Alamat dapur",
-      value: "TBD — akan diumumkan admin",
+      value:
+        siteConfig.businessAddress ??
+        "Lokasi diberikan admin setelah pesanan dikonfirmasi",
     },
   ];
 
   return (
-    <main className="mx-auto w-full max-w-content px-4 pb-16 pt-8 md:px-8 md:pt-12">
+    <main className="mx-auto w-full max-w-content px-4 pb-6 pt-6 md:px-8 md:pb-16 md:pt-12">
       <div className="mx-auto max-w-2xl">
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-gold">
           Kontak
@@ -74,11 +74,23 @@ export default function KontakPage() {
         </section>
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2">
+          {/* Status buka/tutup live (useSyncExternalStore — server merender
+              label netral, klien menghitung). */}
+          <Card className="p-5">
+            <h3 className="flex flex-wrap items-center gap-2 text-sm font-bold text-brown-deep">
+              Jam operasional
+            </h3>
+            <div className="mt-2">
+              <StoreStatusBadge />
+            </div>
+            {siteConfig.businessHours ? (
+              <p className="mt-2 text-sm leading-6 text-brown/70">
+                {siteConfig.businessHours}
+              </p>
+            ) : null}
+          </Card>
           {contactRows.map((row) => (
-            <div
-              key={row.label}
-              className="rounded-2xl border border-gold/20 bg-cream-soft p-5"
-            >
+            <Card key={row.label} className="p-5">
               <h3 className="flex items-center gap-2 text-sm font-bold text-brown-deep">
                 <row.icon
                   aria-hidden="true"
@@ -88,7 +100,7 @@ export default function KontakPage() {
                 {row.label}
               </h3>
               <p className="mt-2 text-sm leading-6 text-brown/70">{row.value}</p>
-            </div>
+            </Card>
           ))}
         </section>
 

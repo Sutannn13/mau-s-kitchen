@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { DatabaseZap } from "lucide-react";
 
-import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { MotionProvider } from "@/components/admin/MotionProvider";
 import {
+  hasAdminAuthorizationConfigured,
   hasServiceRoleKey,
   isSupabaseConfigured,
 } from "@/lib/supabase/config";
@@ -38,8 +40,8 @@ function SetupNeeded(): ReactNode {
           .
         </p>
         <p className="mt-2 text-xs leading-5 text-brown/60">
-          Situs pelanggan tetap berjalan normal — pesanan sementara disimpan
-          di memori server (Fase 1).
+          Demi keamanan, pemesanan tidak akan diterima sampai database dan
+          otorisasi admin selesai dikonfigurasi.
         </p>
       </div>
     </main>
@@ -51,12 +53,17 @@ export default async function AdminPanelLayout({
 }: {
   children: ReactNode;
 }) {
-  if (!isSupabaseConfigured() || !hasServiceRoleKey()) {
+  if (
+    !isSupabaseConfigured() ||
+    !hasServiceRoleKey() ||
+    !hasAdminAuthorizationConfigured()
+  ) {
     return <SetupNeeded />;
   }
 
-  // Middleware sudah menjaga rute ini; verifikasi ulang di layout sebagai
-  // lapisan pertahanan kedua.
+  // Autentikasi utama untuk rute admin (proxy lama dihapus karena runtime
+  // Node.js-nya tidak didukung OpenNext Cloudflare). Verifikasi sesi di sini
+  // adalah gerbang otorisasi tunggal.
   const cookieStore = await cookies();
   const session = await verifyAdminSession(() =>
     cookieStore.getAll().map(({ name, value }) => ({ name, value })),
@@ -67,9 +74,14 @@ export default async function AdminPanelLayout({
   }
 
   return (
-    <div className="pb-16">
-      <AdminNav />
-      {children}
+    <div className="min-h-screen bg-cream">
+      <AdminSidebar email={session.email} />
+      {/* Sidebar desktop fixed; geser konten selebar sidebar (var --sidebar-w
+          dikelola AdminSidebar agar padding ikut berubah saat sidebar
+          menciut/melebar). Di seluler tidak ada offset (drawer menumpang). */}
+      <div className="lg:pl-[var(--sidebar-w)] lg:transition-[padding-left] lg:duration-200 lg:ease-out">
+        <MotionProvider>{children}</MotionProvider>
+      </div>
     </div>
   );
 }

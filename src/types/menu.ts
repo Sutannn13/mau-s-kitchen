@@ -1,4 +1,7 @@
-export type CategoryId = "taichan" | "minuman" | "chocoberry";
+// CategoryId sekarang dinamis (admin bisa buat kategori baru lewat dashboard).
+// Tetap di-export sebagai alias string agar kode lama tetap kompilasi, namun
+// tidak lagi membatasi nilai literal. Lihat docs/10_DATA_MODEL.md §10.3.
+export type CategoryId = string;
 
 export interface MenuCategory {
   id: CategoryId;
@@ -6,12 +9,14 @@ export interface MenuCategory {
   tagline: string;
   image: string;
   order: number;
+  updatedAt?: string;
 }
 
 export interface MenuVariant {
   id: string;
   name: string;
   price: number;
+  sortOrder?: number;
 }
 
 export interface MenuAddOn {
@@ -32,7 +37,9 @@ export interface MenuItem {
   available: boolean;
   isBestSeller: boolean;
   isAddOnItem?: boolean;
-  unit: "porsi" | "cup";
+  unit: "porsi" | "cup" | "item";
+  sortOrder?: number;
+  updatedAt?: string;
 }
 
 // Hasil pilihan pengguna dari ProductSheet; akan dipakai store keranjang (T3.1).

@@ -5,8 +5,8 @@
 | Lingkungan | URL | Cabang Git | Tujuan |
 |---|---|---|---|
 | Development | `http://localhost:3000` | `feature/*` | Pengembangan lokal |
-| Preview | `*.vercel.app` (otomatis) | Pull request | Review sebelum rilis |
-| Production | `https://mauskitchen.com` (TBD) | `main` | Publik |
+| Preview | `*.workers.dev` | Pull request / manual | Review sebelum rilis |
+| Production | `https://maukitchen.my.id` | `main` | Publik |
 
 ---
 
@@ -26,7 +26,9 @@ Lalu di dashboard Vercel:
 
 1. **Add New Project** → Import repository GitHub.
 2. Framework Preset: **Next.js** (terdeteksi otomatis).
-3. Build Command: `npm run build` · Output: `.next` (default).
+3. Build Command: `npm run build:vercel` · Output: `.next` (default).
+   Wrapper memakai `npm run build` untuk Preview dan
+   `npm run build:production` untuk Production.
 4. Tambahkan semua Environment Variables (lihat 17.3).
 5. Klik **Deploy**.
 6. Tambahkan domain kustom di **Settings → Domains**.
@@ -43,7 +45,14 @@ Lalu di dashboard Vercel:
 | `NEXT_PUBLIC_SUPABASE_URL` | Semua | dari dashboard Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Semua | dari dashboard Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server saja** | ⚠️ rahasia, jangan pakai prefix `NEXT_PUBLIC_` |
-| `NEXT_PUBLIC_QRIS_IMAGE_PATH` | Semua | `/assets/payment/qris.png` |
+| `ADMIN_EMAILS` | **Server saja** | daftar email admin sah, dipisahkan koma |
+| `RATE_LIMIT_SALT` | **Server saja** | string acak minimal 32 karakter |
+| `ORDER_RETENTION_DAYS` | **Server saja** | 30–3650, ditetapkan pemilik |
+| `NEXT_PUBLIC_ENABLE_QRIS` | Semua | `false` sampai transaksi uji QRIS berhasil |
+| `NEXT_PUBLIC_ENABLE_TRANSFER` | Semua | `false` sampai rekening siap |
+| `NEXT_PUBLIC_ENABLE_CASH` | Semua | `true` hanya bila tunai/COD diterima |
+| `NEXT_PUBLIC_QRIS_IMAGE_PATH` | Semua | `/assets/payment/qris.jpeg` |
+| `NEXT_PUBLIC_QRIS_MERCHANT_NAME` | Semua | `SATE TAICHAN HANNA` (harus cocok dengan layar pembayaran) |
 | `NEXT_PUBLIC_BANK_NAME` | Semua | `BCA` |
 | `NEXT_PUBLIC_BANK_ACCOUNT_NUMBER` | Semua | isi setelah dikonfirmasi pemilik |
 | `NEXT_PUBLIC_BANK_ACCOUNT_NAME` | Semua | isi setelah dikonfirmasi pemilik |
@@ -53,7 +62,7 @@ Lalu di dashboard Vercel:
 
 ---
 
-## 17.4 Domain
+## 17.4 Domain produksi di Cloudflare Workers
 
 | Opsi | Perkiraan biaya/tahun | Catatan |
 |---|---|---|
@@ -62,15 +71,20 @@ Lalu di dashboard Vercel:
 | `.my.id` | Rp15.000 – Rp50.000 | Termurah, cocok untuk memulai |
 | Subdomain Vercel | Gratis | `maus-kitchen.vercel.app` — cukup untuk uji coba |
 
-Setelah domain dibeli, arahkan DNS ke Vercel:
+Domain produksi memakai **Cloudflare Workers Custom Domain**, bukan record A
+ke Vercel. Konfigurasi `wrangler.toml` memuat:
 
-```
-Type   Name   Value
-A      @      76.76.21.21
-CNAME  www    cname.vercel-dns.com
+```toml
+[[routes]]
+pattern = "maukitchen.my.id"
+custom_domain = true
 ```
 
-SSL/HTTPS dipasang otomatis oleh Vercel (Let's Encrypt).
+Saat `npm run deploy` berhasil, Cloudflare membuat record DNS dan sertifikat
+TLS untuk hostname tersebut secara otomatis. Jangan menambahkan record A atau
+CNAME lain pada `maukitchen.my.id`, karena dapat bertabrakan dengan Custom
+Domain. Hostname `www.maukitchen.my.id` belum digunakan; canonical produksi
+adalah `https://maukitchen.my.id`.
 
 ---
 
@@ -81,7 +95,9 @@ SSL/HTTPS dipasang otomatis oleh Vercel (Let's Encrypt).
 3. Aktifkan **Row Level Security** dan jalankan policy yang tercantum di dokumen tersebut.
 4. **Authentication → Providers** → aktifkan Email, matikan pendaftaran mandiri.
 5. **Authentication → Users** → buat akun admin secara manual.
-6. **Storage** → buat bucket `payment-proofs` (private).
+6. **Storage** → buat bucket `payment-proofs` (private, hard limit 1MiB,
+   hanya `image/jpeg`, `image/png`, dan `image/webp`). Terapkan migration
+   `20260824212500_limit_payment_proofs_to_one_mb.sql` pada project lama.
 7. Salin `Project URL`, `anon key`, dan `service_role key` ke environment variables.
 
 ---
@@ -160,5 +176,72 @@ lakukan ekspor manual berkala).
 | **Total awal** | **≈ Rp0 + domain** | — |
 
 ---
+
+## 17.10 Deploy otomatis (GitHub Actions → Cloudflare Workers)
+
+Target produksi saat ini adalah **Cloudflare Workers** via OpenNext
+(`wrangler.toml`, `open-next.config.ts`).
+
+| Workflow | Pemicu | Isi |
+|---|---|---|
+| `.github/workflows/deploy.yml` | push `main`, PR ke `main`, manual | job `quality` (typecheck, lint, test, build, `npm audit` high+) lalu job `deploy` (`npm run deploy` yang sudah mencakup preflight → health check) |
+| `.github/workflows/data-retention.yml` | cron harian 18:00 UTC (01:00 WIB), manual | `npm run data:purge` agar `ORDER_RETENTION_DAYS` benar-benar diterapkan |
+
+Catatan penting:
+
+- Job `deploy` hanya jalan pada push/manual, **tidak** pada pull request; PR
+  cukup melewati gerbang `quality`.
+- `npm run deploy` dan `npm run upload` menjalankan security preflight
+  sebagai bagian dari perintah rilis; jangan memanggil OpenNext/Wrangler
+  langsung.
+- Env produksi didefinisikan di **level job** `deploy`, bukan per step. Alasan:
+  `npm run deploy` menjalankan `opennextjs-cloudflare build` yang mem-build ulang
+  Next.js, dan nilai `NEXT_PUBLIC_*` di-inline ke bundle browser pada build itu.
+  Bila env hanya diberikan ke step build terpisah, artefak yang benar-benar
+  ter-deploy berisi nilai kosong (login admin dan URL absolut rusak).
+- `concurrency` mencegah dua deploy berjalan bersamaan.
+- Setelah deploy, workflow memanggil `/api/health` (maksimum 6 percobaan, jeda
+  10 detik). Endpoint hanya membalas `200` bila Supabase, allowlist admin, dan
+  konfigurasi privasi siap — jadi rilis rusak langsung terlihat merah.
+
+### Secrets repository yang wajib diisi
+
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `NEXT_PUBLIC_SITE_URL`,
+`NEXT_PUBLIC_SITE_NAME`, `NEXT_PUBLIC_WHATSAPP_NUMBER`,
+`NEXT_PUBLIC_WHATSAPP_DISPLAY`, `NEXT_PUBLIC_ENABLE_QRIS`,
+`NEXT_PUBLIC_ENABLE_TRANSFER`, `NEXT_PUBLIC_ENABLE_CASH`,
+`NEXT_PUBLIC_QRIS_IMAGE_PATH`, `NEXT_PUBLIC_QRIS_MERCHANT_NAME`, `NEXT_PUBLIC_BANK_NAME`,
+`NEXT_PUBLIC_BANK_ACCOUNT_NUMBER`, `NEXT_PUBLIC_BANK_ACCOUNT_NAME`,
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_EMAILS`, `RATE_LIMIT_SALT`,
+`ORDER_RETENTION_DAYS`, `NEXT_PUBLIC_BUSINESS_HOURS`,
+`NEXT_PUBLIC_BUSINESS_ADDRESS`, `NEXT_PUBLIC_INSTAGRAM_URL`.
+
+Token Cloudflare cukup permission **Workers Scripts: Edit** (plus Workers R2 /
+KV bila nanti dipakai). Simpan semuanya di *Settings → Secrets and variables →
+Actions*; disarankan memakai environment `production` agar bisa diberi
+*required reviewers*.
+
+### Rollback
+
+```bash
+npx wrangler deployments list
+npx wrangler rollback --message "rollback rilis bermasalah"
+```
+
+---
+
+## 17.11 Railway dan Netlify
+
+- Railway membaca `railway.json`, menjalankan `npm run build:production`, lalu
+  `node .next/standalone/server.js`. Script postbuild menyalin aset public dan
+  static yang diperlukan standalone.
+- Netlify membaca `netlify.toml`; Route Handler tetap berjalan sebagai function.
+- Keduanya menjalankan security preflight sebelum build. Deploy sengaja gagal
+  bila signup terbuka, schema/bucket belum dimigrasi, atau env bisnis belum siap.
+- Jadwalkan `npm run data:purge` setiap hari melalui Railway Cron atau scheduled
+  job yang setara agar `ORDER_RETENTION_DAYS` benar-benar diterapkan.
+
+Lihat checklist lengkap di `20_SECURITY_GO_LIVE.md`.
 
 ➡️ Lanjut ke `18_ROADMAP.md`

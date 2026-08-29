@@ -1,0 +1,5 @@
+{
+  "name": "gsk-cli",
+  "description": "Genspark CLI tools for search, media generation, email, calendar, and more.",
+  "contextFileName": "CONTEXT.md"
+}

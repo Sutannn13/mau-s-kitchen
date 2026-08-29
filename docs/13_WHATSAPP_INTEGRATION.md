@@ -1,7 +1,8 @@
 # 13 — Integrasi WhatsApp
 
-WhatsApp adalah **kanal utama** MAU'S Kitchen. Website tidak menggantikan WhatsApp,
-tetapi membuat pesan yang masuk ke WhatsApp menjadi rapi dan terstruktur.
+WhatsApp adalah kanal bantuan dan konfirmasi opsional MAU'S Kitchen. Checkout
+menyimpan pesanan ke database dan tidak membuka WhatsApp otomatis; deeplink hanya
+dibuka setelah pelanggan menekan tombol WhatsApp secara eksplisit.
 
 ---
 
@@ -134,30 +135,24 @@ Link: https://mauskitchen.com/produk/choco-berry-grape
 | Batas panjang URL | Aman di bawah ~2000 karakter. Jika pesanan sangat panjang, ringkas jadi "dan N item lainnya" + arahkan ke `/pesanan/[kode]` |
 | Format tebal WhatsApp | `*teks*` (satu bintang), bukan Markdown `**teks**` |
 | Baris baru | Gunakan `\n`, jangan `<br>` |
-| Buka link | `window.open(url, "_blank", "noopener,noreferrer")` |
-| Popup blocker | Panggil `window.open` **langsung di event handler klik**, jangan setelah `await` |
+| Buka link | Gunakan tautan dengan `target="_blank"` dan `rel="noopener noreferrer"` pada tombol WhatsApp eksplisit |
+| Checkout | Tombol "Buat Pesanan" tidak boleh memanggil `window.open` atau mengalihkan ke `wa.me` |
 | Fallback | Sediakan tombol "Salin pesan" bila WhatsApp gagal terbuka |
 | `wa.me` vs `api.whatsapp.com` | Gunakan `wa.me`, lebih andal di mobile |
 
-### Pola aman untuk membuka WhatsApp setelah request API
+### Pola checkout tanpa pengalihan WhatsApp
 
 ```ts
 const handleSubmit = async (values: CheckoutValues) => {
-  // 1. Buka tab kosong LEBIH DULU (masih dalam konteks klik user)
-  const waTab = window.open("", "_blank", "noopener,noreferrer")
-
   try {
     const res = await fetch("/api/orders", { method: "POST", body: JSON.stringify(values) })
     const json = await res.json()
 
     if (!json.success) throw new Error(json.message)
 
-    // 2. Arahkan tab yang sudah terbuka
-    if (waTab) waTab.location.href = json.data.whatsappUrl
     clearCart()
     router.push(json.data.paymentUrl)
   } catch (e) {
-    waTab?.close()
     toast.error("Gagal membuat pesanan. Coba lagi ya.")
   }
 }

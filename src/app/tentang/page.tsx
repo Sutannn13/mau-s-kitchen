@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Heart, UtensilsCrossed } from "lucide-react";
 
+import { Card } from "@/components/ui";
 import { siteConfig } from "@/config/site";
 
 // Copy dari docs/15_SEO_CONTENT.md §15.4 (Tentang Kami + Kenapa MAU'S Kitchen).
@@ -32,13 +33,13 @@ const brandValues: ValueItem[] = [
   },
   {
     title: "Bayar Gampang",
-    body: "QRIS dari DANA, GoPay, OVO, atau m-banking apa pun.",
+    body: "Pilih metode pembayaran yang sedang tersedia saat checkout.",
   },
 ];
 
 export default function TentangPage() {
   return (
-    <main className="mx-auto w-full max-w-content px-4 pb-16 pt-8 md:px-8 md:pt-12">
+    <main className="mx-auto w-full max-w-content px-4 pb-6 pt-6 md:px-8 md:pb-16 md:pt-12">
       <div className="mx-auto max-w-2xl">
         <p className="text-sm font-bold uppercase tracking-[0.18em] text-gold">
           Tentang Kami
@@ -76,17 +77,14 @@ export default function TentangPage() {
           </h2>
           <ul className="mt-5 grid gap-4 sm:grid-cols-2">
             {brandValues.map((value) => (
-              <li
-                key={value.title}
-                className="rounded-2xl border border-gold/20 bg-cream-soft p-5 shadow-warm"
-              >
+              <Card as="li" key={value.title} className="p-5">
                 <h3 className="text-sm font-bold text-brown-deep">
                   {value.title}
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-brown/75">
                   {value.body}
                 </p>
-              </li>
+              </Card>
             ))}
           </ul>
         </section>

@@ -44,6 +44,8 @@ Daftar seluruh dokumen proyek beserta kapan harus dibaca.
 | 16 | `16_TESTING_QA.md` | Strategi test & checklist QA | Sebelum rilis |
 | 17 | `17_DEPLOYMENT.md` | Deploy Vercel, env, checklist go-live | Rilis |
 | 18 | `18_ROADMAP.md` | Fase 1–3 & daftar `TBD` | Perencanaan |
+| 19 | `19_SETUP_MANUAL.md` | Setup manual Supabase dan environment | Setup |
+| 20 | `20_SECURITY_GO_LIVE.md` | Gate keamanan Railway/Netlify | Sebelum rilis |
 
 ## Folder `.ai/`
 

@@ -3,16 +3,24 @@
 import { Check, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 interface CopyButtonProps {
   value: string;
   label: string;
   successLabel?: string;
+  /**
+   * Override gaya untuk latar gelap (mis. hero status pesanan). Default-nya
+   * varian terang: border emas + teks brown-deep.
+   */
+  className?: string;
 }
 
 export function CopyButton({
   value,
   label,
   successLabel = "Tersalin ✓",
+  className,
 }: CopyButtonProps) {
   const [isCopied, setCopied] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -46,12 +54,15 @@ export function CopyButton({
       onClick={() => {
         void handleCopy();
       }}
-      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/40 px-4 text-xs font-bold text-brown-deep transition-colors hover:bg-gold/15"
+      className={cn(
+        "inline-flex min-h-8 sm:min-h-9 items-center gap-1.5 sm:gap-2 rounded-full border border-gold/40 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-brown-deep transition-colors hover:bg-gold/15",
+        className,
+      )}
     >
       {isCopied ? (
-        <Check aria-hidden="true" className="size-4 text-success" strokeWidth={2.25} />
+        <Check aria-hidden="true" className="size-3 sm:size-3.5 text-success" strokeWidth={2.25} />
       ) : (
-        <Copy aria-hidden="true" className="size-4" strokeWidth={1.75} />
+        <Copy aria-hidden="true" className="size-3 sm:size-3.5" strokeWidth={1.75} />
       )}
       {isCopied ? successLabel : label}
     </button>

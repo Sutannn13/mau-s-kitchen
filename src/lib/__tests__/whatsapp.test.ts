@@ -10,6 +10,7 @@ import type { Order } from "@/types/order";
 
 const orderFixture: Order = {
   code: "MK-260814-007",
+  publicToken: "a".repeat(43),
   createdAt: "2026-08-14T12:45:00.000Z",
   customer: {
     name: "Rizky",
@@ -47,6 +48,8 @@ const orderFixture: Order = {
   ],
   subtotal: 118000,
   deliveryFee: null,
+  deliveryProvider: null,
+  courierCost: null,
   total: 118000,
   paymentMethod: "qris",
   status: "BARU",
@@ -76,9 +79,10 @@ describe("buildOrderMessage", () => {
   it("memuat total, ongkir, metode bayar, dan catatan", () => {
     expect(message).toContain("Subtotal : Rp118.000");
     expect(message).toContain("Ongkir   : dikonfirmasi admin");
-    expect(message).toContain("*TOTAL   : Rp118.000*");
+    expect(message).toContain("Pengantar: dikonfirmasi admin");
+    expect(message).toContain("*TOTAL SEMENTARA   : Rp118.000*");
     expect(message).toContain("Metode: QRIS (DANA / BCA / GoPay)");
-    expect(message).toContain("Status: Menunggu pembayaran");
+    expect(message).toContain("Status: Menunggu ongkir sebelum pembayaran");
     expect(message).toContain("Sambelnya pisah ya");
   });
 
@@ -86,6 +90,7 @@ describe("buildOrderMessage", () => {
     const pickupMessage = buildOrderMessage({
       ...orderFixture,
       customer: { ...orderFixture.customer, orderType: "ambil", address: undefined },
+      deliveryFee: 0,
       paymentMethod: "tunai",
     });
 

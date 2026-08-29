@@ -28,13 +28,15 @@ pesanan selesai diproses admin.
         ↓
 [10] Simpan pesanan ke database (Fase 2)
         ↓
-[11] Buka WhatsApp admin dengan pesan terstruktur otomatis
+[11] Pesanan masuk ke dashboard admin tanpa membuka WhatsApp
         ↓
 [12] Halaman "Pesanan Berhasil" + instruksi pembayaran
         ↓
 [13] Pelanggan bayar QRIS → kirim bukti ke WhatsApp
         ↓
 [14] Admin verifikasi → ubah status "Dikonfirmasi"
+        ↓
+[14a] Invoice dengan total final tersedia untuk pelanggan/admin
         ↓
 [15] Dapur memasak → status "Diproses"
         ↓
@@ -63,7 +65,7 @@ flowchart TD
     J -- Sukses --> K[Pilih metode bayar]
     K --> L[Generate kode pesanan MK-YYMMDD-XXX]
     L --> M[(Simpan ke database)]
-    M --> N[Kirim ke WhatsApp admin]
+    M --> N[Tampilkan di dashboard admin]
     N --> O{Metode bayar}
     O -- QRIS/Transfer --> P[Halaman pembayaran + QR]
     O -- Tunai/COD --> Q[Halaman pesanan berhasil]
@@ -82,7 +84,7 @@ flowchart TD
 
 | Status | Kode | Pemicu | Aksi berikutnya |
 |---|---|---|---|
-| Baru | `BARU` | Checkout selesai | Admin verifikasi pembayaran |
+| Baru | `BARU` | Checkout selesai | Admin verifikasi pembayaran (pelanggan bisa menandai "sudah bayar" — lihat catatan klaim di bawah) |
 | Dikonfirmasi | `DIKONFIRMASI` | Pembayaran terverifikasi / COD disetujui | Kirim ke dapur |
 | Diproses | `DIPROSES` | Dapur mulai memasak | Siapkan pengiriman |
 | Dikirim | `DIKIRIM` | Kurir berangkat / pesanan siap diambil | Tunggu konfirmasi terima |
@@ -91,16 +93,51 @@ flowchart TD
 
 **Transisi yang diperbolehkan**
 
+Alur normal pesanan berurutan satu arah:
+
 ```
-BARU         → DIKONFIRMASI | BATAL
-DIKONFIRMASI → DIPROSES     | BATAL
-DIPROSES     → DIKIRIM
-DIKIRIM      → SELESAI
-SELESAI      → (final)
-BATAL        → (final)
+BARU → DIKONFIRMASI → DIPROSES → DIKIRIM → SELESAI
 ```
 
-> Aturan: setelah status `DIPROSES`, pesanan **tidak bisa** dibatalkan pelanggan (BR-07).
+Aturan transisi (berlaku untuk perubahan status oleh admin):
+
+1. Admin boleh **lompat maju** ke status mana pun setelah status saat ini
+   (mis. `BARU → SELESAI` langsung) tanpa harus maju satu per satu.
+2. Admin boleh membatalkan pesanan (`→ BATAL`) selama status belum final.
+3. Transisi **mundur** dilarang, dan status tidak bisa tetap di posisi yang sama.
+4. `SELESAI` dan `BATAL` bersifat **final** — tidak bisa berubah lagi.
+
+> Aturan BR-07: setelah status `DIPROSES`, pesanan **tidak bisa dibatalkan
+> oleh pelanggan**. Larangan ini tidak berlaku untuk pembatalan oleh admin
+> (override manual), karena omzet hanya dihitung dari pesanan `SELESAI`.
+
+**Klaim pembayaran pelanggan (bukan status)**
+
+Di `/pembayaran/[kode]` pelanggan menekan "Saya Sudah Bayar & Kirim Bukti".
+Aksi itu **tidak mengubah status pesanan** — hanya mencatat
+`payment_claimed_at` (lihat §10.3) lalu halaman menampilkan keadaan
+"menunggu konfirmasi admin".
+
+Alasan pemisahan: pembayaran hanya sah setelah admin melihat mutasi/bukti,
+jadi pelanggan tidak boleh menggerakkan state machine sendiri. Efeknya:
+
+| Sisi | Tampilan |
+|---|---|
+| Pelanggan | Loader "Menunggu konfirmasi admin" di halaman pembayaran & banner di `/pesanan/[kode]` selama status masih `BARU` |
+| Admin | Badge "Klaim sudah bayar" di daftar pesanan + waktu klaim di detail pesanan, sebagai antrean verifikasi |
+
+Setelah admin memverifikasi, status berpindah `BARU → DIKONFIRMASI` seperti
+biasa dan penanda klaim berhenti tampil di sisi pelanggan.
+
+**Invoice**
+
+- Invoice memakai kode pesanan sebagai nomor dokumen dan tersedia mulai status
+  `DIKONFIRMASI` hingga `SELESAI`.
+- Status `BARU` belum menerbitkan invoice karena total/pembayaran masih dapat
+  menunggu verifikasi. Pesanan `BATAL` tidak menerbitkan invoice.
+- Pesanan non-tunai yang sudah dikonfirmasi boleh menampilkan "Pembayaran sudah
+  dikonfirmasi admin". Pesanan Tunai/COD tidak boleh diberi label "Lunas"
+  tanpa data verifikasi pembayaran khusus.
 
 ---
 
@@ -112,7 +149,11 @@ BATAL        → (final)
 | Toko sedang tutup | Banner "Sedang Tutup" + checkout berubah jadi **Pre-order besok** |
 | Menu habis saat masih di keranjang | Saat checkout, tampilkan peringatan & minta hapus item tersebut |
 | Nomor WhatsApp tidak valid | Tampilkan error inline, blokir submit |
-| Pelanggan tutup WhatsApp tanpa mengirim | Kode pesanan tetap ada; sediakan tombol "Kirim Ulang ke WhatsApp" |
+| Pelanggan ingin menghubungi admin | Sediakan tombol WhatsApp eksplisit dari halaman pesanan/pembayaran; checkout tidak membuka WhatsApp otomatis |
+| Tautan pelacakan/pembayaran kehilangan `?token=` | 404 khusus rute pesanan: pulihkan otomatis dari riwayat pesanan di perangkat (`localStorage`) → redirect ke tautan utuh; bila tidak ada, tampilkan pesanan terakhir di perangkat + tombol chat admin bawa kode pesanan |
+| Respons checkout hilang setelah pesanan tersimpan | Browser mengulang payload dengan `Idempotency-Key` yang sama; server mengembalikan pesanan pertama, bukan membuat duplikat |
+| Halaman "Pesanan Saya" dibuka kembali | Maksimal 10 entri lokal disinkronkan ke server sehingga status dan total terbaru menggantikan snapshot lama; entri 404 dibuang |
+| Perangkat/browser dipakai orang lain | Riwayat guest memang mengikuti profil browser, bukan identitas orang. Tampilkan peringatan + tombol **Hapus Riwayat** dua langkah; hapus otomatis setelah 30 hari. Profil/incognito/perangkat berbeda tidak berbagi riwayat |
 | Pelanggan tidak bayar dalam 60 menit | Admin ubah status jadi `BATAL` (manual di Fase 2) |
 | Alamat di luar jangkauan antar | Admin konfirmasi lewat WhatsApp & tawarkan ambil sendiri |
 | Website error saat submit | Simpan keranjang di `localStorage`, tampilkan tombol coba lagi |
@@ -122,7 +163,7 @@ BATAL        → (final)
 ## 4.5 Alur sisi admin
 
 ```
-Notifikasi WhatsApp masuk
+Pesanan baru masuk ke dashboard admin
         ↓
 Buka /admin (login)
         ↓
@@ -171,11 +212,11 @@ Waktu   : Secepatnya
 
 Subtotal : Rp157.000
 Ongkir   : dikonfirmasi admin
-*TOTAL   : Rp157.000*
+*TOTAL SEMENTARA   : Rp157.000*
 
 💳 *PEMBAYARAN*
 Metode: QRIS (DANA / BCA / GoPay)
-Status: Menunggu pembayaran
+Status: Menunggu ongkir sebelum pembayaran
 
 📝 *CATATAN*
 Sambelnya pisah ya, jangan terlalu pedas
@@ -187,7 +228,29 @@ Sambelnya pisah ya, jangan terlalu pedas
 
 ---
 
-## 4.7 SLA internal (target waktu)
+## 4.7 Kontrak ongkir dan pembayaran
+
+1. Checkout **Ambil Sendiri** menyimpan `delivery_fee = 0`; total langsung final.
+2. Checkout **Antar** menyimpan `delivery_fee`, `delivery_provider`, dan
+   `courier_cost` sebagai `null`; angka yang terlihat masih subtotal sementara.
+3. Admin memilih pengantaran internal, GoSend, GrabExpress, atau kurir lain;
+   lalu menyimpan ongkir pelanggan dan biaya kurir aktual dalam satu aksi.
+4. Sistem menghitung `total = subtotal + delivery_fee` di server. Selisih
+   `delivery_fee - courier_cost` hanya untuk laporan internal admin.
+5. QRIS/transfer, klaim bayar, dan upload bukti baru aktif setelah rencana
+   pengantaran dan total lengkap.
+6. Admin tidak dapat mengubah status Antar ke `DIKONFIRMASI` sebelum pengantar,
+   ongkir pelanggan, dan biaya kurir aktual lengkap.
+7. Tunai/COD untuk Antar hanya boleh memakai `delivery_provider = internal`.
+   Kurir eksternal biasa tidak dianggap sebagai penagih harga makanan.
+8. Pengantar dan biaya tidak dapat diubah setelah pelanggan mengklaim pembayaran,
+   mengunggah bukti, atau status pesanan sudah dikonfirmasi.
+9. Rp0 adalah ongkir final yang sah; perubahan `null → 0` tetap harus
+   menyegarkan halaman pelanggan.
+
+---
+
+## 4.8 SLA internal (target waktu)
 
 | Tahap | Target waktu |
 |---|---|

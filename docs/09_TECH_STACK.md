@@ -2,30 +2,30 @@
 
 ## 9.1 Stack yang dipilih
 
-| Lapisan | Teknologi | Alasan |
-|---|---|---|
-| Framework | **Next.js 15 (App Router)** | SSG cepat, SEO bagus, deploy gratis di Vercel |
-| Bahasa | **TypeScript (strict)** | Aman untuk perhitungan harga & data pesanan |
-| Styling | **Tailwind CSS** | Cepat, konsisten, mudah dipakai AI agent |
-| Komponen UI | **shadcn/ui** + Radix | Aksesibel, bisa dikustom penuh sesuai brand |
-| Ikon | **lucide-react** | Ringan, konsisten |
-| State keranjang | **Zustand** + `persist` middleware | Sederhana, otomatis simpan ke `localStorage` |
-| Form & validasi | **React Hook Form** + **Zod** | Validasi tipe-aman, dipakai ulang di server |
-| Database (Fase 2) | **Supabase (Postgres)** | Tier gratis, ada Auth & Storage sekaligus |
-| Auth admin (Fase 2) | **Supabase Auth** (email + password) | Cukup untuk 1–2 admin |
-| Penyimpanan file | **Supabase Storage** | Untuk bukti pembayaran |
-| Hosting | **Vercel** | Gratis, CDN global, preview deployment |
-| Analitik | **Vercel Analytics** / Umami | Ringan & hemat privasi |
-| Animasi | **Framer Motion** (secukupnya) | Transisi halus |
+| Lapisan             | Teknologi                            | Alasan                                                                      |
+| ------------------- | ------------------------------------ | --------------------------------------------------------------------------- |
+| Framework           | **Next.js 15 (App Router)**          | SSG cepat, SEO bagus, deploy gratis di Vercel                               |
+| Bahasa              | **TypeScript (strict)**              | Aman untuk perhitungan harga & data pesanan                                 |
+| Styling             | **Tailwind CSS**                     | Cepat, konsisten, mudah dipakai AI agent                                    |
+| Komponen UI         | **shadcn/ui** + Radix                | Aksesibel, bisa dikustom penuh sesuai brand                                 |
+| Ikon                | **lucide-react**                     | Ringan, konsisten                                                           |
+| State keranjang     | **Zustand** + `persist` middleware   | Sederhana, otomatis simpan ke `localStorage`                                |
+| Form & validasi     | **React Hook Form** + **Zod**        | Validasi tipe-aman, dipakai ulang di server                                 |
+| Database (Fase 2)   | **Supabase (Postgres)**              | Tier gratis, ada Auth & Storage sekaligus                                   |
+| Auth admin (Fase 2) | **Supabase Auth** (email + password) | Cukup untuk 1–2 admin                                                       |
+| Penyimpanan file    | **Supabase Storage**                 | Untuk bukti pembayaran + foto menu (bucket `payment-proofs`, `menu-images`) |
+| Hosting             | **Vercel**                           | Gratis, CDN global, preview deployment                                      |
+| Analitik            | **Vercel Analytics** / Umami         | Ringan & hemat privasi                                                      |
+| Animasi             | **Framer Motion** (secukupnya)       | Transisi halus                                                              |
 
 ### Yang sengaja TIDAK dipakai
 
-| Teknologi | Alasan |
-|---|---|
-| WordPress / WooCommerce | Berat, biaya hosting, sulit dikustom sesuai brand |
+| Teknologi                         | Alasan                                                                 |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| WordPress / WooCommerce           | Berat, biaya hosting, sulit dikustom sesuai brand                      |
 | Payment gateway berbayar (Fase 1) | Ada biaya per transaksi & butuh dokumen legal; QRIS manual sudah cukup |
-| Redux | Terlalu kompleks untuk kebutuhan keranjang sederhana |
-| CMS eksternal | Menu jarang berubah; cukup JSON + dashboard admin |
+| Redux                             | Terlalu kompleks untuk kebutuhan keranjang sederhana                   |
+| CMS eksternal                     | Menu jarang berubah; cukup JSON + dashboard admin                      |
 
 ---
 
@@ -86,12 +86,13 @@ src/
 │   │   ├── layout.tsx             # Proteksi auth
 │   │   ├── login/page.tsx
 │   │   ├── pesanan/page.tsx
-│   │   ├── menu/page.tsx
+│   │   ├── menu/page.tsx          # CRUD menu mandiri (FR-27)
 │   │   └── rekap/page.tsx
 │   ├── api/
 │   │   ├── orders/route.ts
 │   │   ├── orders/[kode]/route.ts
-│   │   └── menu/route.ts
+│   │   ├── menu/route.ts
+│   │   └── admin/menu/            # CRUD menu (FR-27)
 │   ├── sitemap.ts
 │   └── robots.ts
 ├── components/
@@ -101,16 +102,19 @@ src/
 │   ├── checkout/  (CheckoutForm, PaymentMethodPicker)
 │   ├── payment/   (QrisPanel)
 │   ├── order/     (OrderStatusTimeline)
-│   ├── admin/     (OrderTable, OrderDetail, StatusSelect, DailyRecap)
+│   ├── admin/     (OrderTable, OrderDetail, StatusSelect, DailyRecap,
+│   │              MenuManager, MenuItemEditor)
 │   ├── common/    (Price, EmptyState, Toast, QuantityStepper)
 │   └── ui/        (shadcn/ui)
 ├── lib/
-│   ├── menu.ts                    # Loader & helper data menu
+│   ├── menu.ts                    # Pembaca JSON fallback + test fixture
+│   ├── menu-data.ts               # Loader DB + fallback JSON (FR-27)
+│   ├── menu-image.ts              # Validasi+optimasi gambar menu (sharp)
 │   ├── cart-store.ts              # Zustand store
 │   ├── format.ts                  # formatRupiah, formatTanggal
 │   ├── order-code.ts              # Generator MK-YYMMDD-XXX
 │   ├── whatsapp.ts                # Builder pesan & deeplink
-│   ├── validations.ts             # Skema Zod
+│   ├── validations.ts             # Skema Zod (checkout + admin menu)
 │   ├── store-hours.ts             # Logika buka/tutup
 │   └── supabase/                  # Client & server helper
 ├── types/
@@ -123,7 +127,7 @@ src/
 public/
 ├── assets/brand/
 ├── assets/menu/
-└── assets/payment/qris.png        # QRIS statis (isi kemudian)
+└── assets/payment/qris.jpeg       # QRIS statis resmi merchant
 
 data/
 └── menu.json
@@ -146,7 +150,8 @@ data/
     "lucide-react": "^0.460.0",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.5.0",
-    "framer-motion": "^11.0.0",
+    "exceljs": "^4.4.0",
+    "motion": "^13.1.0",
     "@supabase/supabase-js": "^2.45.0",
     "@supabase/ssr": "^0.5.0"
   },
@@ -167,6 +172,18 @@ data/
 sehingga audit responsif dapat berjalan tanpa mengunduh binary browser tambahan.
 Vitest digunakan untuk unit test logika uang dan integritas data menu.
 
+`exceljs` hanya dimuat dinamis setelah admin menekan **Unduh Excel**. Workbook
+dibuat lokal di browser admin, sehingga tidak menambah beban awal halaman dan
+tidak mengirim data laporan ke layanan pihak ketiga.
+
+> **`motion`** (2026-08): menggantikan `framer-motion` sebagai dependensi
+> animasi. `motion` adalah penerus resmi framer-motion (paket npm `motion`,
+> import dari `motion/react`) oleh tim yang sama — API identik, kompatibel
+> React 19 + Next 16, dan hanya dipakai untuk animasi ringan panel admin
+> (pill periode, fade konten, ikon centang "pop"). Preferensi
+> `prefers-reduced-motion` dihormati lewat `MotionConfig reducedMotion="user"`
+> di `components/admin/MotionProvider.tsx`.
+
 ---
 
 ## 9.5 Environment variables
@@ -183,7 +200,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
 # Info pembayaran
-NEXT_PUBLIC_QRIS_IMAGE_PATH=/assets/payment/qris.png
+NEXT_PUBLIC_QRIS_IMAGE_PATH=/assets/payment/qris.jpeg
+NEXT_PUBLIC_QRIS_MERCHANT_NAME="SATE TAICHAN HANNA"
 NEXT_PUBLIC_BANK_NAME=BCA
 NEXT_PUBLIC_BANK_ACCOUNT_NUMBER=
 NEXT_PUBLIC_BANK_ACCOUNT_NAME=
@@ -195,13 +213,13 @@ NEXT_PUBLIC_BANK_ACCOUNT_NAME=
 
 ## 9.6 Strategi rendering
 
-| Halaman | Strategi | Alasan |
-|---|---|---|
-| `/`, `/menu`, `/produk/*`, `/tentang`, `/kontak` | SSG | Konten jarang berubah, cepat & hemat |
-| Ketersediaan menu | ISR `revalidate: 60` | Perubahan stok tampil maks 60 detik |
-| `/keranjang`, `/checkout` | Client Component | Butuh `localStorage` |
-| `/pembayaran/*`, `/pesanan/*` | Dynamic | Bergantung kode pesanan |
-| `/admin/*` | Dynamic + `force-dynamic` | Data real-time & terproteksi |
+| Halaman                                          | Strategi                  | Alasan                               |
+| ------------------------------------------------ | ------------------------- | ------------------------------------ |
+| `/`, `/menu`, `/produk/*`, `/tentang`, `/kontak` | SSG                       | Konten jarang berubah, cepat & hemat |
+| Ketersediaan menu                                | ISR `revalidate: 60`      | Perubahan stok tampil maks 60 detik  |
+| `/keranjang`, `/checkout`                        | Client Component          | Butuh `localStorage`                 |
+| `/pembayaran/*`, `/pesanan/*`                    | Dynamic                   | Bergantung kode pesanan              |
+| `/admin/*`                                       | Dynamic + `force-dynamic` | Data real-time & terproteksi         |
 
 ---
 
@@ -211,7 +229,7 @@ NEXT_PUBLIC_BANK_ACCOUNT_NAME=
 2. Foto poster asli besar → kompres ke ≤ 200KB dan potong per produk.
 3. `next/font` untuk semua font (hindari FOUT dan request eksternal).
 4. `dynamic()` untuk komponen berat (bottom sheet, dashboard admin).
-5. Batasi Framer Motion hanya pada elemen kunci.
+5. Batasi Motion hanya pada elemen kunci (pill periode admin, fade konten).
 6. Prefetch link menu dari landing page.
 7. Target bundle JS halaman utama < 150KB gzip.
 
