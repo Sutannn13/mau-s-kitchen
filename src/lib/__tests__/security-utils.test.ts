@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { RekapData } from "@/lib/admin/orders";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
@@ -33,7 +33,14 @@ describe("CSV hardening", () => {
 });
 
 describe("rate limiting", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("hanya mempercayai IP tunggal dari Cloudflare", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEPLOYMENT_PLATFORM", "cloudflare");
+
     expect(
       getClientIp(
         new Headers({
@@ -47,6 +54,9 @@ describe("rate limiting", () => {
   });
 
   it("menolak fallback proxy dan nilai Cloudflare yang tidak valid", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEPLOYMENT_PLATFORM", "cloudflare");
+
     expect(
       getClientIp(
         new Headers({

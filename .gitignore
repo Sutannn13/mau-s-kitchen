@@ -40,3 +40,6 @@ Thumbs.db
 /.kilo/
 /gui-test-screenshots/
 /workflow-gate.json
+
+# temporary staging concurrency test script (never commit)
+/scripts/test-staging-concurrency.mjs

@@ -319,6 +319,9 @@ export default async function AdminDetailPesananPage({
           courierCost={order.courierCost}
           paymentMethod={order.paymentMethod}
           paymentLocked={Boolean(order.paymentClaimedAt || order.paymentProofUrl)}
+          paymentClaimed={Boolean(order.paymentClaimedAt)}
+          paymentProofSubmitted={Boolean(order.paymentProofUrl)}
+          total={order.total}
           adminNote={order.adminNote ?? ""}
         />
       </div>

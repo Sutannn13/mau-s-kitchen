@@ -182,6 +182,12 @@ Setiap pesanan ditampilkan sebagai kartu berisi:
   langkah di dalam panel** — bukan `window.confirm`, karena dialog native
   bisa di-auto-accept webview dan pesanan bisa terbatal tanpa sengaja.
   Pesanan final (Selesai/Batal) menampilkan dropdown nonaktif.
+- Untuk pesanan `BARU` dengan QRIS/transfer, dropdown cepat tidak melakukan
+  perubahan status dan mengarahkan admin ke halaman detail. Di halaman detail,
+  admin harus mencocokkan mutasi/bukti dengan total server lalu mencentang
+  acknowledgement sebelum status dapat dimajukan. Tombol tetap nonaktif sampai
+  klaim bayar atau bukti unggahan tersedia. API menegakkan aturan yang sama
+  untuk menutup bypass request langsung.
 - Panel dropdown dirender ke `document.body` sebagai overlay berposisi tetap,
   membuka ke atas bila ruang bawah sempit, dan dibatasi tinggi viewport. Ini
   mencegah panel tertutup kartu berikutnya atau terpotong stacking context

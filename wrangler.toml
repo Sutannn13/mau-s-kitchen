@@ -1,7 +1,17 @@
 name = "maus-kitchen"
 main = ".open-next/worker.js"
-compatibility_date = "2024-12-30"
+compatibility_date = "2026-08-29"
 compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+head_sampling_rate = 1
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.01
 
 [assets]
 directory = ".open-next/assets"
@@ -38,8 +48,8 @@ NEXT_PUBLIC_WHATSAPP_NUMBER = "6281617691585"
 NEXT_PUBLIC_WHATSAPP_DISPLAY = "0816-1769-1585"
 NEXT_PUBLIC_QRIS_IMAGE_PATH = "/assets/payment/qris.jpeg"
 NEXT_PUBLIC_QRIS_MERCHANT_NAME = "SATE TAICHAN HANNA"
-# Aktifkan setelah QRIS diuji transaksi nominal kecil oleh pemilik.
-NEXT_PUBLIC_ENABLE_QRIS = "false"
+# Aset resmi tersedia; preflight dan alur admin tetap memblokir rilis rusak.
+NEXT_PUBLIC_ENABLE_QRIS = "true"
 NEXT_PUBLIC_ENABLE_TRANSFER = "false"
 NEXT_PUBLIC_ENABLE_CASH = "true"
 NEXT_PUBLIC_BANK_NAME = "BCA"

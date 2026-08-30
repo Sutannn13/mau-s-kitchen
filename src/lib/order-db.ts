@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getMenuItemById } from "@/lib/menu";
-import { buildOrderCode } from "@/lib/order-code";
+import { isValidOrderCode } from "@/lib/order-code";
 import type { MenuAddOn } from "@/types/menu";
 import type { CartItem, DeliveryProvider, Order } from "@/types/order";
 
@@ -172,12 +172,6 @@ export function rowToOrder(row: OrderRow, itemRows: readonly OrderItemRow[]): Or
   };
 }
 
-export class OrderCodeConflictError extends Error {
-  constructor() {
-    super("Kode pesanan sudah dipakai.");
-  }
-}
-
 export class OrderIdempotencyConflictError extends Error {
   constructor() {
     super("Idempotency key sudah dipakai.");
@@ -201,19 +195,13 @@ export async function insertOrder(
   supabase: SupabaseClient,
   order: Order,
   idempotency?: OrderIdempotency,
-): Promise<void> {
-  const inserted = await supabase.rpc("insert_order_with_items", {
+): Promise<string> {
+  const inserted = await supabase.rpc("insert_order_with_items_v2", {
     p_order: orderToRow(order, idempotency),
     p_items: itemsToRows("", order.items),
   });
 
-  if (inserted.error || typeof inserted.data !== "string") {
-    if (
-      inserted.error?.code === "23505" &&
-      inserted.error.message.includes("orders_code")
-    ) {
-      throw new OrderCodeConflictError();
-    }
+  if (inserted.error || !isValidOrderCode(inserted.data)) {
     if (
       inserted.error?.code === "23505" &&
       inserted.error.message.includes("idempotency")
@@ -222,6 +210,8 @@ export async function insertOrder(
     }
     throw new OrderDatabaseError("menyimpan pesanan", inserted.error);
   }
+
+  return inserted.data;
 }
 
 async function findItemRowsForOrder(
@@ -312,7 +302,7 @@ export async function findOrderRowsByIdempotencyKey(
   };
 }
 
-// WIB selalu UTC+7 tanpa DST — offset konstan aman dihitung manual.
+// WIB selalu UTC+7 tanpa DST; dipakai untuk batas rekap harian admin.
 const JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 export function getJakartaDayStartUtc(now: Date): Date {
@@ -320,36 +310,4 @@ export function getJakartaDayStartUtc(now: Date): Date {
     Math.floor((now.getTime() + JAKARTA_OFFSET_MS) / 86_400_000) * 86_400_000 -
       JAKARTA_OFFSET_MS,
   );
-}
-
-// Urutan harian = count hari berjalan + 1 (docs/10_DATA_MODEL.md §10.6),
-// dengan cek tabrakan kode karena bisa ada request bersamaan.
-export async function generateDbOrderCode(
-  supabase: SupabaseClient,
-  now: Date,
-): Promise<string> {
-  const dayStart = getJakartaDayStartUtc(now);
-  const dayEnd = new Date(dayStart.getTime() + 86_400_000);
-
-  const countResult = await supabase
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .gte("created_at", dayStart.toISOString())
-    .lt("created_at", dayEnd.toISOString());
-
-  const baseCount = countResult.count ?? 0;
-
-  for (let offset = 0; offset < 50; offset += 1) {
-    const code = buildOrderCode(now, baseCount + 1 + offset);
-    const exists = await supabase
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("code", code);
-
-    if ((exists.count ?? 0) === 0) {
-      return code;
-    }
-  }
-
-  throw new Error("Kode pesanan harian habis; coba lagi beberapa saat.");
 }

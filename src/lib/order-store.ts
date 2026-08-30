@@ -3,9 +3,7 @@ import {
   findOrderRowsByPublicAccess,
   findOrderRowsByCode,
   findOrderRowsByIdempotencyKey,
-  generateDbOrderCode,
   insertOrder,
-  OrderCodeConflictError,
   OrderIdempotencyConflictError,
   rowToOrder,
   type OrderIdempotency,
@@ -179,46 +177,25 @@ export async function saveOrder(
 ): Promise<Order> {
   const supabase = getServiceClient();
   if (supabase) {
-    let candidate = order;
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        await insertOrder(supabase, candidate, idempotency);
-        return candidate;
-      } catch (error) {
-        if (error instanceof OrderIdempotencyConflictError && idempotency) {
-          const existing = await findOrderRowsByIdempotencyKey(
-            supabase,
-            idempotency.key,
-          );
-          if (!existing) {
-            unavailableAfterDatabaseError("resolve-idempotency-conflict", error);
-          }
-          if (existing.row.request_fingerprint !== idempotency.fingerprint) {
-            throw new IdempotencyKeyReuseError();
-          }
-          return rowToOrder(existing.row, existing.itemRows);
+    try {
+      const code = await insertOrder(supabase, order, idempotency);
+      return code === order.code ? order : { ...order, code };
+    } catch (error) {
+      if (error instanceof OrderIdempotencyConflictError && idempotency) {
+        const existing = await findOrderRowsByIdempotencyKey(
+          supabase,
+          idempotency.key,
+        );
+        if (!existing) {
+          unavailableAfterDatabaseError("resolve-idempotency-conflict", error);
         }
-        if (error instanceof OrderCodeConflictError) {
-          try {
-            candidate = {
-              ...candidate,
-              code: await generateDbOrderCode(supabase, new Date(candidate.createdAt)),
-            };
-            continue;
-          } catch {
-            // DB code generation error, break out
-          }
+        if (existing.row.request_fingerprint !== idempotency.fingerprint) {
+          throw new IdempotencyKeyReuseError();
         }
-        if (error instanceof IdempotencyKeyReuseError) {
-          throw error;
-        }
-        unavailableAfterDatabaseError("save-order", error);
+        return rowToOrder(existing.row, existing.itemRows);
       }
+      unavailableAfterDatabaseError("save-order", error);
     }
-    unavailableAfterDatabaseError(
-      "save-order",
-      new Error("Batas percobaan kode pesanan terlampaui."),
-    );
   }
   if (!allowMemoryStore()) {
     throw new OrderStoreUnavailableError();
@@ -288,11 +265,8 @@ export async function getOrderByPublicAccess(
 export async function generateOrderCode(now: Date): Promise<string> {
   const supabase = getServiceClient();
   if (supabase) {
-    try {
-      return await generateDbOrderCode(supabase, now);
-    } catch (error) {
-      unavailableAfterDatabaseError("generate-order-code", error);
-    }
+    // DB mengganti placeholder ini dengan urutan atomik di transaksi insert.
+    return buildOrderCode(now, 1);
   }
 
   if (!allowMemoryStore()) {

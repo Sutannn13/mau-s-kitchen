@@ -143,6 +143,7 @@ describe("patchOrderSchema (docs/11 §11.5)", () => {
     expect(
       patchOrderSchema.safeParse({
         status: "DIKONFIRMASI",
+        paymentVerified: true,
         adminNote: "Bukti transfer valid",
         deliveryFee: 8000,
       }).success,
@@ -158,6 +159,15 @@ describe("patchOrderSchema (docs/11 §11.5)", () => {
     expect(patchOrderSchema.safeParse({ deliveryFee: 500.5 }).success).toBe(
       false,
     );
+  });
+
+  it("menolak nilai verifikasi pembayaran selain true", () => {
+    expect(
+      patchOrderSchema.safeParse({
+        status: "DIKONFIRMASI",
+        paymentVerified: false,
+      }).success,
+    ).toBe(false);
   });
 
   it("menolak status di luar daftar resmi", () => {

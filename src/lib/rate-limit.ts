@@ -119,7 +119,7 @@ export async function isPublicReadRateLimited(
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const { env } = await getCloudflareContext({ async: true });
-    const binding = (env as Record<string, unknown>)[bindingName];
+    const binding = env[bindingName];
     if (!isEdgeRateLimitBinding(binding)) {
       console.error("[rate-limit] Binding Cloudflare tidak tersedia.", {
         bindingName,
@@ -139,6 +139,13 @@ export async function isPublicReadRateLimited(
 }
 
 export function getClientIp(headers: Headers): string {
+  if (
+    process.env.NODE_ENV !== "production" ||
+    process.env.DEPLOYMENT_PLATFORM !== "cloudflare"
+  ) {
+    return "unknown";
+  }
+
   const cloudflareIp = headers.get("cf-connecting-ip")?.trim() ?? "";
   if (
     cloudflareIp.length > 0 &&

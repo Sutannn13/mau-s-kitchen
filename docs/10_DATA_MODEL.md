@@ -360,8 +360,12 @@ export const buildOrderCode = (date: Date, sequence: number): string => {
 }
 ```
 
-Urutan harian diambil dari `count(*) + 1` pesanan pada tanggal berjalan (zona Asia/Jakarta).
-Sebelum database aktif (Fase 1), gunakan 3 karakter acak sebagai gantinya dan tandai `TODO`.
+Urutan harian dialokasikan atomik oleh RPC `insert_order_with_items_v2` melalui
+UPSERT baris `order_daily_sequences` untuk tanggal berjalan (zona Asia/Jakarta).
+Alokasi kode, insert header, dan insert item berada dalam satu transaksi. Burst
+checkout serentak akan antre singkat pada counter harian, bukan berebut kode atau
+gagal setelah retry. Counter tidak ikut dihapus oleh retensi pesanan sehingga kode
+lama tidak dipakai ulang. Mode development tanpa database tetap memakai angka acak.
 
 ## 10.7 Invoice
 
@@ -378,7 +382,8 @@ memerlukan pasangan kode + `public_token`.
 - `orders.public_token` menyimpan token akses acak terpisah dari `code` yang
   mudah dibaca. Token tidak boleh muncul pada daftar admin, log, atau response
   publik selain URL yang diterima pembuat pesanan.
-- Konflik unique kode akibat checkout bersamaan di-retry saat insert.
+- `order_daily_sequences` mengalokasikan suffix kode di dalam transaksi insert;
+  constraint unique `orders.code` tetap menjadi pertahanan terakhir.
 - `orders.idempotency_key` memiliki unique index parsial. Header dan seluruh
   `order_items` ditulis oleh RPC `insert_order_with_items` dalam satu transaksi;
   retry payload yang sama mengembalikan order pertama, sedangkan key yang sama
@@ -391,6 +396,13 @@ memerlukan pasangan kode + `public_token`.
 - Perubahan untuk project lama ada di
   `supabase/migrations/20260816_security_hardening.sql` dan
   `supabase/migrations/20260824_order_integrity.sql`.
+- Migrasi `supabase/migrations/20260830000100_atomic_order_codes.sql` wajib
+  diterapkan sebelum kode aplikasi terbaru agar checkout serentak tidak berebut
+  kode dan RPC mengembalikan kode final ke server. RPC v1 sengaja tidak dihapus:
+  migrasi dapat diterapkan sebelum deploy tanpa merusak aplikasi production lama.
+- Migrasi yang sama menambah `payment_verified_at` dan trigger database. QRIS /
+  transfer tidak dapat meninggalkan status `BARU` tanpa klaim/bukti serta jejak
+  verifikasi admin, bahkan bila update tidak sengaja melewati helper aplikasi.
 - Project yang terlanjur menjalankan migrasi integritas sebelum migrasi klaim
   pembayaran wajib menjalankan
   `supabase/migrations/20260824000100_payment_claim_repair.sql`. Tanpa kolom

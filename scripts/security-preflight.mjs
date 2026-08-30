@@ -65,7 +65,11 @@ if (isEnabled(process.env.NEXT_PUBLIC_ENABLE_TRANSFER)) {
     errors.push("Transfer aktif tetapi nama rekening belum siap.");
   }
 }
-if (isEnabled(process.env.NEXT_PUBLIC_ENABLE_QRIS)) {
+const qrisEnabled = isEnabled(process.env.NEXT_PUBLIC_ENABLE_QRIS);
+if (!qrisEnabled) {
+  errors.push("NEXT_PUBLIC_ENABLE_QRIS wajib true untuk rilis produksi MAU'S Kitchen.");
+}
+if (qrisEnabled) {
   const qrisPath = process.env.NEXT_PUBLIC_QRIS_IMAGE_PATH ?? "/assets/payment/qris.png";
   if (!existsSync(join(process.cwd(), "public", qrisPath.replace(/^\/+/, "")))) {
     errors.push("QRIS aktif tetapi berkas gambar tidak ditemukan.");
@@ -93,12 +97,39 @@ if (supabaseUrl && serviceRoleKey) {
   };
   try {
     const response = await fetch(
-      `${supabaseUrl}/rest/v1/orders?select=public_token&limit=1`,
+      `${supabaseUrl}/rest/v1/orders?select=public_token,payment_verified_at&limit=1`,
       { headers: serviceHeaders },
     );
-    if (!response.ok) errors.push("Migrasi public_token belum diterapkan.");
+    if (!response.ok) errors.push("Migrasi keamanan orders belum diterapkan.");
   } catch {
     errors.push("Schema orders Supabase tidak dapat diverifikasi.");
+  }
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/order_daily_sequences?select=day_key&limit=1`,
+      { headers: serviceHeaders },
+    );
+    if (!response.ok) errors.push("Migrasi kode pesanan atomik belum diterapkan.");
+  } catch {
+    errors.push("Migrasi kode pesanan atomik tidak dapat diverifikasi.");
+  }
+
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/rpc/insert_order_with_items_v2`,
+      {
+        method: "POST",
+        headers: { ...serviceHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_order: {}, p_items: [] }),
+      },
+    );
+    const result = await response.json();
+    if (response.status !== 400 || result.code !== "22023") {
+      errors.push("RPC checkout atomik v2 belum diterapkan dengan benar.");
+    }
+  } catch {
+    errors.push("RPC checkout atomik v2 tidak dapat diverifikasi.");
   }
 
   try {

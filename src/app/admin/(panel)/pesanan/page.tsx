@@ -232,6 +232,8 @@ export default async function AdminPesananPage({
                     key={`${order.code}-${order.status}`}
                     code={order.code}
                     status={order.status}
+                    paymentMethod={order.paymentMethod}
+                    total={order.total}
                   />
                 </div>
               </li>

@@ -67,7 +67,12 @@ function omitPublicToken(order: Order): Omit<Order, "publicToken"> {
 // tolak dengan 503 MENU_STORE_UNAVAILABLE (jangan pakai fallback JSON yang
 // mungkin stale). Lihat docs/11_API_SPEC.md §11.2.
 export async function POST(request: Request): Promise<NextResponse> {
-  if (await isRateLimited(`order:${getClientIp(request.headers)}`)) {
+  if (
+    await isRateLimited(`order:${getClientIp(request.headers)}`, {
+      maxRequests: 30,
+      windowSeconds: 60,
+    })
+  ) {
     return jsonError(
       429,
       "RATE_LIMITED",
@@ -251,8 +256,14 @@ export async function POST(request: Request): Promise<NextResponse> {
       createdAt: now.toISOString(),
       customer: {
         ...payload.customer,
-        address: payload.customer.address || undefined,
-        addressNote: payload.customer.addressNote || undefined,
+        address:
+          payload.customer.orderType === "antar"
+            ? payload.customer.address || undefined
+            : undefined,
+        addressNote:
+          payload.customer.orderType === "antar"
+            ? payload.customer.addressNote || undefined
+            : undefined,
         scheduledAt: payload.customer.scheduledAt || undefined,
         note: payload.customer.note || undefined,
       },

@@ -12,13 +12,11 @@ import {
 
 describe("getJakartaDayStartUtc", () => {
   it("mengembalikan tengah malam WIB untuk siang hari Jakarta", () => {
-    // 16 Agustus 2026 10:00 WIB = 03:00 UTC
     const start = getJakartaDayStartUtc(new Date("2026-08-16T03:00:00Z"));
     expect(start.toISOString()).toBe("2026-08-15T17:00:00.000Z");
   });
 
   it("bergeser ke hari berikutnya setelah jam 17:00 UTC", () => {
-    // 16 Agustus 2026 00:30 WIB = 15 Agustus 17:30 UTC → hari Jakarta = 16
     const start = getJakartaDayStartUtc(new Date("2026-08-15T17:30:00Z"));
     expect(start.toISOString()).toBe("2026-08-15T17:00:00.000Z");
   });
@@ -89,20 +87,22 @@ describe("rowToOrder", () => {
 
   it("menyimpan header dan item lewat satu RPC transaksi", async () => {
     const rpc = vi.fn().mockResolvedValue({
-      data: "b3f19f92-af4c-4f67-a7e2-d52a9b1a94eb",
+      data: "MK-260816-002",
       error: null,
     });
     const supabase = { rpc } as unknown as SupabaseClient;
     const order = rowToOrder(row, itemRows);
 
-    await insertOrder(supabase, order, {
-      key: "e55f3308-9cb8-42e5-a36f-a53264755152",
-      fingerprint: "a".repeat(64),
-    });
+    await expect(
+      insertOrder(supabase, order, {
+        key: "e55f3308-9cb8-42e5-a36f-a53264755152",
+        fingerprint: "a".repeat(64),
+      }),
+    ).resolves.toBe("MK-260816-002");
 
     expect(rpc).toHaveBeenCalledTimes(1);
     expect(rpc).toHaveBeenCalledWith(
-      "insert_order_with_items",
+      "insert_order_with_items_v2",
       expect.objectContaining({
         p_order: expect.objectContaining({
           code: row.code,
@@ -132,6 +132,19 @@ describe("rowToOrder", () => {
         fingerprint: "a".repeat(64),
       }),
     ).rejects.toBeInstanceOf(OrderIdempotencyConflictError);
+  });
+
+  it("menolak RPC lama yang belum mengembalikan kode atomik", async () => {
+    const supabase = {
+      rpc: vi.fn().mockResolvedValue({
+        data: "b3f19f92-af4c-4f67-a7e2-d52a9b1a94eb",
+        error: null,
+      }),
+    } as unknown as SupabaseClient;
+
+    await expect(insertOrder(supabase, rowToOrder(row, itemRows))).rejects.toBeInstanceOf(
+      OrderDatabaseError,
+    );
   });
 });
 

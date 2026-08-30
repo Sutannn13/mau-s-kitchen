@@ -45,6 +45,15 @@ WhatsApp terbuka dengan pesan konfirmasi otomatis
 Admin cek mutasi → konfirmasi pesanan
 ```
 
+Tombol pelanggan hanya membuat **klaim**, bukan bukti pembayaran yang dipercaya.
+Saat admin hendak mengubah QRIS/transfer dari `BARU` ke status maju, UI wajib
+memastikan klaim/bukti sudah ada, menampilkan total server, dan meminta checkbox
+pemeriksaan manual. API menolak request tanpa pengajuan pembayaran atau tanpa
+`paymentVerified: true`, sehingga lompatan status lewat dropdown maupun request
+langsung tidak dapat melewati langkah pemeriksaan. Server menulis
+`payment_verified_at`; trigger database menolak non-tunai keluar dari `BARU`
+tanpa klaim/bukti dan timestamp tersebut.
+
 **Aturan total sebelum bayar:**
 
 - Ambil Sendiri langsung memakai ongkir Rp0 dan total final.

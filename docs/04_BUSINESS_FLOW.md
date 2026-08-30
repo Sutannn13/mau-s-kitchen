@@ -93,6 +93,12 @@ flowchart TD
 
 **Transisi yang diperbolehkan**
 
+Untuk QRIS/transfer, setiap transisi dari `BARU` ke status maju (termasuk
+lompatan langsung) baru boleh dilakukan setelah pelanggan mengirim klaim
+"sudah bayar" atau bukti. Request juga wajib disertai acknowledgement admin
+bahwa mutasi rekening atau bukti sudah diperiksa dan nominalnya sama dengan
+total server. Klaim pelanggan sendiri tidak pernah dianggap sebagai verifikasi.
+
 Alur normal pesanan berurutan satu arah:
 
 ```

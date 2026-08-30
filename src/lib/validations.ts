@@ -59,6 +59,7 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 export const patchOrderSchema = z
   .object({
     status: z.enum(["BARU", "DIKONFIRMASI", "DIPROSES", "DIKIRIM", "SELESAI", "BATAL"]).optional(),
+    paymentVerified: z.literal(true).optional(),
     adminNote: z.string().trim().max(500, "Catatan admin maksimal 500 karakter").optional(),
     deliveryFee: z
       .number()

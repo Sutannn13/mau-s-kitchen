@@ -48,7 +48,7 @@ Lalu di dashboard Vercel:
 | `ADMIN_EMAILS` | **Server saja** | daftar email admin sah, dipisahkan koma |
 | `RATE_LIMIT_SALT` | **Server saja** | string acak minimal 32 karakter |
 | `ORDER_RETENTION_DAYS` | **Server saja** | 30–3650, ditetapkan pemilik |
-| `NEXT_PUBLIC_ENABLE_QRIS` | Semua | `false` sampai transaksi uji QRIS berhasil |
+| `NEXT_PUBLIC_ENABLE_QRIS` | Semua | wajib `true` untuk rilis produksi; preflight menolak nilai kosong/false |
 | `NEXT_PUBLIC_ENABLE_TRANSFER` | Semua | `false` sampai rekening siap |
 | `NEXT_PUBLIC_ENABLE_CASH` | Semua | `true` hanya bila tunai/COD diterima |
 | `NEXT_PUBLIC_QRIS_IMAGE_PATH` | Semua | `/assets/payment/qris.jpeg` |
@@ -99,6 +99,10 @@ adalah `https://maukitchen.my.id`.
    hanya `image/jpeg`, `image/png`, dan `image/webp`). Terapkan migration
    `20260824212500_limit_payment_proofs_to_one_mb.sql` pada project lama.
 7. Salin `Project URL`, `anon key`, dan `service_role key` ke environment variables.
+8. Terapkan `supabase/migrations/20260830000100_atomic_order_codes.sql` sebelum
+   deploy aplikasi terbaru. Preflight akan menolak deploy bila tabel counter
+   atomik belum tersedia. Migration menambah RPC v2 tanpa menghapus RPC v1,
+   sehingga production lama tetap melayani checkout selama rollout.
 
 ---
 
@@ -194,6 +198,9 @@ Catatan penting:
 - `npm run deploy` dan `npm run upload` menjalankan security preflight
   sebagai bagian dari perintah rilis; jangan memanggil OpenNext/Wrangler
   langsung.
+- Preflight produksi mewajibkan QRIS aktif dan aset QRIS tersedia. Perubahan
+  secret `NEXT_PUBLIC_*` baru berlaku setelah workflow build/deploy dijalankan
+  ulang karena nilainya di-inline ke bundle browser saat build.
 - Env produksi didefinisikan di **level job** `deploy`, bukan per step. Alasan:
   `npm run deploy` menjalankan `opennextjs-cloudflare build` yang mem-build ulang
   Next.js, dan nilai `NEXT_PUBLIC_*` di-inline ke bundle browser pada build itu.
@@ -203,6 +210,12 @@ Catatan penting:
 - Setelah deploy, workflow memanggil `/api/health` (maksimum 6 percobaan, jeda
   10 detik). Endpoint hanya membalas `200` bila Supabase, allowlist admin, dan
   konfigurasi privasi siap — jadi rilis rusak langsung terlihat merah.
+- Cloudflare Workers membagi request dan auto-scale di jaringan edge; load
+  balancer aplikasi tambahan tidak diperlukan untuk 10–20 checkout serentak.
+  Konsistensi burst dijaga counter kode atomik dan RPC transaksi Supabase.
+- Aktifkan Workers Observability sebelum go-live agar error runtime, CPU, dan
+  respons `5xx` dapat dilacak. Pantau pula limit harian paket Cloudflare dan
+  kapasitas/kuota Supabase; keduanya batas layanan, bukan load balancer kode.
 
 ### Secrets repository yang wajib diisi
 

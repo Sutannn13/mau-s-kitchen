@@ -12,7 +12,9 @@ import {
   type StatusMenuPosition,
 } from "@/lib/admin/status-menu-position";
 import { cn } from "@/lib/utils";
-import type { OrderStatus } from "@/types/order";
+import { formatRupiah } from "@/lib/format";
+import { requiresManualPaymentVerification } from "@/lib/order-payment";
+import type { OrderStatus, PaymentMethod } from "@/types/order";
 
 // Dropdown ubah status langsung dari kartu pesanan: admin bisa lompat
 // ke status mana pun yang sah tanpa maju satu-satu atau buka detail
@@ -27,9 +29,13 @@ import type { OrderStatus } from "@/types/order";
 export function StatusSelect({
   code,
   status,
+  paymentMethod,
+  total,
 }: {
   code: string;
   status: OrderStatus;
+  paymentMethod: PaymentMethod;
+  total: number;
 }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -96,6 +102,12 @@ export function StatusSelect({
   async function handleChange(target: OrderStatus): Promise<void> {
     setIsOpen(false);
     if (target === status) {
+      return;
+    }
+    if (requiresManualPaymentVerification(status, target, paymentMethod)) {
+      setError(
+        `Buka detail pesanan untuk memeriksa pembayaran ${formatRupiah(total)} sebelum mengubah status.`,
+      );
       return;
     }
 

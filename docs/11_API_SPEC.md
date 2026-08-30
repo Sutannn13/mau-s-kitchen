@@ -202,6 +202,7 @@ Mengembalikan detail pesanan untuk halaman pelacakan pelanggan.
 ```json
 {
   "status": "DIKONFIRMASI",
+  "paymentVerified": true,
   "adminNote": "Bukti transfer valid",
   "deliveryFee": 12000,
   "deliveryProvider": "gosend",
@@ -212,6 +213,13 @@ Mengembalikan detail pesanan untuk halaman pelacakan pelanggan.
 Aturan:
 - Transisi status wajib mengikuti state machine di `04_BUSINESS_FLOW.md`.
 - Transisi tidak sah → `400 INVALID_STATUS_TRANSITION`.
+- Untuk QRIS/transfer, perpindahan dari `BARU` ke status maju wajib mengirim
+  `paymentVerified: true` setelah admin mencocokkan mutasi/bukti dengan total
+  server. Pesanan juga harus sudah memiliki klaim bayar atau bukti unggahan;
+  jika belum API menolak `409 PAYMENT_SUBMISSION_REQUIRED`, sedangkan request
+  tanpa acknowledgement ditolak `409 PAYMENT_VERIFICATION_REQUIRED`.
+- `paymentVerified` hanya acknowledgement request admin dan tidak boleh menjadi
+  satu-satunya perubahan dalam body PATCH.
 - `deliveryFee`, `deliveryProvider`, dan `courierCost` wajib dikirim bersama
   untuk pesanan Antar berstatus `BARU`, sebelum klaim/bukti pembayaran.
 - `deliveryProvider`: `internal | gosend | grabexpress | other`. Nilai biaya
@@ -429,8 +437,12 @@ Add-on global reusable lintas item.
 3. Kode error menggunakan `SCREAMING_SNAKE_CASE`.
 4. `message` selalu Bahasa Indonesia (langsung bisa ditampilkan ke pengguna).
 5. Semua endpoint tulis wajib memvalidasi ulang input di server.
-6. Rate limit `POST /api/orders`: maksimal 5 permintaan per IP per menit.
+6. Rate limit `POST /api/orders`: maksimal 30 permintaan per IP Cloudflare per
+   menit. Nilai ini mengizinkan burst 20 checkout dari jaringan NAT/Wi-Fi yang
+   sama tanpa menghilangkan perlindungan spam dasar.
 7. Jangan pernah mengembalikan `SUPABASE_SERVICE_ROLE_KEY` atau data internal lain.
+8. Untuk `orderType=ambil`, server membuang `address` dan `addressNote` walaupun
+   browser mengirim nilai lama, agar PII yang tidak dibutuhkan tidak tersimpan.
 
 ---
 

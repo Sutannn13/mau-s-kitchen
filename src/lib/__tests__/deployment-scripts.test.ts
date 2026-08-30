@@ -61,11 +61,40 @@ describe("production release commands", () => {
     expect(workflow).not.toMatch(/run:\s+(?:npx\s+)?(?:opennextjs-cloudflare|wrangler)/);
   });
 
+  it("menggagalkan rilis produksi bila QRIS tidak aktif", () => {
+    const preflight = readProjectFile("scripts/security-preflight.mjs");
+
+    expect(preflight).toContain(
+      "NEXT_PUBLIC_ENABLE_QRIS wajib true untuk rilis produksi MAU'S Kitchen.",
+    );
+  });
+
   it("mengonfigurasi rate limit pra-database untuk endpoint publik", () => {
     const wrangler = readProjectFile("wrangler.toml");
 
     expect(wrangler).toContain('name = "ORDER_READ_RATE_LIMITER"');
     expect(wrangler).toContain('name = "HEALTH_RATE_LIMITER"');
     expect(wrangler).toContain('DEPLOYMENT_PLATFORM = "cloudflare"');
+  });
+
+  it("mewajibkan migration concurrency dan pembayaran sebelum rilis", () => {
+    const preflight = readProjectFile("scripts/security-preflight.mjs");
+    const migration = readProjectFile(
+      "supabase/migrations/20260830000100_atomic_order_codes.sql",
+    );
+
+    expect(preflight).toContain("order_daily_sequences?select=day_key");
+    expect(preflight).toContain("payment_verified_at");
+    expect(preflight).toContain("rpc/insert_order_with_items_v2");
+    expect(migration).toContain("insert_order_with_items_v2");
+    expect(migration).toContain("orders_enforce_manual_payment_verification");
+  });
+
+  it("mengaktifkan QRIS dan observability pada runtime Cloudflare", () => {
+    const wrangler = readProjectFile("wrangler.toml");
+
+    expect(wrangler).toContain('NEXT_PUBLIC_ENABLE_QRIS = "true"');
+    expect(wrangler).toContain("[observability]");
+    expect(wrangler).toContain("[observability.traces]");
   });
 });

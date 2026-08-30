@@ -9,6 +9,10 @@ import {
 } from "@/lib/order-db";
 import { canTransition } from "@/lib/order-status";
 import {
+  hasPaymentSubmission,
+  requiresManualPaymentVerification,
+} from "@/lib/order-payment";
+import {
   isCashDeliveryProviderAllowed,
   isDeliveryPlanReady,
 } from "@/lib/order-delivery";
@@ -241,6 +245,7 @@ export async function getAdminOrder(
 
 export interface UpdateOrderPatch {
   status?: OrderStatus;
+  paymentVerified?: true;
   adminNote?: string;
   deliveryFee?: number;
   deliveryProvider?: DeliveryProvider;
@@ -332,6 +337,34 @@ export async function updateOrder(
         "INVALID_STATUS_TRANSITION",
         `Pesanan tidak bisa berubah dari ${current.row.status} ke ${patch.status}.`,
       );
+    }
+    if (
+      requiresManualPaymentVerification(
+        current.row.status,
+        patch.status,
+        current.row.payment_method,
+      )
+    ) {
+      if (
+        !hasPaymentSubmission(
+          current.row.payment_claimed_at,
+          current.row.payment_proof_url,
+        )
+      ) {
+        throw new AdminError(
+          409,
+          "PAYMENT_SUBMISSION_REQUIRED",
+          "Pelanggan belum mengirim klaim atau bukti pembayaran.",
+        );
+      }
+      if (patch.paymentVerified !== true) {
+        throw new AdminError(
+          409,
+          "PAYMENT_VERIFICATION_REQUIRED",
+          "Periksa mutasi rekening atau bukti bayar dan cocokkan nominal sebelum mengonfirmasi pesanan.",
+        );
+      }
+      update.payment_verified_at = new Date().toISOString();
     }
     if (
       statusRequiresFinalTotal(patch.status) &&

@@ -10,6 +10,7 @@ import {
   isDeliveryPlanReady,
 } from "@/lib/order-delivery";
 import { formatRupiah } from "@/lib/format";
+import { requiresManualPaymentVerification } from "@/lib/order-payment";
 import { canTransition, statusLabels } from "@/lib/order-status";
 import { canEditDeliveryFee } from "@/lib/order-pricing";
 import type {
@@ -28,6 +29,9 @@ interface OrderDetailActionsProps {
   courierCost: number | null;
   paymentMethod: PaymentMethod;
   paymentLocked: boolean;
+  paymentClaimed: boolean;
+  paymentProofSubmitted: boolean;
+  total: number;
   adminNote: string;
 }
 
@@ -51,6 +55,9 @@ export function OrderDetailActions({
   courierCost,
   paymentMethod,
   paymentLocked,
+  paymentClaimed,
+  paymentProofSubmitted,
+  total,
   adminNote,
 }: OrderDetailActionsProps) {
   const router = useRouter();
@@ -68,6 +75,9 @@ export function OrderDetailActions({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [pendingPaymentStatus, setPendingPaymentStatus] =
+    useState<OrderStatus | null>(null);
+  const [paymentVerified, setPaymentVerified] = useState(false);
 
   async function patch(body: Record<string, unknown>): Promise<boolean> {
     setIsBusy(true);
@@ -97,9 +107,31 @@ export function OrderDetailActions({
   }
 
   async function handleStatus(target: OrderStatus): Promise<void> {
+    if (requiresManualPaymentVerification(status, target, paymentMethod)) {
+      setPendingPaymentStatus(target);
+      setPaymentVerified(false);
+      setConfirmCancel(false);
+      return;
+    }
     if (await patch({ status: target })) {
       setNotice(`Status berubah menjadi ${statusLabels[target]}.`);
       setConfirmCancel(false);
+    }
+  }
+
+  async function handleVerifiedPaymentStatus(): Promise<void> {
+    if (!pendingPaymentStatus || !paymentVerified) {
+      return;
+    }
+    if (
+      await patch({
+        status: pendingPaymentStatus,
+        paymentVerified: true,
+      })
+    ) {
+      setNotice(`Pembayaran diverifikasi dan status berubah menjadi ${statusLabels[pendingPaymentStatus]}.`);
+      setPendingPaymentStatus(null);
+      setPaymentVerified(false);
     }
   }
 
@@ -166,6 +198,7 @@ export function OrderDetailActions({
     ? Number.parseInt(effectiveCostValue, 10)
     : null;
   const deliveryMargin = calculateDeliveryMargin(parsedFee, parsedCourierCost);
+  const paymentSubmissionPresent = paymentClaimed || paymentProofSubmitted;
 
   return (
     <section className="mt-3.5 sm:mt-6 space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
@@ -173,6 +206,56 @@ export function OrderDetailActions({
         <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-brown/60">
           Aksi Status
         </h2>
+        {pendingPaymentStatus ? (
+          <div
+            role="group"
+            aria-label="Verifikasi pembayaran manual"
+            className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-brown-deep"
+          >
+            <p className="font-bold">Verifikasi pembayaran sebelum lanjut</p>
+            <p className="mt-1 leading-5">
+              Cocokkan mutasi rekening atau bukti bayar dengan total <strong>{formatRupiah(total)}</strong>.
+              Klaim pelanggan: <strong>{paymentClaimed ? "ada" : "belum ada"}</strong>; bukti unggahan:{" "}
+              <strong>{paymentProofSubmitted ? "ada" : "belum ada"}</strong>.
+            </p>
+            {!paymentSubmissionPresent ? (
+              <p className="mt-2 font-semibold text-chili">
+                Belum bisa dikonfirmasi. Minta pelanggan menekan tombol sudah bayar atau mengunggah bukti terlebih dahulu.
+              </p>
+            ) : null}
+            <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-2 rounded-lg bg-cream/70 p-2.5">
+              <input
+                type="checkbox"
+                checked={paymentVerified}
+                disabled={!paymentSubmissionPresent}
+                onChange={(event) => setPaymentVerified(event.target.checked)}
+                className="mt-0.5 size-5 accent-gold"
+              />
+              <span>Saya sudah memeriksa pembayaran dan nominalnya cocok.</span>
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={isBusy || !paymentSubmissionPresent || !paymentVerified}
+                onClick={() => void handleVerifiedPaymentStatus()}
+                className="min-h-11 rounded-full bg-gold px-4 font-bold text-brown-deep disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Verifikasi &amp; {statusLabels[pendingPaymentStatus]}
+              </button>
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => {
+                  setPendingPaymentStatus(null);
+                  setPaymentVerified(false);
+                }}
+                className="min-h-11 rounded-full border border-gold/40 px-4 font-semibold text-brown"
+              >
+                Batal
+              </button>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-2.5 sm:mt-3 flex flex-wrap gap-1.5 sm:gap-2">
           {statusActions.map((action) => (
             <button

@@ -66,9 +66,19 @@ describe("saveOrder dengan database terkonfigurasi", () => {
 
   it("mengembalikan pesanan setelah transaksi database berhasil", async () => {
     const order = buildOrder();
-    mocks.insertOrder.mockResolvedValue(undefined);
+    mocks.insertOrder.mockResolvedValue(order.code);
 
     await expect(saveOrder(order)).resolves.toBe(order);
+  });
+
+  it("menggunakan kode atomik yang dialokasikan transaksi database", async () => {
+    const order = buildOrder();
+    mocks.insertOrder.mockResolvedValue("MK-260824-902");
+
+    await expect(saveOrder(order)).resolves.toMatchObject({
+      code: "MK-260824-902",
+      publicToken: order.publicToken,
+    });
   });
 
   it("menolak checkout saat database gagal tanpa membuat pesanan bayangan", async () => {

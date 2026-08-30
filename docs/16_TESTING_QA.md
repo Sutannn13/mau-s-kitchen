@@ -124,6 +124,8 @@ describe("buildOrderCode", () => {
 | E2E-34 | Admin mengunduh rekap Excel                                                        | File `.xlsx` terbuka dengan sheet Ringkasan, Pesanan, dan Item Pesanan; KPI sesuai data server          |
 | E2E-35 | Filter/sort tabel Pesanan di Excel                                                 | Header tetap terlihat, nilai tanggal/Rupiah dikenali sebagai tipe data, dan formula tidak rusak         |
 | E2E-36 | Admin mengunduh CSV Mentah                                                         | CSV hanya berisi satu header dan tabel detail; input berawalan karakter formula tetap dinetralisasi     |
+| E2E-37 | Admin mencoba memajukan QRIS/transfer BARU tanpa klaim/bukti atau acknowledgement   | API menolak `PAYMENT_SUBMISSION_REQUIRED`/`PAYMENT_VERIFICATION_REQUIRED`; pembatalan tetap boleh        |
+| E2E-38 | Kirim 20 checkout valid serentak dengan idempotency key berbeda                    | Seluruhnya berhasil dengan 20 kode unik berurutan; tidak ada `503`, header tanpa item, atau kode terpakai ulang |
 
 ---
 
