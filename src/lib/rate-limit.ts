@@ -119,7 +119,12 @@ export async function isPublicReadRateLimited(
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const { env } = await getCloudflareContext({ async: true });
-    const binding = env[bindingName];
+    // Cast ke tipe presisi (bukan Record<string, unknown>) karena
+    // cloudflare-env.d.ts yang berisi binding aktual di-gitignore dan tidak
+    // ada di CI. Tipe ini hanya mengizinkan key yang sudah didefinisikan.
+    const binding = (
+      env as Partial<Record<EdgeRateLimitBindingName, EdgeRateLimitBinding>>
+    )[bindingName];
     if (!isEdgeRateLimitBinding(binding)) {
       console.error("[rate-limit] Binding Cloudflare tidak tersedia.", {
         bindingName,
