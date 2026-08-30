@@ -172,6 +172,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                     src={category.image}
                     alt=""
                     fill
+                    loading="lazy"
                     sizes="36px"
                     className="object-cover"
                   />
@@ -217,7 +218,8 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                         src={imageSource}
                         alt={`Foto ${item.name}`}
                         fill
-                        quality={70}
+                        loading="lazy"
+                        quality={60}
                         sizes="(max-width: 479px) calc((100vw - 56px) / 2), (max-width: 1023px) calc((100vw - 88px) / 2), 360px"
                         className={cn(
                           "object-cover transition duration-500 motion-safe:group-hover:scale-105",

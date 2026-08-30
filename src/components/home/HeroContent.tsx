@@ -54,9 +54,9 @@ export function HeroContent() {
 
       <div className="relative mx-auto w-full max-w-content px-4 md:px-8">
         <div className="relative rounded-[2rem] border border-brown-deep/10 bg-cream-soft/80 p-4 shadow-[0_18px_50px_rgba(62,35,24,0.10)] backdrop-blur-sm md:grid md:grid-cols-[0.95fr_1.05fr] md:items-center md:gap-6 md:p-7 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:p-9">
-          {/* Frame dekoratif lapis kedua — sekarang subtle gold ring agar
-              selaras dengan orbs ambient di latar. */}
-          <span className="pointer-events-none absolute -bottom-2 -right-2 -z-10 h-full w-full rounded-[2rem] border border-gold/40" />
+          {/* Frame dekoratif lapis kedua — inset ring gold agar tidak
+              menonjol keluar container di mobile (fix border overflow). */}
+          <span className="pointer-events-none absolute inset-0 rounded-[2rem] ring-1 ring-inset ring-gold/30" />
 
           <div className="flex flex-col items-start px-1 pb-6 pt-1 md:px-2 lg:pb-0">
             <div className="mb-5 flex w-full items-center justify-between gap-3 motion-safe:animate-reveal">
@@ -178,7 +178,7 @@ export function HeroContent() {
             <a
               href="#menu-home"
               aria-label="Lanjut ke pilihan menu"
-              className="btn-press absolute -bottom-5 right-5 flex size-12 items-center justify-center rounded-full border-4 border-cream-soft bg-gold text-brown-deep shadow-warm-lg"
+              className="btn-press absolute -bottom-5 right-5 z-10 flex size-12 items-center justify-center rounded-full border-4 border-cream-soft bg-gold text-brown-deep shadow-warm-lg"
             >
               <ArrowDown aria-hidden="true" className="size-5" />
             </a>
