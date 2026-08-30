@@ -343,27 +343,6 @@
   animation: bar-grow 500ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
 }
 
-/* Crossfade slideshow background (BrandValues section). Empat foto food
- * bergantian dengan fade mulus — masing-masing visible 25% dari siklus
- * 20 detik. Opacity-only untuk GPU. Berhenti saat reduced-motion. */
-@keyframes crossfade {
-  0%, 20% { opacity: 1; }
-  25%, 95% { opacity: 0; }
-  100% { opacity: 1; }
-}
-.animate-crossfade {
-  opacity: 0;
-  animation: crossfade 20s ease-in-out infinite;
-  animation-fill-mode: both;
-}
-.animate-crossfade-2 { animation-delay: -5s; }
-.animate-crossfade-3 { animation-delay: -10s; }
-.animate-crossfade-4 { animation-delay: -15s; }
-@media (prefers-reduced-motion: reduce) {
-  .animate-crossfade { animation: none; opacity: 0; }
-  .animate-crossfade:first-of-type { opacity: 1; }
-}
-
 /* Invoice tetap nyaman dibaca di HP, lalu menjadi dokumen A4 bersih saat
  * dialog cetak browser dipakai untuk printer atau Save as PDF. */
 @media print {

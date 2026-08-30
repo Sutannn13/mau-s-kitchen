@@ -225,8 +225,8 @@ NEXT_PUBLIC_BANK_ACCOUNT_NAME=
 
 ## 9.7 Optimasi performa
 
-1. Gunakan `next/image` dengan `sizes` yang tepat; format WebP/AVIF.
-2. Foto poster asli besar → kompres ke ≤ 200KB dan potong per produk.
+1. Gunakan `next/image` dengan `sizes` yang tepat. Pada Cloudflare OpenNext tanpa binding `IMAGES`, jangan mengandalkan transformasi `/_next/image`; pakai varian statis `*-optimized.jpg`, `*-card.jpg`, dan `*-thumb.jpg` yang dikompresi build-time.
+2. Foto poster asli besar → kompres ke ≤ 200KB dan potong per konteks tampil.
 3. `next/font` untuk semua font (hindari FOUT dan request eksternal).
 4. `dynamic()` untuk komponen berat (bottom sheet, dashboard admin).
 5. Batasi Motion hanya pada elemen kunci (pill periode admin, fade konten).

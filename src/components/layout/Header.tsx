@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { ShoppingBag } from "lucide-react";
 
 import { CartBadge } from "@/components/layout/CartBadge";
@@ -21,27 +20,15 @@ const navigationItems = [
 // Ikon hamburger tiga garis yang morf jadi X: garis atas/bawah berotasi
 // ke tengah, garis tengah fade — sinkron dengan animasi panel navigasi.
 function HamburgerIcon({ isOpen }: { isOpen: boolean }) {
-  const lineClass = "block h-[2px] w-5 rounded-full bg-current";
+  const lineClass = "block h-[2px] w-5 rounded-full bg-current transition-transform duration-150";
   return (
     <span
       aria-hidden="true"
       className="relative flex size-5 flex-col items-center justify-center gap-[5px]"
     >
-      <motion.span
-        animate={isOpen ? { rotate: 45, y: 7 } : { rotate: 0, y: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className={lineClass}
-      />
-      <motion.span
-        animate={isOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-        className={cn(lineClass, "origin-center")}
-      />
-      <motion.span
-        animate={isOpen ? { rotate: -45, y: -7 } : { rotate: 0, y: 0 }}
-        transition={{ duration: 0.2, ease: "easeOut" }}
-        className={lineClass}
-      />
+      <span className={cn(lineClass, isOpen && "translate-y-[7px] rotate-45")} />
+      <span className={cn(lineClass, "origin-center", isOpen && "scale-x-0 opacity-0")} />
+      <span className={cn(lineClass, isOpen && "-translate-y-[7px] -rotate-45")} />
     </span>
   );
 }
@@ -84,10 +71,11 @@ export function Header() {
           aria-label="Kembali ke beranda MAU'S Kitchen"
         >
           <Image
-            src="/assets/brand/logo-maus-kitchen.jpeg"
+            src="/assets/brand/logo-maus-kitchen-thumb.jpg"
             alt="Logo MAU'S Kitchen"
             width={40}
             height={40}
+            unoptimized
             className="size-9 rounded-full border border-gold/40 object-cover"
           />
           <span className="font-serif text-xl font-bold tracking-tight text-brown-deep sm:text-2xl">
@@ -167,15 +155,10 @@ export function Header() {
               </span>
             </button>
 
-            <AnimatePresence>
               {isMenuOpen ? (
-                <motion.nav
+                <nav
                   id={panelId}
                   aria-label="Navigasi seluler"
-                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
                   className="absolute right-0 top-12 w-56 rounded-2xl border border-[#EAE3DB] bg-cream-soft p-2 shadow-warm-lg"
                 >
                   {navigationItems.map((item) => (
@@ -201,9 +184,8 @@ export function Header() {
                       Pesan Sekarang
                     </Link>
                   </div>
-                </motion.nav>
+                </nav>
               ) : null}
-            </AnimatePresence>
           </div>
         </div>
       </div>

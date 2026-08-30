@@ -53,16 +53,12 @@ export function HowToOrderSection() {
         <div className="relative mt-8 md:mt-10">
           {/* Garis penghubung horizontal di desktop */}
           <span className="absolute left-[12%] right-[12%] top-[22px] hidden h-px border-t border-dashed border-gold/40 lg:block" aria-hidden="true" />
-          <ol
-            aria-label="Langkah pemesanan"
-            tabIndex={0}
-            className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-2 md:px-0 lg:grid-cols-4"
-          >
+          <ol className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {orderSteps.map((step, index) => (
             <Card
               as="li"
               key={step.title}
-              className="relative w-[78vw] min-w-0 flex-none snap-center overflow-hidden p-5 md:w-auto md:flex-initial"
+              className="relative min-w-0 overflow-hidden p-4 sm:p-5"
             >
               <span className="absolute inset-x-0 top-0 h-1 bg-gold" />
               <div className="flex items-center justify-between">
@@ -73,14 +69,14 @@ export function HowToOrderSection() {
                     strokeWidth={1.75}
                   />
                 </span>
-                <span className="font-serif text-3xl font-bold text-gold/45">
+                <span className="font-serif text-3xl font-bold text-brown/70">
                   {String(index + 1).padStart(2, "0")}
                 </span>
               </div>
-              <h3 className="mt-5 text-lg font-bold text-brown-deep">
+              <h3 className="mt-4 text-base font-bold text-brown-deep sm:text-lg">
                 {step.title}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-brown/70">
+              <p className="mt-2 text-xs leading-5 text-brown/85 sm:text-sm sm:leading-6">
                 {step.description}
               </p>
             </Card>

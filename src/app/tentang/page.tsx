@@ -88,7 +88,7 @@ export default function TentangPage() {
       {/* HERO TENTANG — latar ambient + foto kitchen-story (asset sudah ada). */}
       <section className="relative overflow-hidden">
         <AmbientBackground
-          imageSrc="/assets/stitch/kitchen-story.jpg"
+          imageSrc="/assets/stitch/kitchen-story-optimized.jpg"
           tone="warm"
           imageOpacity={50}
         />
@@ -162,9 +162,10 @@ export default function TentangPage() {
       {/* KENAPA — value cards editorial dengan ikon + accent bar. */}
       <section className="relative overflow-hidden py-10 text-cream md:py-16">
         <Image
-          src="/assets/stitch/kitchen-story.jpg"
+          src="/assets/stitch/kitchen-story-optimized.jpg"
           alt=""
           fill
+          unoptimized
           quality={60}
           sizes="100vw"
           className="object-cover blur-[2px] brightness-[0.42]"

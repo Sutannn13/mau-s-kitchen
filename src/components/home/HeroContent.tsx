@@ -1,8 +1,4 @@
-"use client";
-
 import Image from "next/image";
-import { useRef } from "react";
-import { motion, useScroll, useTransform, useReducedMotion, type Variants } from "motion/react";
 import { ArrowDown, ArrowRight, Flame, Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -10,39 +6,9 @@ import { StoreStatusBadge } from "@/components/common/StoreStatusBadge";
 import { EyebrowRule } from "@/components/common/EyebrowRule";
 import { AmbientBackground } from "@/components/common/AmbientBackground";
 
-// Heading dipisah per kata untuk stagger reveal yang lebih dinamis
-const headingLine1 = "Manisnya Bikin Senyum.".split(" ");
-const headingLine2 = "Pedasnya Bikin Nagih.".split(" ");
-
-const wordVariants: Variants = {
-  // Transform-only: teks tetap terlihat tanpa JS dan atribut SSR tetap sama.
-  // MotionConfig reducedMotion="user" otomatis melucuti transform.
-  hidden: { y: 12 },
-  visible: (i: number) => ({
-    y: 0,
-    transition: {
-      delay: 0.1 + i * 0.045,
-      duration: 0.35,
-      ease: [0.25, 0.1, 0.25, 1] as const,
-    },
-  }),
-};
-
 export function HeroContent() {
-  const shouldReduceMotion = useReducedMotion();
-  const heroRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-
-  // Parallax hanya pada layer foto agar frame dan layout tidak ikut bergeser.
-  const imageY = useTransform(scrollYProgress, [0, 1], [0, 36]);
-  const overlayOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0.4]);
-
   return (
     <section
-      ref={heroRef}
       className="relative overflow-hidden bg-cream pb-12 pt-5 md:pb-20 md:pt-10"
     >
       {/* Latar ambient (docs/08 upgrade §8): gradient mesh warm + foto makanan
@@ -75,31 +41,9 @@ export function HeroContent() {
             </p>
 
             <h1 className="font-serif text-[2.35rem] font-bold leading-[1.04] tracking-[-0.035em] text-brown-deep sm:text-5xl md:text-[2.5rem] lg:text-[4rem] lg:leading-[1.02]">
-              {headingLine1.map((word, i) => (
-                <motion.span
-                  key={`${word}-${i}`}
-                  custom={i}
-                  variants={wordVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="inline-block"
-                >
-                  {word}{" "}
-                </motion.span>
-              ))}
+              Manisnya Bikin Senyum.{" "}
               <br className="hidden sm:inline" />
-              {headingLine2.map((word, i) => (
-                <motion.span
-                  key={`${word}-${i}`}
-                  custom={i + headingLine1.length}
-                  variants={wordVariants}
-                  initial="hidden"
-                  animate="visible"
-                  className="inline-block text-chili"
-                >
-                  {word}{" "}
-                </motion.span>
-              ))}
+              <span className="text-chili">Pedasnya Bikin Nagih.</span>
             </h1>
 
             <p
@@ -120,7 +64,7 @@ export function HeroContent() {
                 href="#menu-home"
                 className="btn-press group inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brown-deep px-6 text-sm font-bold text-white shadow-warm transition-colors hover:bg-brown sm:flex-none"
               >
-                Pesan Sekarang
+                Lihat Pilihan
                 <ArrowRight
                   aria-hidden="true"
                   className="size-4 transition-transform duration-300 group-hover:translate-x-1"
@@ -148,32 +92,27 @@ export function HeroContent() {
 
           <div className="relative">
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[1.6rem] border border-white/60 bg-white shadow-warm-lg lg:aspect-[6/5]">
-              <motion.div
-                style={{ y: shouldReduceMotion ? 0 : imageY }}
-                className="absolute -inset-y-[12%] inset-x-0"
-              >
+              <div className="absolute inset-0">
                 <Image
-                  src="/assets/stitch/hero-food-plate.jpg"
+                  src="/assets/stitch/hero-food-plate-optimized.jpg"
                   alt="Sajian dari MAU'S Kitchen"
                   fill
+                  unoptimized
                   loading="eager"
                   fetchPriority="high"
                   quality={75}
                   sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 64px), (max-width: 1263px) calc((100vw - 120px) / 2), 572px"
-                  className="object-cover motion-safe:animate-kenburns"
+                  className="object-cover"
                 />
-              </motion.div>
-              <motion.div
-                style={{ opacity: shouldReduceMotion ? 1 : overlayOpacity }}
-                className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent px-4 pb-4 pt-14 text-white md:px-5 md:pb-5"
-              >
+              </div>
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/80 to-transparent px-4 pb-4 pt-14 text-white md:px-5 md:pb-5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-gold-light">
                   Dibuat setelah kamu pesan
                 </p>
                 <p className="mt-1 text-sm font-semibold md:text-base">
                   Dari dapur rumahan, langsung untuk kamu.
                 </p>
-              </motion.div>
+              </div>
             </div>
             <a
               href="#menu-home"

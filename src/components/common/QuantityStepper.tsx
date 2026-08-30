@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
-import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,9 +25,6 @@ export function QuantityStepper({
   label,
   className,
 }: QuantityStepperProps) {
-  // 1 = menambah (angka baru masuk dari bawah), -1 = mengurangi.
-  const [direction, setDirection] = useState<1 | -1>(1);
-
   return (
     <div
       role="group"
@@ -42,7 +37,6 @@ export function QuantityStepper({
       <button
         type="button"
         onClick={() => {
-          setDirection(-1);
           onChange(value - 1);
         }}
         disabled={value <= min}
@@ -55,20 +49,11 @@ export function QuantityStepper({
         aria-live="polite"
         className="flex min-w-10 items-center justify-center overflow-hidden border-x border-gold/25 px-2 text-sm font-bold tabular-nums text-brown-deep"
       >
-        <motion.span
-          key={value}
-          initial={{ y: 4 * direction, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.12, ease: "easeOut" }}
-          className="block"
-        >
-          {value}
-        </motion.span>
+        <span className="block">{value}</span>
       </output>
       <button
         type="button"
         onClick={() => {
-          setDirection(1);
           onChange(value + 1);
         }}
         disabled={max !== undefined && value >= max}

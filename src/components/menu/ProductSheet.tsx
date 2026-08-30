@@ -4,7 +4,6 @@ import { useId, useRef, useState } from "react";
 import { ShoppingBag, X } from "lucide-react";
 
 import { QuantityStepper } from "@/components/common/QuantityStepper";
-import { useCartFly } from "@/components/cart/CartFlyContext";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { formatRupiah } from "@/lib/format";
 import { lineSubtotal } from "@/lib/pricing";
@@ -71,16 +70,9 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
     });
   }
 
-  const { flyFromElement } = useCartFly();
-
-  function handleAdd(event?: React.MouseEvent<HTMLButtonElement>): void {
+  function handleAdd(): void {
     if (!isVariantValid) {
       return;
-    }
-    // Thumbnail "terbang" ke keranjang sebelum sheet ditutup parent —
-    // elemen terbang fixed-position global jadi tetap terlihat.
-    if (event?.currentTarget) {
-      flyFromElement(event.currentTarget, item.image);
     }
     onAdd({
       variant: selectedVariant,

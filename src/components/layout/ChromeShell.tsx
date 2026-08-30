@@ -7,9 +7,6 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { MobileBottomBar } from "@/components/layout/MobileBottomBar";
 import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
-import { MotionProvider } from "@/components/common/MotionProvider";
-import { CartFlyProvider } from "@/components/cart/CartFlyContext";
-import { ScrollProgressBar } from "@/components/common/ScrollProgressBar";
 import { cn } from "@/lib/utils";
 
 // Sebelumnya penyembunyian chrome publik pada rute /admin/* mengandalkan
@@ -29,17 +26,14 @@ export function ChromeShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <MotionProvider>
       <div className={cn("flex min-h-screen flex-col", "pb-16 md:pb-0")}>
-        <ScrollProgressBar />
         <Header />
         <div className="flex-1">
-          <CartFlyProvider>{children}</CartFlyProvider>
+          {children}
         </div>
         <Footer />
         <WhatsAppFab />
         <MobileBottomBar />
       </div>
-    </MotionProvider>
   );
 }

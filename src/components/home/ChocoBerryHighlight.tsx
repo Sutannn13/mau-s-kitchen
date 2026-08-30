@@ -25,9 +25,10 @@ export async function ChocoBerryHighlight() {
           <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-gold/30" />
           <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-gold/30 shadow-warm-lg">
           <Image
-            src={category.image}
+            src="/assets/stitch/chocoberry-original-optimized.jpg"
             alt="Poster resmi ChocoBerry dengan buah segar dan coklat premium"
             fill
+            unoptimized
             quality={70}
             sizes="(max-width: 767px) 100vw, 45vw"
             className="object-cover"

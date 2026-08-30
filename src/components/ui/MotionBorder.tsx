@@ -1,7 +1,4 @@
-"use client";
-
 import type { ReactNode } from "react";
-import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 
@@ -21,11 +18,9 @@ export function MotionBorder({ children, className }: MotionBorderProps) {
         className,
       )}
     >
-      <motion.span
+      <span
         aria-hidden="true"
-        className="absolute -inset-[60%] bg-[conic-gradient(from_90deg,transparent_0deg,transparent_245deg,#E3C489_290deg,transparent_335deg)]"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 9, ease: "linear", repeat: Infinity }}
+        className="absolute inset-0 rounded-[2rem] border border-gold/30"
       />
       <div className="relative h-full rounded-[calc(2rem-1px)] bg-brown-deep">
         {children}

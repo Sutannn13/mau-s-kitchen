@@ -42,41 +42,15 @@ const brandValues: BrandValue[] = [
 export function BrandValuesSection() {
   return (
     <section className="relative overflow-hidden py-8 text-cream md:py-14">
-      {/* Crossfade slideshow background */}
+      {/* Satu background terkompresi. Slideshow empat foto dihapus karena
+          menambah >3 MB pada cold load tanpa menambah informasi. */}
       <Image
-        src="/assets/stitch/hero-food-plate.jpg"
+        src="/assets/stitch/hero-food-plate-optimized.jpg"
         alt=""
         fill
-        quality={60}
+        unoptimized
         sizes="100vw"
-        className="animate-crossfade object-cover blur-[2px] brightness-[0.45]"
-      />
-      <Image
-        src="/assets/stitch/taichan-daging.jpg"
-        alt=""
-        fill
-        loading="lazy"
-        quality={60}
-        sizes="100vw"
-        className="animate-crossfade animate-crossfade-2 object-cover blur-[2px] brightness-[0.45]"
-      />
-      <Image
-        src="/assets/stitch/chocoberry-original.jpg"
-        alt=""
-        fill
-        loading="lazy"
-        quality={60}
-        sizes="100vw"
-        className="animate-crossfade animate-crossfade-3 object-cover blur-[2px] brightness-[0.45]"
-      />
-      <Image
-        src="/assets/stitch/aren-latte.jpg"
-        alt=""
-        fill
-        loading="lazy"
-        quality={60}
-        sizes="100vw"
-        className="animate-crossfade animate-crossfade-4 object-cover blur-[2px] brightness-[0.45]"
+        className="object-cover blur-[1px] brightness-[0.45]"
       />
       {/* Overlay gelap gradient untuk readability */}
       <div className="absolute inset-0 bg-gradient-to-b from-brown-deep/70 via-brown-deep/60 to-brown-deep/80" aria-hidden="true" />
@@ -95,17 +69,13 @@ export function BrandValuesSection() {
           </h2>
         </div>
 
-        <div
-          aria-label="Keunggulan MAU'S Kitchen"
-          tabIndex={0}
-          className="-mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4"
-        >
+        <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
           {brandValues.map((value) => (
             <Card
               as="article"
               key={value.title}
               muted
-              className="relative w-[78vw] min-w-0 flex-none snap-center overflow-hidden border-cream/15 bg-white/[0.08] p-5 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:w-auto sm:flex-initial"
+              className="relative min-w-0 overflow-hidden border-cream/15 bg-white/[0.08] p-4 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:p-5"
             >
               <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${value.accent}`} aria-hidden="true" />
               <span className="mt-1 flex size-11 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold-light">
@@ -115,10 +85,10 @@ export function BrandValuesSection() {
                   strokeWidth={1.75}
                 />
               </span>
-              <h3 className="mt-5 text-lg font-bold text-cream">
+              <h3 className="mt-4 text-base font-bold text-cream sm:text-lg">
                 {value.title}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-cream/65">
+              <p className="mt-2 text-xs leading-5 text-cream/75 sm:text-sm sm:leading-6">
                 {value.description}
               </p>
             </Card>

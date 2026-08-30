@@ -1,11 +1,6 @@
 import { EyebrowRule } from "@/components/common/EyebrowRule";
 import { Reveal } from "@/components/common/Reveal";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui";
+import { ChevronDown } from "lucide-react";
 
 interface FaqItem {
   question: string;
@@ -57,14 +52,26 @@ export function FaqSection() {
           </h2>
         </Reveal>
 
-        <Accordion type="single" defaultValue="faq-0" collapsible className="space-y-2.5">
+        <div className="space-y-2.5">
           {faqItems.map((item, index) => (
-            <AccordionItem key={item.question} value={`faq-${index}`}>
-              <AccordionTrigger>{item.question}</AccordionTrigger>
-              <AccordionContent>{item.answer}</AccordionContent>
-            </AccordionItem>
+            <details
+              key={item.question}
+              open={index === 0}
+              className="group overflow-hidden rounded-2xl border border-brown-deep/10 bg-cream shadow-warm open:border-gold/35"
+            >
+              <summary className="btn-press flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-left text-sm font-bold text-brown-deep marker:content-none md:text-base">
+                {item.question}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-5 shrink-0 text-gold transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <p className="px-5 pb-4 text-sm leading-6 text-brown/85">
+                {item.answer}
+              </p>
+            </details>
           ))}
-        </Accordion>
+        </div>
       </div>
     </section>
   );

@@ -3,16 +3,22 @@
 import { useCallback, useDeferredValue, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "motion/react";
+import dynamic from "next/dynamic";
 import { CircleOff, LayoutGrid, Plus, Search, Star } from "lucide-react";
 
-import { Toast } from "@/components/common/Toast";
-import { ProductSheet } from "@/components/menu/ProductSheet";
-import { useCartFly } from "@/components/cart/CartFlyContext";
 import { formatRupiah } from "@/lib/format";
 import { useCart } from "@/lib/cart-store";
 import { cn } from "@/lib/utils";
 import type { MenuCategory, MenuItem, ProductSelection } from "@/types/menu";
+
+const ProductSheet = dynamic(
+  () => import("@/components/menu/ProductSheet").then((module) => module.ProductSheet),
+  { ssr: false },
+);
+const Toast = dynamic(
+  () => import("@/components/common/Toast").then((module) => module.Toast),
+  { ssr: false },
+);
 
 interface FeaturedMenuGridProps {
   categories: MenuCategory[];
@@ -20,9 +26,21 @@ interface FeaturedMenuGridProps {
 }
 
 const productImages: Readonly<Record<string, string>> = {
-  "taichan-daging": "/assets/stitch/taichan-daging.jpg",
-  "choco-berry-original": "/assets/stitch/chocoberry-original.jpg",
-  "aren-latte": "/assets/stitch/aren-latte.jpg",
+  "taichan-daging": "/assets/stitch/taichan-daging-optimized.jpg",
+  "choco-berry-original": "/assets/stitch/chocoberry-original-optimized.jpg",
+  "aren-latte": "/assets/stitch/aren-latte-optimized.jpg",
+};
+
+const categoryThumbnails: Readonly<Record<string, string>> = {
+  taichan: "/assets/menu/menu-taichan-thumb.jpg",
+  minuman: "/assets/menu/menu-minuman-thumb.jpg",
+  chocoberry: "/assets/menu/menu-chocoberry-thumb.jpg",
+};
+
+const categoryCards: Readonly<Record<string, string>> = {
+  taichan: "/assets/menu/menu-taichan-card.jpg",
+  minuman: "/assets/menu/menu-minuman-card.jpg",
+  chocoberry: "/assets/menu/menu-chocoberry-card.jpg",
 };
 
 export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
@@ -62,9 +80,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
     setActiveItem(null);
   }
 
-  const { flyFromElement } = useCartFly();
-
-  function handleQuickAdd(item: MenuItem, source?: Element): void {
+  function handleQuickAdd(item: MenuItem): void {
     if (!item.available) {
       return;
     }
@@ -75,9 +91,6 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
     }
 
     // Jika item tanpa varian (misal Taichan Daging / Aren Latte), langsung tambah ke keranjang
-    if (source) {
-      flyFromElement(source, item.image);
-    }
     addItem(item, {
       variant: null,
       addOns: [],
@@ -120,27 +133,19 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
           />
         </label>
 
-        <div className="-mx-3 mt-4 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0">
-          <div className="flex min-w-max gap-2.5 md:min-w-0 md:flex-wrap">
+        <div className="mt-4">
+          <div className="grid grid-cols-2 gap-2.5 md:flex md:flex-wrap">
             <button
               type="button"
               onClick={() => setActiveCategory("semua")}
               aria-pressed={activeCategory === "semua"}
               className={cn(
-                "relative flex min-h-14 items-center gap-2 rounded-2xl border px-3 text-xs font-bold transition-colors duration-200",
+                "relative flex min-h-14 min-w-0 items-center gap-2 rounded-2xl border px-3 text-xs font-bold transition-colors duration-200",
                 activeCategory === "semua"
                   ? "border-brown-deep bg-brown-deep text-cream shadow-warm"
                   : "border-gold/25 bg-cream-soft text-brown-deep hover:border-gold/60",
               )}
             >
-              {activeCategory === "semua" && (
-                <motion.span
-                  layoutId="category-active"
-                  className="absolute inset-0 rounded-2xl border border-brown-deep bg-brown-deep shadow-warm"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  style={{ zIndex: -1 }}
-                />
-              )}
               <span className="relative flex size-8 items-center justify-center rounded-xl bg-gold/15">
                 <LayoutGrid aria-hidden="true" className="size-4" />
               </span>
@@ -153,60 +158,55 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                 onClick={() => setActiveCategory(category.id)}
                 aria-pressed={activeCategory === category.id}
                 className={cn(
-                  "relative flex min-h-14 items-center gap-2 rounded-2xl border px-2.5 pr-3 text-xs font-bold transition-colors duration-200",
+                  "relative flex min-h-14 min-w-0 items-center gap-2 rounded-2xl border px-2.5 pr-3 text-xs font-bold transition-colors duration-200",
                   activeCategory === category.id
                     ? "border-brown-deep bg-brown-deep text-cream shadow-warm"
                     : "border-gold/25 bg-cream-soft text-brown-deep hover:border-gold/60",
                 )}
               >
-                {activeCategory === category.id && (
-                  <motion.span
-                    layoutId="category-active"
-                    className="absolute inset-0 rounded-2xl border border-brown-deep bg-brown-deep shadow-warm"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    style={{ zIndex: -1 }}
-                  />
-                )}
                 <span className="relative size-9 overflow-hidden rounded-xl border border-white/20 bg-cream">
                   <Image
-                    src={category.image}
+                    src={categoryThumbnails[category.id] ?? category.image}
                     alt=""
                     fill
+                    unoptimized
                     loading="lazy"
                     sizes="36px"
                     className="object-cover"
                   />
                 </span>
-                <span className="relative">{category.name}</span>
+                <span className="relative truncate">{category.name}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div className="mt-3 flex items-center justify-between border-t border-dashed border-gold/30 pt-4">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-brown/65">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-brown/80">
             {activeCategory === "semua"
               ? "Semua menu"
               : categories.find((category) => category.id === activeCategory)?.name}
           </p>
-          <p className="text-xs tabular-nums text-brown/55">
+          <p className="text-xs tabular-nums text-brown/75">
             {visibleItems.length} pilihan
           </p>
         </div>
 
         {visibleItems.length > 0 ? (
           <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-            {visibleItems.map((item, index) => {
+            {visibleItems.map((item) => {
               const startingPrice =
                 item.variants.length > 0
                   ? Math.min(...item.variants.map((variant) => variant.price))
                   : item.basePrice;
-              const imageSource = productImages[item.id] ?? item.image;
+              const imageSource =
+                productImages[item.id] ??
+                categoryCards[item.categoryId] ??
+                item.image;
               return (
                 <article
                   key={item.id}
-                  className="group flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-brown-deep/10 bg-white shadow-[0_5px_18px_rgba(62,35,24,0.07)] transition duration-300 motion-safe:animate-card-enter motion-safe:hover:-translate-y-1 hover:border-gold/45 hover:shadow-warm-lg"
-                  style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
+                  className="group flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-brown-deep/10 bg-white shadow-[0_5px_18px_rgba(62,35,24,0.07)] transition duration-300 motion-safe:hover:-translate-y-1 hover:border-gold/45 hover:shadow-warm-lg"
                 >
                   <div className="relative aspect-square overflow-hidden bg-cream-soft sm:aspect-[4/3]">
                     <Link
@@ -218,6 +218,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                         src={imageSource}
                         alt={`Foto ${item.name}`}
                         fill
+                        unoptimized
                         loading="lazy"
                         quality={60}
                         sizes="(max-width: 479px) calc((100vw - 56px) / 2), (max-width: 1023px) calc((100vw - 88px) / 2), 360px"
@@ -252,13 +253,13 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                         {item.name}
                       </Link>
                     </h3>
-                    <p className="mt-1 hidden line-clamp-2 text-xs leading-5 text-brown/65 sm:block">
+                    <p className="mt-1 hidden line-clamp-2 text-xs leading-5 text-brown/80 sm:block">
                       {item.description}
                     </p>
                     <div className="mt-auto flex items-end justify-between gap-2 border-t border-dashed border-gold/20 pt-3">
                       <p className="min-w-0 text-xs font-bold tabular-nums text-brown-deep sm:text-sm sm:text-gold">
                         {item.variants.length > 0 && (
-                          <span className="mb-0.5 block text-[9px] font-semibold uppercase tracking-wide text-brown/50">
+                          <span className="mb-0.5 block text-[9px] font-semibold uppercase tracking-wide text-brown/80">
                             Mulai
                           </span>
                         )}
@@ -266,7 +267,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                       </p>
                       <button
                         type="button"
-                        onClick={(event) => handleQuickAdd(item, event.currentTarget)}
+                         onClick={() => handleQuickAdd(item)}
                         disabled={!item.available}
                         aria-label={`Tambah ${item.name}`}
                         className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brown-deep text-cream shadow-warm transition-colors hover:bg-brown disabled:cursor-not-allowed disabled:bg-neutral-300"
@@ -283,7 +284,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
           <div className="mt-4 rounded-2xl border border-dashed border-gold/40 bg-cream-soft px-5 py-10 text-center">
             <Search aria-hidden="true" className="mx-auto size-6 text-gold" />
             <p className="mt-3 text-sm font-bold text-brown-deep">Menu tidak ditemukan</p>
-            <p className="mt-1 text-xs leading-5 text-brown/65">
+            <p className="mt-1 text-xs leading-5 text-brown/80">
               Coba kata lain atau pilih kategori berbeda.
             </p>
           </div>
