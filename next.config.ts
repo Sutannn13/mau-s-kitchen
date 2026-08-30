@@ -1,18 +1,9 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 // Aktifkan integrasi `wrangler` saat `next dev` (binding env R2/D1/vars dll).
 // No-op di environment lain. Lihat: https://opennext.js.org/cloudflare
-// Import di-guard karena Cloudflare Pages Git Integration menjalankan
-// `vercel build` yang tidak menginstall @opennextjs/cloudflare/wrangler.
-if (process.env.NODE_ENV === "development") {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
-    initOpenNextCloudflareForDev();
-  } catch {
-    // No-op: @opennextjs/cloudflare belum terinstall di beberapa environment
-  }
-}
+initOpenNextCloudflareForDev();
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const contentSecurityPolicy = [
