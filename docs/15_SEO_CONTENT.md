@@ -18,6 +18,10 @@
 
 ## 15.2 Metadata per halaman
 
+Setiap halaman publik menetapkan `alternates.canonical` ke URL utamanya.
+Halaman kategori dan produk membangun canonical dari parameter route yang
+sudah divalidasi, sehingga variasi query string tidak membentuk URL duplikat.
+
 | Halaman | Title (≤ 60 karakter) | Description (≤ 155 karakter) |
 |---|---|---|
 | `/` | MAU'S Kitchen — Taichan, Minuman & ChocoBerry | Sate taichan pedas, minuman segar, dan ChocoBerry buah coklat premium. Pesan online, bayar QRIS. Homemade with Love. |

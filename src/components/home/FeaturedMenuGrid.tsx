@@ -217,7 +217,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                         src={imageSource}
                         alt={`Foto ${item.name}`}
                         fill
-                        quality={72}
+                        quality={70}
                         sizes="(max-width: 479px) calc((100vw - 56px) / 2), (max-width: 1023px) calc((100vw - 88px) / 2), 360px"
                         className={cn(
                           "object-cover transition duration-500 motion-safe:group-hover:scale-105",
@@ -246,7 +246,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
 
                   <div className="flex flex-1 flex-col p-3 sm:p-4">
                     <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-5 text-brown-deep sm:min-h-0 sm:text-base">
-                      <Link href={`/produk/${item.id}`} className="hover:text-brown">
+                      <Link href={`/produk/${item.id}`} className="inline-flex min-h-11 items-center hover:text-brown">
                         {item.name}
                       </Link>
                     </h3>

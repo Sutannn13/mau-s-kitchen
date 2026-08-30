@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { BrandValuesSection } from "@/components/home/BrandValuesSection";
 import { ChocoBerryHighlight } from "@/components/home/ChocoBerryHighlight";
 import { ClosingCta } from "@/components/home/ClosingCta";
@@ -6,8 +7,13 @@ import { FeaturedMenuSection } from "@/components/home/FeaturedMenuSection";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HowToOrderSection } from "@/components/home/HowToOrderSection";
 import { StatsStrip } from "@/components/home/StatsStrip";
+import { LayoutGrid, Star, UtensilsCrossed, Wallet } from "lucide-react";
 import { getEnabledPaymentMethods } from "@/config/payment";
 import { getCachedMenu } from "@/lib/menu-data";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function HomePage() {
   const menu = await getCachedMenu();
@@ -19,10 +25,10 @@ export default async function HomePage() {
   const paymentMethodCount = getEnabledPaymentMethods().length;
 
   const stats = [
-    { value: menuCount, suffix: "", label: "Pilihan menu" },
-    { value: categoryCount, suffix: "", label: "Kategori" },
-    { value: bestSellerCount, suffix: "", label: "Menu unggulan" },
-    { value: paymentMethodCount, suffix: "", label: "Cara bayar" },
+    { value: menuCount, suffix: "", label: "Pilihan menu", icon: UtensilsCrossed },
+    { value: categoryCount, suffix: "", label: "Kategori", icon: LayoutGrid },
+    { value: bestSellerCount, suffix: "", label: "Menu unggulan", icon: Star },
+    { value: paymentMethodCount, suffix: "", label: "Cara bayar", icon: Wallet },
   ];
 
   return (

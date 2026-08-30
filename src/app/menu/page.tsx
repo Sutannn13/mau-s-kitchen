@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "Menu & Harga",
   description:
     "Lihat menu lengkap Taichan, Minuman, dan ChocoBerry beserta harganya. Pesan langsung lewat WhatsApp.",
+  alternates: { canonical: "/menu" },
 };
 
 // Ketersediaan dari DB tampil maksimal 60 detik (docs/09 §9.6).

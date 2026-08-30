@@ -55,7 +55,7 @@ export function CopyButton({
         void handleCopy();
       }}
       className={cn(
-        "inline-flex min-h-8 sm:min-h-9 items-center gap-1.5 sm:gap-2 rounded-full border border-gold/40 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold text-brown-deep transition-colors hover:bg-gold/15",
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full border border-gold/40 px-3 text-[11px] font-bold text-brown-deep transition-colors hover:bg-gold/15 sm:gap-2 sm:text-xs",
         className,
       )}
     >

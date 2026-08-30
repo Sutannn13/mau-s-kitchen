@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { EyebrowRule } from "@/components/common/EyebrowRule";
 import { Reveal } from "@/components/common/Reveal";
 import { FeaturedMenuGrid } from "@/components/home/FeaturedMenuGrid";
 import { getCachedMenu } from "@/lib/menu-data";
@@ -16,7 +17,7 @@ export async function FeaturedMenuSection() {
         <Reveal className="mb-6 flex items-end justify-between gap-4 md:mb-8">
           <div className="max-w-2xl">
             <div className="mb-2 flex items-center gap-2.5">
-              <span className="h-px w-8 bg-gold" />
+              <EyebrowRule />
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-brown">
                 Menu hari ini
               </p>

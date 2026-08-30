@@ -7,15 +7,18 @@ import { ArrowDown, ArrowRight, Flame, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { StoreStatusBadge } from "@/components/common/StoreStatusBadge";
+import { EyebrowRule } from "@/components/common/EyebrowRule";
+import { AmbientBackground } from "@/components/common/AmbientBackground";
 
 // Heading dipisah per kata untuk stagger reveal yang lebih dinamis
 const headingLine1 = "Manisnya Bikin Senyum.".split(" ");
 const headingLine2 = "Pedasnya Bikin Nagih.".split(" ");
 
 const wordVariants: Variants = {
-  hidden: { opacity: 0, y: 12 },
+  // Transform-only: teks tetap terlihat tanpa JS dan atribut SSR tetap sama.
+  // MotionConfig reducedMotion="user" otomatis melucuti transform.
+  hidden: { y: 12 },
   visible: (i: number) => ({
-    opacity: 1,
     y: 0,
     transition: {
       delay: 0.1 + i * 0.045,
@@ -42,8 +45,17 @@ export function HeroContent() {
       ref={heroRef}
       className="relative overflow-hidden bg-cream pb-12 pt-5 md:pb-20 md:pt-10"
     >
-      <div className="mx-auto w-full max-w-content px-4 md:px-8">
-        <div className="relative rounded-[2rem] border border-brown-deep/10 bg-cream-soft p-4 shadow-[0_18px_50px_rgba(62,35,24,0.10)] md:p-7 lg:grid lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-10 lg:p-9">
+      {/* Latar ambient (docs/08 upgrade §8): gradient mesh warm + foto makanan
+          ambient blur + orbs + grain. Mengganti bg-cream solid yang "klasik"
+          dengan kedalaman, tanpa mengganggu readability konten. */}
+      <AmbientBackground
+        tone="warm"
+      />
+
+      <div className="relative mx-auto w-full max-w-content px-4 md:px-8">
+        <div className="relative rounded-[2rem] border border-brown-deep/10 bg-cream-soft/80 p-4 shadow-[0_18px_50px_rgba(62,35,24,0.10)] backdrop-blur-sm md:grid md:grid-cols-[0.95fr_1.05fr] md:items-center md:gap-6 md:p-7 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:p-9">
+          {/* Frame dekoratif lapis kedua — sekarang subtle gold ring agar
+              selaras dengan orbs ambient di latar. */}
           <span className="pointer-events-none absolute -bottom-2 -right-2 -z-10 h-full w-full rounded-[2rem] border border-gold/40" />
 
           <div className="flex flex-col items-start px-1 pb-6 pt-1 md:px-2 lg:pb-0">
@@ -58,11 +70,11 @@ export function HeroContent() {
               className="mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brown motion-safe:animate-reveal"
               style={{ animationDelay: "80ms" }}
             >
-              <span className="h-px w-8 bg-gold" aria-hidden="true" />
+              <EyebrowRule />
               Homemade with Love
             </p>
 
-            <h1 className="font-serif text-[2.35rem] font-bold leading-[1.04] tracking-[-0.035em] text-brown-deep sm:text-5xl lg:text-[4rem] lg:leading-[1.02]">
+            <h1 className="font-serif text-[2.35rem] font-bold leading-[1.04] tracking-[-0.035em] text-brown-deep sm:text-5xl md:text-[2.5rem] lg:text-[4rem] lg:leading-[1.02]">
               {headingLine1.map((word, i) => (
                 <motion.span
                   key={`${word}-${i}`}
@@ -148,7 +160,7 @@ export function HeroContent() {
                   fetchPriority="high"
                   quality={75}
                   sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 1023px) calc(100vw - 64px), (max-width: 1263px) calc((100vw - 120px) / 2), 572px"
-                  className="object-cover"
+                  className="object-cover motion-safe:animate-kenburns"
                 />
               </motion.div>
               <motion.div

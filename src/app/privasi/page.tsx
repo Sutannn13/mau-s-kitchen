@@ -6,6 +6,7 @@ import { getOrderRetentionDays } from "@/lib/privacy";
 export const metadata: Metadata = {
   title: "Kebijakan Privasi",
   description: "Cara MAU'S Kitchen menggunakan dan melindungi data pesanan pelanggan.",
+  alternates: { canonical: "/privasi" },
 };
 
 export default function PrivacyPage() {

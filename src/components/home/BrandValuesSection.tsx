@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { CreditCard, Flame, Home, Leaf } from "lucide-react";
 
+import { EyebrowRule } from "@/components/common/EyebrowRule";
 import { Card } from "@/components/ui";
 
 interface BrandValue {
@@ -46,7 +47,7 @@ export function BrandValuesSection() {
         src="/assets/stitch/hero-food-plate.jpg"
         alt=""
         fill
-        quality={50}
+        quality={60}
         sizes="100vw"
         className="animate-crossfade object-cover blur-[2px] brightness-[0.45]"
       />
@@ -55,7 +56,7 @@ export function BrandValuesSection() {
         alt=""
         fill
         loading="lazy"
-        quality={50}
+        quality={60}
         sizes="100vw"
         className="animate-crossfade animate-crossfade-2 object-cover blur-[2px] brightness-[0.45]"
       />
@@ -64,7 +65,7 @@ export function BrandValuesSection() {
         alt=""
         fill
         loading="lazy"
-        quality={50}
+        quality={60}
         sizes="100vw"
         className="animate-crossfade animate-crossfade-3 object-cover blur-[2px] brightness-[0.45]"
       />
@@ -73,7 +74,7 @@ export function BrandValuesSection() {
         alt=""
         fill
         loading="lazy"
-        quality={50}
+        quality={60}
         sizes="100vw"
         className="animate-crossfade animate-crossfade-4 object-cover blur-[2px] brightness-[0.45]"
       />
@@ -83,24 +84,28 @@ export function BrandValuesSection() {
       <div className="relative mx-auto w-full max-w-content px-4 md:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <div className="mb-2 flex items-center justify-center gap-2.5">
-            <span className="h-px w-8 bg-gold-light" aria-hidden="true" />
+            <EyebrowRule variant="light" />
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">
               Kenapa MAU&apos;S Kitchen
             </p>
-            <span className="h-px w-8 bg-gold-light" aria-hidden="true" />
+            <EyebrowRule variant="light" />
           </div>
           <h2 className="mt-3 font-serif text-2xl font-bold text-cream md:text-4xl">
             Sederhana, segar, dan dibuat sepenuh hati
           </h2>
         </div>
 
-        <div className="-mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4">
+        <div
+          aria-label="Keunggulan MAU'S Kitchen"
+          tabIndex={0}
+          className="-mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4"
+        >
           {brandValues.map((value) => (
             <Card
               as="article"
               key={value.title}
               muted
-              className="relative min-w-[78vw] shrink-0 snap-center overflow-hidden border-cream/15 bg-white/[0.08] p-5 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:min-w-0 sm:shrink"
+              className="relative w-[78vw] min-w-0 flex-none snap-center overflow-hidden border-cream/15 bg-white/[0.08] p-5 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:w-auto sm:flex-initial"
             >
               <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${value.accent}`} aria-hidden="true" />
               <span className="mt-1 flex size-11 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold-light">

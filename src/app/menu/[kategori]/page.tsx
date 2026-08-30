@@ -63,6 +63,7 @@ export async function generateMetadata({
   return {
     title: copy.title,
     description: copy.description.replace("{mulai}", mulai),
+    alternates: { canonical: `/menu/${kategori}` },
   };
 }
 

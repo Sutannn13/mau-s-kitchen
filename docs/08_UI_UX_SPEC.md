@@ -18,7 +18,7 @@ Lebar konten maksimum: `1200px`, padding horizontal `16px` (mobile) / `32px` (de
 
 ### Sistem primitif & tangga z-index (upgrade Batch 1, 2026-08)
 
-Lapisan primitif dalam-repo `src/components/ui/` (nol dependensi baru) menyatukan komponen token-driven: `Button`, `IconButton`, `Input`, `Textarea`, `Label`, `Badge`, `Card`, `Skeleton`, `Divider`, plus `Dialog` + hook `useDialogA11y` yang diekstrak dari a11y `ProductSheet` (focus-trap, Esc, restore fokus, scroll-lock). `motion/react` + keyframe Tailwind tetap satu-satunya mesin animasi; rute pelanggan dibungkus `MotionProvider` (`<MotionConfig reducedMotion="user">`) sebagai client island di root layout — admin tetap pakai `MotionProvider`-nya sendiri di `(panel)/layout.tsx`.
+Lapisan primitif dalam-repo `src/components/ui/` menyatukan komponen token-driven: `Button`, `IconButton`, `Input`, `Textarea`, `Label`, `Badge`, `Card`, `Skeleton`, `Divider`, `Dialog`, serta `Accordion` berbasis Radix untuk semantik dan navigasi keyboard. Hook `useDialogA11y` diekstrak dari a11y `ProductSheet` (focus-trap, Esc, restore fokus, scroll-lock). `motion/react` + keyframe Tailwind tetap mesin animasi; rute pelanggan dibungkus `MotionProvider` (`<MotionConfig reducedMotion="user">`) sebagai client island di root layout — admin tetap pakai `MotionProvider`-nya sendiri di `(panel)/layout.tsx`.
 
 Tangga z-index terpadu (token Tailwind, sumber nilai CSS var di `globals.css`):
 
@@ -60,7 +60,7 @@ Keyframe aksen tambahan (Batch 6): `animate-halo` (denyut ambient 2,6s pada lang
 | CTA primer | "Pesan Sekarang" menuju katalog ringkas dalam halaman |
 | CTA sekunder | "Jelajahi Menu" menuju `/menu` |
 | Badge | `StoreStatusBadge` (ikon+teks Buka/Tutup/konfirmasi-WA, dihitung klien via `useSyncExternalStore` dari `lib/store-hours.ts`; TBD → teks konfirmasi, tidak mengarang status) |
-| Entrance | Reveal kata-per-kata 350ms; parallax, count-up, crossfade, dan motion border tunduk pada `prefers-reduced-motion` |
+| Entrance | Reveal kata-per-kata transform-only 350ms; parallax, crossfade, dan motion border tunduk pada `prefers-reduced-motion`. Konten tidak disembunyikan lewat opacity sehingga tetap terbaca tanpa JavaScript |
 
 ### Statistik dan nilai brand
 
@@ -94,7 +94,7 @@ disatukan menjadi satu katalog ringkas yang tetap membaca data hidup dari
 
 ### FAQ dan CTA akhir
 
-- FAQ accordion memakai `AnimatePresence`, dapat dioperasikan dengan keyboard,
+- FAQ memakai primitive Radix Accordion, dapat dioperasikan dengan keyboard,
   dan copy mengikuti kontrak bisnis: ongkir ditetapkan admin, waktu siap
   bergantung menu/antrean, serta pembatalan pelanggan hanya sebelum Diproses.
 - CTA akhir memakai `MotionBorder` dan efek magnetik pointer yang dinonaktifkan

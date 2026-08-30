@@ -12,4 +12,12 @@ export { Divider } from "./Divider";
 export { Dialog, type DialogProps } from "./Dialog";
 export { ConfirmButton, type ConfirmButtonProps } from "./ConfirmButton";
 export { MotionBorder } from "./MotionBorder";
+// Accordion (docs/08 upgrade §6 — shadcn approach): Radix primitive sebagai
+// aksesibilitas, styled penuh pakai token brand. Lihat Accordion.tsx.
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "./Accordion";
 export { useDialogA11y } from "./useDialogA11y";

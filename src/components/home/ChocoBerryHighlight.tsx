@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
+import { EyebrowRule } from "@/components/common/EyebrowRule";
 import { formatRupiah } from "@/lib/format";
 import { getCachedMenu } from "@/lib/menu-data";
 
@@ -41,7 +42,7 @@ export async function ChocoBerryHighlight() {
             </span>
           </div>
           <p className="mt-4 flex items-center gap-2.5 text-xs font-bold uppercase tracking-[0.2em] text-gold-light">
-            <span className="h-px w-8 bg-gold-light" aria-hidden="true" />
+            <EyebrowRule variant="light" />
             <Sparkles aria-hidden="true" className="size-4" />
             ChocoBerry by MAU&apos;S Kitchen
           </p>

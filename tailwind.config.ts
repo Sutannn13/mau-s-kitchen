@@ -101,7 +101,20 @@ const config: Config = {
       // Animasi masuk Toast + ProductSheet (docs/08_UI_UX_SPEC.md §8.3).
       // Hormati prefers-reduced-motion lewat kelas motion-reduce:animate-none
       // (dan jaring pengaman global di globals.css).
-      keyframes: {        "fade-in": {
+      keyframes: {
+        // Accordion (Radix + shadcn approach, src/components/ui/Accordion.tsx).
+        // Radix menyimpan tinggi konten di var --radix-accordion-content-height;
+        // kita animasikan dari 0 ke nilai itu (dan sebaliknya) lewat keyframe
+        // CSS — lebih andal lintas browser daripada motion height:auto.
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
@@ -159,6 +172,8 @@ const config: Config = {
       },
       animation: {
         "fade-in": "fade-in 200ms ease-out",
+        "accordion-down": "accordion-down 0.3s ease-in-out",
+        "accordion-up": "accordion-up 0.3s ease-in-out",
         "sheet-up": "sheet-up 250ms cubic-bezier(0.22, 1, 0.36, 1)",
         "toast-in": "toast-in 200ms ease-out",
         "drawer-in": "drawer-in 220ms cubic-bezier(0.22, 1, 0.36, 1)",
