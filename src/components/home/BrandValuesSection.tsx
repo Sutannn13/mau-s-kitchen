@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { CreditCard, Flame, Home, Leaf } from "lucide-react";
 
@@ -7,6 +8,7 @@ interface BrandValue {
   title: string;
   description: string;
   Icon: LucideIcon;
+  accent: string;
 }
 
 const brandValues: BrandValue[] = [
@@ -14,51 +16,104 @@ const brandValues: BrandValue[] = [
     title: "Dapur Rumahan",
     description: "Dimasak sendiri dengan rasa rumah yang hangat dan konsisten.",
     Icon: Home,
+    accent: "from-gold to-gold-light",
   },
   {
     title: "Bahan Segar",
     description: "Buah dan ayam dipilih untuk setiap sajian yang kami siapkan.",
     Icon: Leaf,
+    accent: "from-pistachio to-success",
   },
   {
     title: "Sambal Racikan",
     description: "Sambal taichan racikan sendiri dengan rasa pedas yang khas.",
     Icon: Flame,
+    accent: "from-chili to-rose",
   },
   {
     title: "Bayar Mudah",
     description: "Pilih metode pembayaran yang sedang tersedia saat checkout.",
     Icon: CreditCard,
+    accent: "from-berry to-chili",
   },
 ];
 
 export function BrandValuesSection() {
   return (
-    <section className="bg-cream-soft py-12 md:py-24">
-      <div className="mx-auto w-full max-w-content px-4 md:px-8">
+    <section className="relative overflow-hidden py-8 text-cream md:py-14">
+      {/* Crossfade slideshow background */}
+      <Image
+        src="/assets/stitch/hero-food-plate.jpg"
+        alt=""
+        fill
+        quality={50}
+        sizes="100vw"
+        className="animate-crossfade object-cover blur-[2px] brightness-[0.45]"
+      />
+      <Image
+        src="/assets/stitch/taichan-daging.jpg"
+        alt=""
+        fill
+        loading="lazy"
+        quality={50}
+        sizes="100vw"
+        className="animate-crossfade animate-crossfade-2 object-cover blur-[2px] brightness-[0.45]"
+      />
+      <Image
+        src="/assets/stitch/chocoberry-original.jpg"
+        alt=""
+        fill
+        loading="lazy"
+        quality={50}
+        sizes="100vw"
+        className="animate-crossfade animate-crossfade-3 object-cover blur-[2px] brightness-[0.45]"
+      />
+      <Image
+        src="/assets/stitch/aren-latte.jpg"
+        alt=""
+        fill
+        loading="lazy"
+        quality={50}
+        sizes="100vw"
+        className="animate-crossfade animate-crossfade-4 object-cover blur-[2px] brightness-[0.45]"
+      />
+      {/* Overlay gelap gradient untuk readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-brown-deep/70 via-brown-deep/60 to-brown-deep/80" aria-hidden="true" />
+
+      <div className="relative mx-auto w-full max-w-content px-4 md:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            Kenapa MAU&apos;S Kitchen
-          </p>
-          <h2 className="mt-3 font-serif text-2xl font-bold text-brown-deep md:text-4xl">
+          <div className="mb-2 flex items-center justify-center gap-2.5">
+            <span className="h-px w-8 bg-gold-light" aria-hidden="true" />
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gold-light">
+              Kenapa MAU&apos;S Kitchen
+            </p>
+            <span className="h-px w-8 bg-gold-light" aria-hidden="true" />
+          </div>
+          <h2 className="mt-3 font-serif text-2xl font-bold text-cream md:text-4xl">
             Sederhana, segar, dan dibuat sepenuh hati
           </h2>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="-mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4">
           {brandValues.map((value) => (
-            <Card as="article" key={value.title} className="p-5">
-              <span className="flex size-11 items-center justify-center rounded-full bg-gold/15 text-gold">
+            <Card
+              as="article"
+              key={value.title}
+              muted
+              className="relative min-w-[78vw] shrink-0 snap-center overflow-hidden border-cream/15 bg-white/[0.08] p-5 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:min-w-0 sm:shrink"
+            >
+              <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${value.accent}`} aria-hidden="true" />
+              <span className="mt-1 flex size-11 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold-light">
                 <value.Icon
                   aria-hidden="true"
                   className="size-5"
                   strokeWidth={1.75}
                 />
               </span>
-              <h3 className="mt-5 text-lg font-bold text-brown-deep">
+              <h3 className="mt-5 text-lg font-bold text-cream">
                 {value.title}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-brown/70">
+              <p className="mt-2 text-sm leading-6 text-cream/65">
                 {value.description}
               </p>
             </Card>

@@ -27,33 +27,41 @@ const orderSteps: OrderStep[] = [
   },
   {
     title: "Bayar & Konfirmasi",
-    description: "Pilih cara bayar lalu kirim rincian pesanan ke admin.",
+    description: "Buat pesanan, lalu ikuti instruksi pembayaran atau status pesanan.",
     Icon: QrCode,
   },
 ];
 
 export function HowToOrderSection() {
   return (
-    <section className="bg-cream py-12 md:py-24">
+    <section className="bg-cream py-10 md:py-16">
       <div className="mx-auto w-full max-w-content px-4 md:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">
-            Mudah dan tanpa daftar akun
-          </p>
+          <div className="mb-2 flex items-center justify-center gap-2.5">
+            <span className="h-px w-8 bg-gold" aria-hidden="true" />
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brown">
+              Mudah dan tanpa daftar akun
+            </p>
+            <span className="h-px w-8 bg-gold" aria-hidden="true" />
+          </div>
           <h2 className="mt-3 font-serif text-2xl font-bold text-brown-deep md:text-4xl">
             Empat langkah sampai pesanan dikonfirmasi
           </h2>
         </div>
 
-        <ol className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="relative mt-8 md:mt-10">
+          {/* Garis penghubung horizontal di desktop */}
+          <span className="absolute left-[12%] right-[12%] top-[22px] hidden h-px border-t border-dashed border-gold/40 lg:block" aria-hidden="true" />
+          <ol className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:grid md:grid-cols-2 md:px-0 lg:grid-cols-4">
           {orderSteps.map((step, index) => (
             <Card
               as="li"
               key={step.title}
-              className="relative p-5"
+              className="relative min-w-[78vw] shrink-0 snap-center overflow-hidden p-5 md:min-w-0 md:shrink"
             >
+              <span className="absolute inset-x-0 top-0 h-1 bg-gold" />
               <div className="flex items-center justify-between">
-                <span className="flex size-11 items-center justify-center rounded-full bg-brown-deep text-cream">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-brown-deep text-cream shadow-warm">
                   <step.Icon
                     aria-hidden="true"
                     className="size-5"
@@ -73,6 +81,7 @@ export function HowToOrderSection() {
             </Card>
           ))}
         </ol>
+        </div>
       </div>
     </section>
   );

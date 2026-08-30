@@ -11,4 +11,5 @@ export { Skeleton } from "./Skeleton";
 export { Divider } from "./Divider";
 export { Dialog, type DialogProps } from "./Dialog";
 export { ConfirmButton, type ConfirmButtonProps } from "./ConfirmButton";
+export { MotionBorder } from "./MotionBorder";
 export { useDialogA11y } from "./useDialogA11y";

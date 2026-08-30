@@ -37,21 +37,22 @@ export function MenuCard({ item, onOpen, priority = false }: MenuCardProps) {
       }}
       disabled={!item.available}
       aria-disabled={!item.available}
+      aria-label={`Tambah ${item.name}`}
       className={cn(
-        "inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-xs font-bold transition-colors",
+        "inline-flex size-11 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-warm transition-colors sm:w-auto sm:gap-1.5 sm:px-4",
         item.available
           ? "bg-brown-deep text-cream hover:bg-brown"
           : "cursor-not-allowed bg-neutral-200 text-neutral-400",
       )}
     >
       <Plus aria-hidden="true" className="size-4" strokeWidth={2} />
-      Tambah
+      <span className="hidden sm:inline">Tambah</span>
     </button>
   );
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gold/20 bg-cream-soft shadow-warm">
-      <div className="relative aspect-[4/5] overflow-hidden">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-brown-deep/10 bg-white shadow-[0_5px_18px_rgba(62,35,24,0.07)] transition duration-300 hover:border-gold/45 hover:shadow-warm-lg">
+      <div className="relative aspect-square overflow-hidden bg-cream-soft sm:aspect-[4/5]">
         <Link
           href={productHref}
           aria-label={`Lihat detail ${item.name}`}
@@ -63,7 +64,7 @@ export function MenuCard({ item, onOpen, priority = false }: MenuCardProps) {
             fill
             priority={priority}
             quality={70}
-            sizes="(max-width: 479px) 92vw, (max-width: 767px) 46vw, (max-width: 1023px) 46vw, (max-width: 1279px) 31vw, 23vw"
+            sizes="(max-width: 479px) calc((100vw - 44px) / 2), (max-width: 767px) calc((100vw - 64px) / 2), (max-width: 1023px) 46vw, (max-width: 1279px) 31vw, 23vw"
             className={cn(
               "object-cover transition duration-300 motion-safe:group-hover:scale-105",
               !item.available && "grayscale",
@@ -72,7 +73,7 @@ export function MenuCard({ item, onOpen, priority = false }: MenuCardProps) {
         </Link>
 
         {item.isBestSeller && (
-          <span className="absolute right-3 top-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-cream/95 px-3 text-xs font-bold text-brown-deep shadow-warm">
+          <span className="absolute left-2 top-2 inline-flex min-h-7 items-center gap-1 rounded-full bg-cream/95 px-2 text-[10px] font-bold text-brown-deep shadow-warm sm:left-auto sm:right-3 sm:top-3 sm:min-h-11 sm:gap-1.5 sm:px-3 sm:text-xs">
             <Star
               aria-hidden="true"
               className="size-4 fill-gold text-gold"
@@ -96,18 +97,18 @@ export function MenuCard({ item, onOpen, priority = false }: MenuCardProps) {
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="text-[17px] font-semibold leading-snug text-brown-deep">
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        <h3 className="line-clamp-2 min-h-10 text-sm font-bold leading-5 text-brown-deep sm:min-h-0 sm:text-[17px] sm:font-semibold sm:leading-snug">
           <Link href={productHref} className="transition-colors hover:text-brown">
             {item.name}
           </Link>
         </h3>
-        <p className="mt-1.5 line-clamp-2 min-h-10 text-sm leading-5 text-brown/70">
+        <p className="mt-1.5 hidden line-clamp-2 min-h-10 text-sm leading-5 text-brown/70 sm:block">
           {item.description}
         </p>
 
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-4">
-          <p className="flex items-center gap-1.5 text-sm font-bold tabular-nums text-gold">
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3 sm:pt-4">
+          <p className="min-w-0 text-xs font-bold tabular-nums text-gold sm:flex sm:items-center sm:gap-1.5 sm:text-sm">
             {priceLabel}
             {item.addOns.length > 0 && (
               <span className="inline-flex items-center" title="Tersedia tambahan">

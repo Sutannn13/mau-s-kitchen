@@ -8,7 +8,7 @@ Spesifikasi tiap halaman dan komponen. Semua ukuran mengacu pendekatan **mobile-
 
 | Nama | Lebar | Kolom grid menu |
 |---|---|---|
-| `xs` | 360–479px | 1 |
+| `xs` | 360–479px | 2 |
 | `sm` | 480–767px | 2 |
 | `md` | 768–1023px | 2 |
 | `lg` | 1024–1279px | 3 |
@@ -53,33 +53,52 @@ Keyframe aksen tambahan (Batch 6): `animate-halo` (denyut ambient 2,6s pada lang
 
 | Elemen | Spesifikasi |
 |---|---|
-| Latar | Gradien `cream` → `cream-soft`, ornamen floral tipis di sudut |
-| Foto focal | Poster kategori (Taichan) — split editorial di desktop (teks ↔ foto), stacked di seluler; `priority` LCP, tanpa animasi entrance (upgrade Batch 2) |
-| Logo | Ornamen kecil 48px bersama StoreStatusBadge (bukan seluruh hero — memperbaiki ritme mobile agar CTA utama di atas lipatan 360px) |
-| Judul | "Taichan Pedas, Minuman Segar, Dessert Coklat Premium" |
-| Subjudul | "Homemade with Love — dibuat segar setiap hari" |
-| CTA primer | "Lihat Menu" (tombol `gold`, teks `brown-deep`, `rounded-full`) |
-| CTA sekunder | "Pesan via WhatsApp" (outline `brown`) |
+| Latar | `cream` dengan panel `cream-soft`, border coklat tipis, dan frame emas offset |
+| Foto focal | Foto sajian resmi — split editorial di desktop, stacked di seluler; `priority` LCP. Parallax hanya menggerakkan layer foto di dalam frame sehingga layout tidak bergeser |
+| Judul | "Manisnya Bikin Senyum. Pedasnya Bikin Nagih." dengan reveal kata-per-kata singkat tanpa blur |
+| Subjudul | Ringkasan lini ChocoBerry dan Sate Taichan, tanpa klaim harga/waktu operasional baru |
+| CTA primer | "Pesan Sekarang" menuju katalog ringkas dalam halaman |
+| CTA sekunder | "Jelajahi Menu" menuju `/menu` |
 | Badge | `StoreStatusBadge` (ikon+teks Buka/Tutup/konfirmasi-WA, dihitung klien via `useSyncExternalStore` dari `lib/store-hours.ts`; TBD → teks konfirmasi, tidak mengarang status) |
-| Entrance | Blok teks `animate-reveal` (fade+8px, sekali, 350ms) + `motion-reduce:animate-none` |
+| Entrance | Reveal kata-per-kata 350ms; parallax, count-up, crossfade, dan motion border tunduk pada `prefers-reduced-motion` |
 
-### Kartu tiga lini produk
+### Statistik dan nilai brand
 
-```
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│  🍢 TAICHAN  │  │  🧋 MINUMAN  │  │ 🍓 CHOCOBERRY│
-│  mulai       │  │  mulai       │  │  mulai       │
-│  Rp35.000    │  │  Rp10.000    │  │  Rp25.000    │
-│  [Lihat >]   │  │  [Lihat >]   │  │  [Lihat >]   │
-└─────────────┘  └─────────────┘  └─────────────┘
-```
+- Strip statistik mengambil jumlah menu, kategori, best seller, dan metode
+  pembayaran aktif dari data/config hidup. Angka tidak ditulis manual.
+- Section nilai brand memakai empat foto resmi secara crossfade opacity 20s,
+  overlay gelap, dan kartu `backdrop-blur`. Hanya satu gambar tampil pada waktu
+  tertentu; initial state deterministik untuk mencegah tumpukan gambar.
 
-- Mobile: tumpuk vertikal; Desktop: 3 kolom sejajar.
-- Hover: naik 4px + bayangan menguat.
+### Katalog ringkas pada landing (upgrade 2026-08-30)
+
+Tiga blok katalog lama yang berulang (kategori, best seller, dan menu pilihan)
+disatukan menjadi satu katalog ringkas yang tetap membaca data hidup dari
+`getCachedMenu()`.
+
+- Seluler 360px: search field, rail kategori horizontal bergambar, lalu kartu
+  menu dua kolom seperti aplikasi pemesanan. Nama, harga, status Favorit/Habis,
+  dan tombol tambah tetap terlihat tanpa membuka halaman lain.
+- Desktop: kontrol kategori membungkus ke baris dan kartu menjadi tiga kolom;
+  komposisi tetap editorial, bukan layar aplikasi seluler yang diperbesar.
+- Produk tanpa varian ditambahkan langsung. Produk dengan varian/add-on membuka
+  `ProductSheet` yang sama dengan halaman `/menu`.
+- Animasi masuk memakai `card-enter`; hover hanya transform dan shadow. Semua
+  motion tunduk pada `prefers-reduced-motion`.
+- Homepage tidak menggandakan harga atau data menu. Poster kategori tetap
+  fallback; foto produk khusus dipakai hanya bila aset resmi sudah tersedia.
 
 ### Section "Cara Pesan"
 
 4 langkah bernomor dengan ikon: **Pilih Menu → Masuk Keranjang → Isi Data → Bayar & Konfirmasi**.
+
+### FAQ dan CTA akhir
+
+- FAQ accordion memakai `AnimatePresence`, dapat dioperasikan dengan keyboard,
+  dan copy mengikuti kontrak bisnis: ongkir ditetapkan admin, waktu siap
+  bergantung menu/antrean, serta pembatalan pelanggan hanya sebelum Diproses.
+- CTA akhir memakai `MotionBorder` dan efek magnetik pointer yang dinonaktifkan
+  saat reduced motion. Semua link tetap anchor semantik dan dapat difokuskan.
 
 ---
 
@@ -121,6 +140,16 @@ Varian kartu:
 | Punya add-on | Ikon ➕ kecil di samping harga |
 | `available: false` | Foto grayscale, overlay "Habis", tombol nonaktif |
 | Item tambahan (lontong/sambel) | Kartu penuh dengan foto & link detail, sama seperti menu utama (diubah dari kartu ringkas — permintaan pemilik, 2026-08-22) |
+
+Upgrade mobile 2026-08-30: `/menu` memakai dua kolom sejak 360px, gambar
+persegi, nama maksimal dua baris, deskripsi disembunyikan pada lebar di bawah
+480px, dan tombol tambah menjadi tombol ikon 44px. Pada ≥480px kartu kembali
+menampilkan deskripsi dan label tombol lengkap. Pola ini menyamai katalog
+ringkas di landing tanpa mengubah `ProductSheet` atau data menu.
+
+Landing memakai `MotionBorder` lokal berbasis `motion/react` pada CTA penutup.
+Komponen mengikuti pola visual Motion/Magic UI, tetapi tidak menambah dependency
+baru; animasi conic-border berhenti total saat `prefers-reduced-motion` aktif.
 
 ### Bottom sheet pemilihan varian
 

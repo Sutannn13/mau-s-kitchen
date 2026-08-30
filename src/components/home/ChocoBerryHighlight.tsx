@@ -18,9 +18,11 @@ export async function ChocoBerryHighlight() {
   }
 
   return (
-    <section className="bg-gradient-to-br from-choco to-choco-mid py-12 text-cream md:py-24">
+    <section className="bg-choco py-10 text-cream md:py-16">
       <div className="mx-auto grid w-full max-w-content gap-8 px-4 md:grid-cols-[0.9fr_1.1fr] md:items-center md:px-8">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-gold/30 shadow-warm-lg">
+        <div className="relative">
+          <span className="absolute -bottom-3 -left-3 h-full w-full rounded-[1.75rem] border border-gold/45" />
+          <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-gold/30 shadow-warm-lg">
           <Image
             src={category.image}
             alt="Poster resmi ChocoBerry dengan buah segar dan coklat premium"
@@ -29,14 +31,21 @@ export async function ChocoBerryHighlight() {
             sizes="(max-width: 767px) 100vw, 45vw"
             className="object-cover"
           />
+          </div>
         </div>
 
         <div>
-          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-gold-light">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-pistachio/40 bg-pistachio/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-pistachio">
+              Sub-brand
+            </span>
+          </div>
+          <p className="mt-4 flex items-center gap-2.5 text-xs font-bold uppercase tracking-[0.2em] text-gold-light">
+            <span className="h-px w-8 bg-gold-light" aria-hidden="true" />
             <Sparkles aria-hidden="true" className="size-4" />
             ChocoBerry by MAU&apos;S Kitchen
           </p>
-          <h2 className="mt-4 font-serif text-3xl font-bold md:text-5xl">
+          <h2 className="mt-4 font-serif text-4xl font-bold leading-tight md:text-5xl">
             Fresh Berries, Premium Chocolate
           </h2>
           <p className="mt-5 max-w-xl text-sm leading-7 text-cream/75 md:text-base">

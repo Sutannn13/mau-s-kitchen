@@ -56,13 +56,16 @@ export default async function MenuPage() {
   const cheapestPrice = Math.min(...loaded.items.map((item) => item.basePrice));
 
   return (
-    <main className="pb-6 md:pb-16">
+    <main className="bg-cream-soft pb-6 md:pb-16">
       <JsonLd data={menuJsonLd(categories, loaded.items)} />
       <div className="mx-auto w-full max-w-content px-4 pb-4 pt-6 md:px-8 md:pb-6 md:pt-12">
-        <h1 className="font-serif text-3xl font-bold text-brown-deep md:text-4xl">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-chili">
+          Pilih menu
+        </p>
+        <h1 className="mt-2 font-serif text-3xl font-bold text-brown-deep md:text-5xl">
           Menu &amp; Harga
         </h1>
-        <p className="mt-3 max-w-2xl leading-7 text-brown/80">
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-brown/80 md:text-base md:leading-7">
           Lihat menu lengkap Taichan, Minuman, dan ChocoBerry beserta
           harganya mulai {formatRupiah(cheapestPrice)}. Pesan langsung lewat
           WhatsApp.

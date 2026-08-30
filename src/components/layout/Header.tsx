@@ -133,7 +133,7 @@ export function Header() {
         <div className="flex items-center gap-3">
           <Link
             href="/keranjang"
-            className="relative flex size-10 items-center justify-center rounded-full text-brown-deep transition-colors hover:bg-gold/15"
+            className="relative flex size-11 items-center justify-center rounded-full text-brown-deep transition-colors hover:bg-gold/15"
             aria-label="Buka keranjang"
             data-cart-target
           >
@@ -159,7 +159,7 @@ export function Header() {
               }}
               aria-expanded={isMenuOpen}
               aria-controls={panelId}
-              className="flex size-10 items-center justify-center rounded-full text-brown-deep transition-colors hover:bg-gold/15"
+              className="flex size-11 items-center justify-center rounded-full text-brown-deep transition-colors hover:bg-gold/15"
             >
               <HamburgerIcon isOpen={isMenuOpen} />
               <span className="sr-only">

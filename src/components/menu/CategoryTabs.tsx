@@ -30,7 +30,7 @@ export function CategoryTabs({ active, categories }: CategoryTabsProps) {
   return (
     <div className="sticky top-[72px] z-dropdown border-b border-gold/20 bg-cream/95 backdrop-blur-xl">
       <nav aria-label="Kategori menu" className="mx-auto w-full max-w-content">
-        <ul className="flex gap-2 overflow-x-auto px-4 py-2.5 md:justify-center md:px-8">
+        <ul className="flex gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:justify-center md:px-8">
           {tabs.map((tab) => {
             const isActive = tab.id === active;
             return (

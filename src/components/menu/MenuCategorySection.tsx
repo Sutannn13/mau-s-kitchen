@@ -85,11 +85,13 @@ export function MenuCategorySection({
     // scroll-mt menutup header 72px + bar tab sticky agar anchor tidak
     // tertutup elemen menempel. Lihat docs/08_UI_UX_SPEC.md §8.3.
     <section id={category.id} className="scroll-mt-[144px] py-5 md:py-10">
-      <header className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 md:mb-5">
+      <header className="mb-4 flex items-end justify-between gap-3 border-b border-dashed border-gold/30 pb-3 md:mb-5">
         <Heading className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
           {category.name}
         </Heading>
-        <p className="text-sm italic text-brown/70">{category.tagline}</p>
+        <p className="max-w-[48%] text-right text-[11px] leading-4 text-brown/65 sm:text-sm sm:italic">
+          {category.tagline}
+        </p>
       </header>
 
       <motion.div

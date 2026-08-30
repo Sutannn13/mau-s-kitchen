@@ -4,10 +4,11 @@ interface MenuGridProps {
   children: ReactNode;
 }
 
-// Grid menu 1/2/2/3/4 kolom sesuai breakpoint. Lihat docs/08_UI_UX_SPEC.md §8.1.
+// Dua kolom sejak 360px agar katalog mobile terasa seperti aplikasi pesan
+// makanan; desktop bertambah ke 3/4 kolom. Lihat docs/08 §8.1 dan §8.3.
 export function MenuGrid({ children }: MenuGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
       {children}
     </div>
   );
