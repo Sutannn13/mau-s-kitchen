@@ -81,6 +81,41 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Server-only values must become encrypted Worker bindings before first deploy.
+      - name: Sync staging Worker secrets
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+          RATE_LIMIT_SALT: ${{ secrets.RATE_LIMIT_SALT }}
+        run: |
+          secrets_file="$(mktemp)"
+          trap 'rm -f "$secrets_file"' EXIT
+
+          node - "$secrets_file" <<'NODE'
+          const fs = require("node:fs");
+
+          const secretNames = [
+            "SUPABASE_SERVICE_ROLE_KEY",
+            "ADMIN_EMAILS",
+            "RATE_LIMIT_SALT",
+          ];
+          const missing = secretNames.filter((name) => !process.env[name]);
+
+          if (missing.length > 0) {
+            throw new Error(`Missing required staging secrets: ${missing.join(", ")}`);
+          }
+
+          const secrets = Object.fromEntries(
+            secretNames.map((name) => [name, process.env[name]]),
+          );
+          fs.writeFileSync(process.argv[2], JSON.stringify(secrets), { mode: 0o600 });
+          NODE
+
+          npx wrangler secret bulk "$secrets_file" --env staging
+
       - name: Deploy staging
         run: npm run deploy:staging
         env:

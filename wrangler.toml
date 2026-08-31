@@ -70,6 +70,9 @@ ORDER_RETENTION_DAYS = "90"
 name = "maus-kitchen-staging"
 workers_dev = true
 
+[env.staging.secrets]
+required = ["SUPABASE_SERVICE_ROLE_KEY", "ADMIN_EMAILS", "RATE_LIMIT_SALT"]
+
 [env.staging.observability]
 enabled = true
 
