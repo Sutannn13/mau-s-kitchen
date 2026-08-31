@@ -343,6 +343,80 @@
   animation: bar-grow 500ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
 }
 
+/* ---------------------------------------------------------------------
+ * CSS-only scroll-driven entrance animations (zero JS, zero hydration).
+ * Menggantikan Motion IntersectionObserver yang membebani main-thread.
+ * Pakai animation-timeline: view() bila didukung (Chrome 115+), fallback
+ * ke animation langsung bila tidak. prefers-reduced-motion dimatikan
+ * oleh jaring pengaman global di @layer base.
+ * --------------------------------------------------------------------- */
+@keyframes scroll-fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@supports (animation-timeline: view()) {
+  .scroll-reveal {
+    animation: scroll-fade-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 45%;
+  }
+}
+@supports not (animation-timeline: view()) {
+  .scroll-reveal {
+    animation: scroll-fade-up 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+/* Stagger variant untuk children — delay bertingkat via nth-child. */
+.scroll-reveal-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.scroll-reveal-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.scroll-reveal-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.scroll-reveal-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.scroll-reveal-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.scroll-reveal-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.scroll-reveal-stagger > *:nth-child(7) { animation-delay: 360ms; }
+.scroll-reveal-stagger > *:nth-child(8) { animation-delay: 420ms; }
+
+/* Orb ambient drift — CSS-only, GPU transform, zero JS. */
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -12px); }
+}
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-16px, 10px); }
+}
+.orb-drift-1 { animation: orb-drift-1 18s ease-in-out infinite; }
+.orb-drift-2 { animation: orb-drift-2 22s ease-in-out infinite; }
+
+/* Shimmer sweep pada CTA premium — CSS pseudo-element, zero JS. */
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.shimmer-sweep::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.12) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: shimmer-sweep 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Pulse untuk store status badge — CSS-only. */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.status-pulse { animation: status-pulse 2s ease-in-out infinite; }
+
 /* Invoice tetap nyaman dibaca di HP, lalu menjadi dokumen A4 bersih saat
  * dialog cetak browser dipakai untuk printer atau Save as PDF. */
 @media print {

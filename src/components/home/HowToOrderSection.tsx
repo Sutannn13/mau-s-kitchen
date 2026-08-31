@@ -53,12 +53,12 @@ export function HowToOrderSection() {
         <div className="relative mt-8 md:mt-10">
           {/* Garis penghubung horizontal di desktop */}
           <span className="absolute left-[12%] right-[12%] top-[22px] hidden h-px border-t border-dashed border-gold/40 lg:block" aria-hidden="true" />
-          <ol className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <ol className="grid grid-cols-2 gap-3 scroll-reveal-stagger lg:grid-cols-4">
           {orderSteps.map((step, index) => (
             <Card
               as="li"
               key={step.title}
-              className="relative min-w-0 overflow-hidden p-4 sm:p-5"
+              className="scroll-reveal relative min-w-0 overflow-hidden p-4 sm:p-5"
             >
               <span className="absolute inset-x-0 top-0 h-1 bg-gold" />
               <div className="flex items-center justify-between">

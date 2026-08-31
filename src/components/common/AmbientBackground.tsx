@@ -78,11 +78,12 @@ export function AmbientBackground({
         </>
       ) : null}
 
-      {/* Layer 3: Orbs dekoratif — blur besar = cahaya ambient, bukan blob flat. */}
+      {/* Layer 3: Orbs dekoratif — blur besar = cahaya ambient, bukan blob flat.
+          Drift CSS-only (GPU transform, zero JS) untuk kesan hidup. */}
       {showOrbs ? (
         <>
-          <div className={cn("absolute -left-20 top-10 size-72 rounded-full blur-3xl", orbPalette)} />
-          <div className={cn("absolute -right-16 bottom-0 size-80 rounded-full blur-3xl", "bg-gold/20")} />
+          <div className={cn("absolute -left-20 top-10 size-72 rounded-full blur-3xl orb-drift-1", orbPalette)} />
+          <div className={cn("absolute -right-16 bottom-0 size-80 rounded-full blur-3xl orb-drift-2", "bg-gold/20")} />
         </>
       ) : null}
 

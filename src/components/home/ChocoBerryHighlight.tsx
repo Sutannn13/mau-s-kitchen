@@ -20,7 +20,7 @@ export async function ChocoBerryHighlight() {
 
   return (
     <section className="bg-choco py-10 text-cream md:py-16">
-      <div className="mx-auto grid w-full max-w-content gap-8 px-4 md:grid-cols-[0.9fr_1.1fr] md:items-center md:px-8">
+      <div className="scroll-reveal mx-auto grid w-full max-w-content gap-8 px-4 md:grid-cols-[0.9fr_1.1fr] md:items-center md:px-8">
         <div className="relative">
           <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-gold/30" />
           <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-gold/30 shadow-warm-lg">

@@ -114,6 +114,13 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
     return matchesCategory && matchesSearch;
   });
 
+  // Batasi DOM di mobile: tampilkan 6 item pertama, sisanya via "Lihat lainnya".
+  // Desktop tetap menampilkan semua. Mengurangi style recalculation + DOM size.
+  const [showAll, setShowAll] = useState(false);
+  const MOBILE_LIMIT = 6;
+  const displayItems = showAll ? visibleItems : visibleItems.slice(0, MOBILE_LIMIT);
+  const hiddenCount = visibleItems.length - MOBILE_LIMIT;
+
   return (
     <>
       <div className="rounded-[1.75rem] border border-brown-deep/10 bg-cream p-3 shadow-warm md:p-5">
@@ -193,8 +200,9 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
         </div>
 
         {visibleItems.length > 0 ? (
+          <>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-            {visibleItems.map((item) => {
+            {displayItems.map((item) => {
               const startingPrice =
                 item.variants.length > 0
                   ? Math.min(...item.variants.map((variant) => variant.price))
@@ -280,6 +288,18 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
               );
             })}
           </div>
+          {!showAll && hiddenCount > 0 ? (
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="btn-press inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/30 bg-cream-soft px-5 text-xs font-bold text-brown-deep hover:bg-gold/10"
+              >
+                Lihat {hiddenCount} menu lainnya
+              </button>
+            </div>
+          ) : null}
+          </>
         ) : (
           <div className="mt-4 rounded-2xl border border-dashed border-gold/40 bg-cream-soft px-5 py-10 text-center">
             <Search aria-hidden="true" className="mx-auto size-6 text-gold" />

@@ -2,12 +2,11 @@ import { ArrowRight, MessageCircle } from "lucide-react";
 
 import { MagneticButton } from "@/components/common/MagneticButton";
 import { WhatsAppLink } from "@/components/common/WhatsAppLink";
-import { MotionBorder } from "@/components/ui";
 
 export function ClosingCta() {
   return (
     <section className="bg-rose/25 px-4 py-10 md:px-8 md:py-16">
-      <MotionBorder className="mx-auto max-w-content">
+      <div className="scroll-reveal shimmer-sweep relative mx-auto max-w-content overflow-hidden rounded-[2rem] bg-ink shadow-warm-lg">
         <div className="relative overflow-hidden px-5 py-10 text-center text-cream md:px-12 md:py-16">
           <span className="pointer-events-none absolute inset-3 rounded-[1.45rem] border border-gold/20" />
           <div className="relative">
@@ -39,7 +38,7 @@ export function ClosingCta() {
             </div>
           </div>
         </div>
-      </MotionBorder>
+      </div>
     </section>
   );
 }

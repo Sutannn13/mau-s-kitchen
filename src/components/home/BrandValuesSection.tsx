@@ -69,13 +69,13 @@ export function BrandValuesSection() {
           </h2>
         </div>
 
-        <div className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 scroll-reveal-stagger lg:grid-cols-4">
           {brandValues.map((value) => (
             <Card
               as="article"
               key={value.title}
               muted
-              className="relative min-w-0 overflow-hidden border-cream/15 bg-white/[0.08] p-4 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:p-5"
+              className="scroll-reveal relative min-w-0 overflow-hidden border-cream/15 bg-white/[0.08] p-4 backdrop-blur-md transition-colors hover:bg-white/[0.12] sm:p-5"
             >
               <span className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${value.accent}`} aria-hidden="true" />
               <span className="mt-1 flex size-11 items-center justify-center rounded-2xl border border-gold/25 bg-gold/10 text-gold-light">
