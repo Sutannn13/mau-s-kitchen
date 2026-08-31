@@ -58,7 +58,7 @@ export function HowToOrderSection() {
             <Card
               as="li"
               key={step.title}
-              className="scroll-reveal relative min-w-0 overflow-hidden p-4 sm:p-5"
+              className="scroll-reveal glow-hover relative min-w-0 overflow-hidden p-4 sm:p-5"
             >
               <span className="absolute inset-x-0 top-0 h-1 bg-gold" />
               <div className="flex items-center justify-between">

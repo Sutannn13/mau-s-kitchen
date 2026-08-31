@@ -6,6 +6,7 @@
 |---|---|---|---|
 | Development | `http://localhost:3000` | `feature/*` | Pengembangan lokal |
 | Preview | `*.workers.dev` | Pull request / manual | Review sebelum rilis |
+| Staging | `https://staging.maukitchen.my.id` | `codex/staging` | Uji integrasi dengan data non-produksi |
 | Production | `https://maukitchen.my.id` | `main` | Publik |
 
 ---
@@ -103,6 +104,52 @@ adalah `https://maukitchen.my.id`.
    deploy aplikasi terbaru. Preflight akan menolak deploy bila tabel counter
    atomik belum tersedia. Migration menambah RPC v2 tanpa menghapus RPC v1,
    sehingga production lama tetap melayani checkout selama rollout.
+
+### 17.5.1 Staging terisolasi
+
+Staging memakai project Supabase `maus-kitchen-staging` (`srnmwvgbokmxjxdsplqu`)
+dan Worker Cloudflare `maus-kitchen-staging`. Jangan memakai service-role key
+production pada environment ini. Database staging boleh berisi data uji, tetapi
+tidak boleh menjadi tempat uji migration destruktif tanpa backup.
+
+Alasan environment terpisah:
+
+- perubahan schema, RLS, Auth, Storage, dan checkout diuji tanpa menyentuh data pelanggan;
+- desain UI dapat diuji terhadap backend nyata, bukan mock;
+- health check menjadi gerbang sebelum perubahan dipromosikan ke `main`;
+- domain, rate limiter, secret, dan project Supabase tidak berbagi binding dengan production.
+
+Sebelum deploy pertama, buat GitHub environment `staging`, isi secret
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SUPABASE_SERVICE_ROLE_KEY`
+khusus staging, `ADMIN_EMAILS`, `RATE_LIMIT_SALT`,
+`NEXT_PUBLIC_BUSINESS_HOURS`, dan `NEXT_PUBLIC_BUSINESS_ADDRESS`. Secret
+server-side yang sama juga harus dipasang pada Worker staging dengan:
+
+```bash
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env staging
+npx wrangler secret put ADMIN_EMAILS --env staging
+npx wrangler secret put RATE_LIMIT_SALT --env staging
+```
+
+Nilai operasional publik yang belum dikonfirmasi tidak disimpan sebagai `TBD`
+di `wrangler.toml`, karena binding Wrangler dapat mengalahkan environment CI
+saat OpenNext membangun bundle. Workflow memasok nilai final pada build dan
+`security:preflight` menolak nilai kosong atau `TBD`.
+
+Setelah semua nilai bisnis dikonfirmasi dan `/api/health` siap, set repository
+variable GitHub Actions `STAGING_READY=true` (Settings → Secrets and variables →
+Actions → Variables). Push ke `codex/staging` kemudian menjalankan quality gate
+dan deploy staging. Secret tetap disimpan pada GitHub environment `staging`.
+Promotion ke production tetap lewat merge terpisah ke `main`; jangan menunjuk
+domain production ke Worker staging.
+
+Catatan 2026-08-31: schema aktual project staging sudah disinkronkan tanpa
+menghapus 20 pesanan uji. Riwayat migration project lama belum identik dengan
+nama file lokal karena schema awal dibuat manual. Sebelum mengaktifkan
+`supabase db push` otomatis, rekonsiliasi dengan perintah resmi
+`supabase migration repair` menggunakan password database staging dan verifikasi
+ulang dengan `supabase migration list`. CI staging saat ini sengaja tidak
+menjalankan migration database otomatis.
 
 ---
 

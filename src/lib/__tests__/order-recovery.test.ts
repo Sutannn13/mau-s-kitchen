@@ -10,6 +10,7 @@ import {
   findRecoveryEntry,
   isValidRecoveryToken,
   parseOrderScopeCode,
+  resolveOrderSearch,
   shouldRecoverRedirect,
 } from "@/lib/order-recovery";
 
@@ -109,5 +110,38 @@ describe("shouldRecoverRedirect", () => {
     expect(
       shouldRecoverRedirect(entry, "beda-" + validToken.slice(5)),
     ).toBe(true);
+  });
+});
+
+describe("resolveOrderSearch", () => {
+  it("memakai token lokal untuk kode yang tersimpan", () => {
+    expect(
+      resolveOrderSearch("mk-260822-009", [makeEntry()], "https://mauskitchen.id"),
+    ).toEqual({
+      ok: true,
+      url: `/pesanan/MK-260822-009?token=${validToken}`,
+    });
+  });
+
+  it("menerima tautan privat lengkap tanpa membuka redirect eksternal", () => {
+    expect(
+      resolveOrderSearch(
+        `https://contoh.invalid/pesanan/MK-260822-009?token=${validToken}`,
+        [],
+        "https://mauskitchen.id",
+      ),
+    ).toEqual({
+      ok: true,
+      url: `/pesanan/MK-260822-009?token=${validToken}`,
+    });
+  });
+
+  it("menolak kode asing tanpa token dan tautan yang tidak sah", () => {
+    expect(
+      resolveOrderSearch("MK-260822-009", [], "https://mauskitchen.id"),
+    ).toEqual({ ok: false, reason: "missing-token" });
+    expect(
+      resolveOrderSearch("https://contoh.invalid/admin", [], "https://mauskitchen.id"),
+    ).toEqual({ ok: false, reason: "invalid" });
   });
 });

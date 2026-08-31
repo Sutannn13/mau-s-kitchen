@@ -1,4 +1,5 @@
 import type { OrderHistoryEntry } from "@/lib/order-history-store";
+import { isValidOrderCode } from "@/lib/order-code";
 
 // Pemulihan akses tautan privat pesanan (docs/04_BUSINESS_FLOW.md §4.4):
 // dipakai sisi client saat /pesanan/[kode] atau /pembayaran/[kode] jatuh ke
@@ -14,6 +15,10 @@ export interface OrderScopeCode {
   scope: OrderScope;
   code: string;
 }
+
+export type OrderSearchResult =
+  | { ok: true; url: string }
+  | { ok: false; reason: "empty" | "missing-token" | "invalid" };
 
 // not-found.tsx tidak menerima params rute, jadi kode pesanan dibaca ulang
 // dari pathname di client.
@@ -70,4 +75,58 @@ export function shouldRecoverRedirect(
   urlToken: string,
 ): boolean {
   return entry.token !== urlToken;
+}
+
+// Kode saja hanya boleh memakai token yang sudah tersimpan di perangkat;
+// tautan privat lengkap tetap dapat dipakai saat berpindah perangkat.
+export function resolveOrderSearch(
+  input: string,
+  entries: readonly OrderHistoryEntry[],
+  baseUrl: string,
+): OrderSearchResult {
+  const value = input.trim();
+  if (!value) {
+    return { ok: false, reason: "empty" };
+  }
+  if (value.length > 512) {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const code = value.toUpperCase();
+  const localEntry = entries.find(
+    (entry) =>
+      entry.code.toUpperCase() === code && isValidRecoveryToken(entry.token),
+  );
+  if (localEntry) {
+    return {
+      ok: true,
+      url: buildRecoveryOrderUrl("pesanan", localEntry.code, localEntry.token),
+    };
+  }
+  if (isValidOrderCode(code)) {
+    return { ok: false, reason: "missing-token" };
+  }
+
+  try {
+    const parsedUrl = new URL(value, baseUrl);
+    const route = parseOrderScopeCode(parsedUrl.pathname);
+    if (
+      route?.scope !== "pesanan" ||
+      !isValidOrderCode(route.code.toUpperCase())
+    ) {
+      return { ok: false, reason: "invalid" };
+    }
+
+    const token = parsedUrl.searchParams.get("token") ?? "";
+    if (!isValidRecoveryToken(token)) {
+      return { ok: false, reason: "missing-token" };
+    }
+
+    return {
+      ok: true,
+      url: buildRecoveryOrderUrl("pesanan", route.code.toUpperCase(), token),
+    };
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
 }

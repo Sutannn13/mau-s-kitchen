@@ -98,7 +98,22 @@ where public_token is null;
 alter table public.orders alter column public_token set default
   (replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', ''));
 alter table public.orders alter column public_token set not null;
-create unique index if not exists orders_public_token_idx on public.orders (public_token);
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint as constraint_row
+    join pg_attribute as attribute_row
+      on attribute_row.attrelid = constraint_row.conrelid
+     and attribute_row.attname = 'public_token'
+    where constraint_row.conrelid = 'public.orders'::regclass
+      and constraint_row.contype = 'u'
+      and constraint_row.conkey = array[attribute_row.attnum]::smallint[]
+  ) and to_regclass('public.orders_public_token_idx') is null then
+    create unique index orders_public_token_idx
+      on public.orders (public_token);
+  end if;
+end $$;
 
 -- Retry checkout memakai key yang sama agar kegagalan jaringan tidak membuat
 -- dua pesanan. Nullable menjaga kompatibilitas dengan baris lama.
@@ -339,7 +354,11 @@ create index if not exists orders_payment_claimed_idx
 
 -- Trigger updated_at
 create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
+returns trigger
+language plpgsql
+security invoker
+set search_path = public
+as $$
 begin
   new.updated_at = now();
   return new;
@@ -419,21 +438,30 @@ grant execute on function public.check_rate_limit(text, integer, integer) to ser
 -- Publik boleh membaca ketersediaan menu (dipakai halaman katalog ISR)
 drop policy if exists menu_overrides_public_read on public.menu_overrides;
 create policy "menu_overrides_public_read"
-  on public.menu_overrides for select using (true);
+  on public.menu_overrides for select
+  to anon, authenticated
+  using (true);
 
--- Hanya user dengan custom claim app_metadata.role=admin. Route dashboard
--- tetap memakai service role setelah allowlist email diverifikasi di server.
+-- Route dashboard memakai service role setelah allowlist email diverifikasi
+-- di server; jangan buka jalur Data API tambahan untuk JWT pelanggan/admin.
 drop policy if exists orders_admin_all on public.orders;
-create policy "orders_admin_all"
-  on public.orders for all
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
-
 drop policy if exists order_items_admin_all on public.order_items;
-create policy "order_items_admin_all"
-  on public.order_items for all
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+revoke all privileges
+  on table
+    public.orders,
+    public.order_items,
+    public.order_daily_sequences,
+    public.rate_limits
+  from anon, authenticated;
+
+grant all privileges
+  on table
+    public.orders,
+    public.order_items,
+    public.order_daily_sequences,
+    public.rate_limits
+  to service_role;
 
 -- Bucket bukti bayar privat dengan batas yang sama seperti API.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

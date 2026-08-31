@@ -214,7 +214,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
               return (
                 <article
                   key={item.id}
-                  className="group flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-brown-deep/10 bg-white shadow-[0_5px_18px_rgba(62,35,24,0.07)] transition duration-300 motion-safe:hover:-translate-y-1 hover:border-gold/45 hover:shadow-warm-lg"
+                  className="glow-hover group flex min-w-0 flex-col overflow-hidden rounded-[1.35rem] border border-brown-deep/10 bg-white shadow-[0_5px_18px_rgba(62,35,24,0.07)]"
                 >
                   <div className="relative aspect-square overflow-hidden bg-cream-soft sm:aspect-[4/3]">
                     <Link

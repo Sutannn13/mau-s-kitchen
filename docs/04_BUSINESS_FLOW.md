@@ -158,7 +158,7 @@ biasa dan penanda klaim berhenti tampil di sisi pelanggan.
 | Pelanggan ingin menghubungi admin | Sediakan tombol WhatsApp eksplisit dari halaman pesanan/pembayaran; checkout tidak membuka WhatsApp otomatis |
 | Tautan pelacakan/pembayaran kehilangan `?token=` | 404 khusus rute pesanan: pulihkan otomatis dari riwayat pesanan di perangkat (`localStorage`) → redirect ke tautan utuh; bila tidak ada, tampilkan pesanan terakhir di perangkat + tombol chat admin bawa kode pesanan |
 | Respons checkout hilang setelah pesanan tersimpan | Browser mengulang payload dengan `Idempotency-Key` yang sama; server mengembalikan pesanan pertama, bukan membuat duplikat |
-| Halaman "Pesanan Saya" dibuka kembali | Maksimal 10 entri lokal disinkronkan ke server sehingga status dan total terbaru menggantikan snapshot lama; entri 404 dibuang |
+| Halaman "Pesanan Saya" dibuka kembali | Maksimal 10 entri lokal disinkronkan ke server sehingga status dan total terbaru menggantikan snapshot lama; entri 404 dibuang. Pencarian kode hanya membuka entri yang tokennya tersimpan di perangkat; tautan privat lengkap juga diterima. Kode asing tanpa token tetap di halaman daftar dan mendapat error inline |
 | Perangkat/browser dipakai orang lain | Riwayat guest memang mengikuti profil browser, bukan identitas orang. Tampilkan peringatan + tombol **Hapus Riwayat** dua langkah; hapus otomatis setelah 30 hari. Profil/incognito/perangkat berbeda tidak berbagi riwayat |
 | Pelanggan tidak bayar dalam 60 menit | Admin ubah status jadi `BATAL` (manual di Fase 2) |
 | Alamat di luar jangkauan antar | Admin konfirmasi lewat WhatsApp & tawarkan ambil sendiri |

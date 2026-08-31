@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   canTransition,
+  getCustomerHistoryStepIndex,
   getAdminTargets,
   isOrderStatus,
 } from "@/lib/order-status";
@@ -78,5 +79,18 @@ describe("isOrderStatus", () => {
     expect(isOrderStatus("barU")).toBe(false);
     expect(isOrderStatus("DIANTAR")).toBe(false);
     expect(isOrderStatus("")).toBe(false);
+  });
+});
+
+describe("getCustomerHistoryStepIndex", () => {
+  it("menampilkan DIKIRIM sebagai tahap tersendiri", () => {
+    expect(getCustomerHistoryStepIndex("DIKONFIRMASI")).toBe(0);
+    expect(getCustomerHistoryStepIndex("DIPROSES")).toBe(1);
+    expect(getCustomerHistoryStepIndex("DIKIRIM")).toBe(2);
+    expect(getCustomerHistoryStepIndex("SELESAI")).toBe(3);
+  });
+
+  it("tidak menampilkan timeline progres untuk pesanan batal", () => {
+    expect(getCustomerHistoryStepIndex("BATAL")).toBe(-1);
   });
 });

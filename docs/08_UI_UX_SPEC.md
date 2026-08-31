@@ -60,7 +60,7 @@ Keyframe aksen tambahan (Batch 6): `animate-halo` (denyut ambient 2,6s pada lang
 | CTA primer | "Pesan Sekarang" menuju katalog ringkas dalam halaman |
 | CTA sekunder | "Jelajahi Menu" menuju `/menu` |
 | Badge | `StoreStatusBadge` (ikon+teks Buka/Tutup/konfirmasi-WA, dihitung klien via `useSyncExternalStore` dari `lib/store-hours.ts`; TBD → teks konfirmasi, tidak mengarang status) |
-| Entrance | Konten publik langsung terlihat tanpa observer/parallax/crossfade. Feedback tekan dan hover memakai transform CSS yang tunduk pada `prefers-reduced-motion` |
+| Entrance | Hero memakai entrance CSS transform-only; paragraf LCP tetap statis dan terlihat sejak frame pertama. Section below-the-fold memakai scroll-driven CSS reveal. Tidak ada observer/parallax JS; seluruh motion tunduk pada `prefers-reduced-motion` |
 
 ### Statistik dan nilai brand
 
@@ -288,6 +288,13 @@ Langkah pembayaran:
 - Jika metode = Transfer: tampilkan nomor rekening BCA + tombol salin.
 - Jika metode = Tunai/COD: lewati halaman ini, langsung ke `/pesanan/[kode]`.
 - Tampilkan pengingat: "Pesanan diproses setelah pembayaran dikonfirmasi admin."
+
+### Riwayat Pesanan (`/pesanan`) — hardening akses (2026-08-31)
+
+- Pencarian menerima kode yang tersimpan di riwayat perangkat atau tautan privat lengkap. Kode asing tanpa token tidak dinavigasikan ke halaman 404 dan mendapat error inline yang terhubung ke input melalui `aria-describedby`.
+- Input memiliki label aksesibel, petunjuk format, batas panjang 512 karakter, dan status `aria-invalid` saat gagal.
+- Kartu memakai label status resmi dan timeline empat tahap `Diterima → Diproses → Dikirim → Selesai`; `DIKONFIRMASI` diringkas ke tahap `Diterima`, sedangkan `BATAL` tidak menampilkan timeline.
+- Riwayat hanya menyediakan CTA **Lihat Status & Rincian**. CTA pembayaran dimiliki halaman rincian/pembayaran karena kesiapan rencana pengantaran dan klaim pembayaran harus divalidasi dari data server, bukan snapshot lokal.
 
 ### Status Pesanan (`/pesanan/[kode]?token=…`) — redesign "Struk & Tiket Dapur" Batch 7 (2026-08-22)
 

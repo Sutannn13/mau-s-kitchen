@@ -126,6 +126,10 @@ describe("buildOrderCode", () => {
 | E2E-36 | Admin mengunduh CSV Mentah                                                         | CSV hanya berisi satu header dan tabel detail; input berawalan karakter formula tetap dinetralisasi     |
 | E2E-37 | Admin mencoba memajukan QRIS/transfer BARU tanpa klaim/bukti atau acknowledgement   | API menolak `PAYMENT_SUBMISSION_REQUIRED`/`PAYMENT_VERIFICATION_REQUIRED`; pembatalan tetap boleh        |
 | E2E-38 | Kirim 20 checkout valid serentak dengan idempotency key berbeda                    | Seluruhnya berhasil dengan 20 kode unik berurutan; tidak ada `503`, header tanpa item, atau kode terpakai ulang |
+| E2E-39 | Cari kode yang tersimpan dari halaman "Pesanan Saya"                               | Navigasi memakai token lokal ke tautan privat yang valid                                                |
+| E2E-40 | Cari kode asing tanpa token dari halaman "Pesanan Saya"                            | Tetap di halaman daftar; error inline tampil dan fokus pencarian tetap dapat digunakan                  |
+| E2E-41 | Tempel tautan privat lengkap dari perangkat lain                                    | Navigasi ke rincian lokal dengan kode dan token yang tervalidasi; tidak ada open redirect               |
+| E2E-42 | Sinkronkan pesanan sampai status `DIKIRIM` pada lebar 360px                          | Pill dan timeline menampilkan "Dikirim" secara eksplisit tanpa scroll horizontal                      |
 
 ---
 

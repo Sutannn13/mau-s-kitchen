@@ -52,6 +52,41 @@ export const orderStatuses: readonly OrderStatus[] = [
   "BATAL",
 ];
 
+export const customerHistorySteps = [
+  "BARU",
+  "DIPROSES",
+  "DIKIRIM",
+  "SELESAI",
+] as const;
+
+export const customerHistoryStepLabels: Record<
+  (typeof customerHistorySteps)[number],
+  string
+> = {
+  BARU: "Diterima",
+  DIPROSES: "Diproses",
+  DIKIRIM: "Dikirim",
+  SELESAI: "Selesai",
+};
+
+// Riwayat pelanggan merangkum DIKONFIRMASI ke tahap awal; tambah tahap baru
+// hanya jika alur status resmi di docs/04_BUSINESS_FLOW.md berubah.
+export function getCustomerHistoryStepIndex(status: OrderStatus): number {
+  switch (status) {
+    case "BATAL":
+      return -1;
+    case "BARU":
+    case "DIKONFIRMASI":
+      return 0;
+    case "DIPROSES":
+      return 1;
+    case "DIKIRIM":
+      return 2;
+    case "SELESAI":
+      return 3;
+  }
+}
+
 export function isOrderStatus(value: string): value is OrderStatus {
   return (orderStatuses as readonly string[]).includes(value);
 }

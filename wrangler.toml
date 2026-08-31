@@ -53,11 +53,6 @@ NEXT_PUBLIC_ENABLE_QRIS = "true"
 NEXT_PUBLIC_ENABLE_TRANSFER = "false"
 NEXT_PUBLIC_ENABLE_CASH = "true"
 NEXT_PUBLIC_BANK_NAME = "BCA"
-NEXT_PUBLIC_BANK_ACCOUNT_NUMBER = "TBD"
-NEXT_PUBLIC_BANK_ACCOUNT_NAME = "TBD"
-NEXT_PUBLIC_BUSINESS_HOURS = "TBD"
-NEXT_PUBLIC_BUSINESS_ADDRESS = "TBD"
-NEXT_PUBLIC_INSTAGRAM_URL = ""
 NEXT_PUBLIC_SUPABASE_URL = "https://ghjgicxxxftjhqxnbzan.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_lIsxSqC20yxaL1ztV9cwpQ_DQ-k9xc6"
 ORDER_RETENTION_DAYS = "90"
@@ -67,3 +62,60 @@ ORDER_RETENTION_DAYS = "90"
 #   SUPABASE_SERVICE_ROLE_KEY  → sb_secret_...  (wajib, akses admin Supabase)
 #   ADMIN_EMAILS               → mauskitchen@gmail.com (siapa yang boleh akses /admin)
 #   RATE_LIMIT_SALT            → string acak 32+ char (hash rate limiter)
+
+# Staging memakai Worker, domain, rate-limit namespace, dan project Supabase
+# terpisah. Binding Wrangler tidak diwariskan ke environment, jadi seluruh
+# binding publik yang dibutuhkan sengaja dideklarasikan ulang di bawah ini.
+[env.staging]
+name = "maus-kitchen-staging"
+workers_dev = true
+
+[env.staging.observability]
+enabled = true
+
+[env.staging.observability.logs]
+head_sampling_rate = 1
+
+[env.staging.observability.traces]
+enabled = true
+head_sampling_rate = 0.01
+
+[env.staging.assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[env.staging.routes]]
+pattern = "staging.maukitchen.my.id"
+custom_domain = true
+
+[[env.staging.ratelimits]]
+name = "ORDER_READ_RATE_LIMITER"
+namespace_id = "26083111"
+
+[env.staging.ratelimits.simple]
+limit = 120
+period = 60
+
+[[env.staging.ratelimits]]
+name = "HEALTH_RATE_LIMITER"
+namespace_id = "26083112"
+
+[env.staging.ratelimits.simple]
+limit = 30
+period = 60
+
+[env.staging.vars]
+DEPLOYMENT_PLATFORM = "cloudflare"
+NEXT_PUBLIC_SITE_URL = "https://staging.maukitchen.my.id"
+NEXT_PUBLIC_SITE_NAME = "MAU'S Kitchen"
+NEXT_PUBLIC_WHATSAPP_NUMBER = "6281617691585"
+NEXT_PUBLIC_WHATSAPP_DISPLAY = "0816-1769-1585"
+NEXT_PUBLIC_QRIS_IMAGE_PATH = "/assets/payment/qris.jpeg"
+NEXT_PUBLIC_QRIS_MERCHANT_NAME = "SATE TAICHAN HANNA"
+NEXT_PUBLIC_ENABLE_QRIS = "true"
+NEXT_PUBLIC_ENABLE_TRANSFER = "false"
+NEXT_PUBLIC_ENABLE_CASH = "true"
+NEXT_PUBLIC_BANK_NAME = "BCA"
+NEXT_PUBLIC_SUPABASE_URL = "https://srnmwvgbokmxjxdsplqu.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "sb_publishable_PuW_mW4v6Rx9TvQQ98qqFw_PovY-rD5"
+ORDER_RETENTION_DAYS = "90"

@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "npm run security:preflight && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "deploy:staging": "npm run security:preflight && opennextjs-cloudflare build --env staging && opennextjs-cloudflare deploy --env staging",
     "upload": "npm run security:preflight && opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },

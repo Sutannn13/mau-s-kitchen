@@ -378,6 +378,36 @@
 .scroll-reveal-stagger > *:nth-child(7) { animation-delay: 360ms; }
 .scroll-reveal-stagger > *:nth-child(8) { animation-delay: 420ms; }
 
+/* ---------------------------------------------------------------------
+ * Above-the-fold entrance animation — langsung jalan saat page load,
+ * TIDAK pakai animation-timeline: view(). Memperbaiki FCP/LCP/Speed Index
+ * karena konten hero langsung terlihat tanpa menunggu viewport trigger.
+ * Gunakan .hero-enter saja, delay via inline style.
+ * --------------------------------------------------------------------- */
+@keyframes hero-enter {
+  from { transform: translateY(10px); }
+  to { transform: translateY(0); }
+}
+.hero-enter {
+  animation: hero-enter 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hover glow hanya untuk pointer presisi. Smartphone tidak menjalankan
+ * hover semu/sticky; transform dan shadow tetap composited, zero JS. */
+.glow-hover {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .glow-hover:hover {
+    transform: translateY(-4px);
+    border-color: rgba(199, 154, 75, 0.5);
+    box-shadow: 0 14px 34px rgba(62, 35, 24, 0.16);
+  }
+}
+
 /* Orb ambient drift — CSS-only, GPU transform, zero JS. */
 @keyframes orb-drift-1 {
   0%, 100% { transform: translate(0, 0); }
@@ -387,13 +417,19 @@
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(-16px, 10px); }
 }
-.orb-drift-1 { animation: orb-drift-1 18s ease-in-out infinite; }
-.orb-drift-2 { animation: orb-drift-2 22s ease-in-out infinite; }
+@media (min-width: 768px) {
+  .orb-drift-1 { animation: orb-drift-1 18s ease-in-out infinite; }
+  .orb-drift-2 { animation: orb-drift-2 22s ease-in-out infinite; }
+}
 
 /* Shimmer sweep pada CTA premium — CSS pseudo-element, zero JS. */
 @keyframes shimmer-sweep {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
+}
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
 }
 .shimmer-sweep::after {
   content: "";

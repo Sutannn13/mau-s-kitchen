@@ -16,13 +16,13 @@ export function HeroContent() {
       />
 
       <div className="relative mx-auto w-full max-w-content px-4 md:px-8">
-        <div className="relative scroll-reveal rounded-[2rem] border border-brown-deep/10 bg-cream-soft/80 p-4 shadow-[0_18px_50px_rgba(62,35,24,0.10)] backdrop-blur-sm md:grid md:grid-cols-[0.95fr_1.05fr] md:items-center md:gap-6 md:p-7 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:p-9">
+        <div className="relative rounded-[2rem] border border-brown-deep/10 bg-cream-soft/80 p-4 shadow-[0_18px_50px_rgba(62,35,24,0.10)] backdrop-blur-sm md:grid md:grid-cols-[0.95fr_1.05fr] md:items-center md:gap-6 md:p-7 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 lg:p-9">
           {/* Frame dekoratif lapis kedua — inset ring gold agar tidak
               menonjol keluar container di mobile (fix border overflow). */}
           <span className="pointer-events-none absolute inset-0 rounded-[2rem] ring-1 ring-inset ring-gold/30" />
 
           <div className="flex flex-col items-start px-1 pb-6 pt-1 md:px-2 lg:pb-0">
-            <div className="scroll-reveal mb-5 flex w-full items-center justify-between gap-3">
+            <div className="hero-enter mb-5 flex w-full items-center justify-between gap-3">
               <StoreStatusBadge />
               <span className="text-xs font-bold tabular-nums text-gold">
                 01 / 03
@@ -30,14 +30,14 @@ export function HeroContent() {
             </div>
 
             <p
-              className="scroll-reveal mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brown"
+              className="hero-enter mb-4 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.2em] text-brown"
               style={{ animationDelay: "80ms" }}
             >
               <EyebrowRule />
               Homemade with Love
             </p>
 
-            <h1 className="scroll-reveal font-serif text-[2.35rem] font-bold leading-[1.04] tracking-[-0.035em] text-brown-deep sm:text-5xl md:text-[2.5rem] lg:text-[4rem] lg:leading-[1.02]"
+            <h1 className="hero-enter font-serif text-[2.35rem] font-bold leading-[1.04] tracking-[-0.035em] text-brown-deep sm:text-5xl md:text-[2.5rem] lg:text-[4rem] lg:leading-[1.02]"
               style={{ animationDelay: "120ms" }}
             >
               Manisnya Bikin Senyum.{" "}
@@ -45,10 +45,7 @@ export function HeroContent() {
               <span className="text-chili">Pedasnya Bikin Nagih.</span>
             </h1>
 
-            <p
-              className="scroll-reveal mt-5 max-w-xl text-[15px] leading-7 text-brown/80 md:text-base"
-              style={{ animationDelay: "200ms" }}
-            >
+            <p className="mt-5 max-w-xl text-[15px] leading-7 text-brown/80 md:text-base">
               Nikmati keseimbangan rasa otentik dari MAU&apos;S Kitchen. Mulai
               dari kelezatan Choco Berry yang manis menyegarkan, hingga sengatan
               Sate Taichan yang menggugah selera. Dibuat dengan dedikasi untuk
@@ -56,7 +53,7 @@ export function HeroContent() {
             </p>
 
             <div
-              className="scroll-reveal mt-7 flex w-full items-center gap-2.5 sm:w-auto"
+              className="hero-enter mt-7 flex w-full items-center gap-2.5 sm:w-auto"
               style={{ animationDelay: "280ms" }}
             >
               <Link
@@ -77,7 +74,7 @@ export function HeroContent() {
               </Link>
             </div>
 
-            <div className="scroll-reveal mt-6 flex flex-wrap gap-2 border-t border-dashed border-gold/35 pt-5 text-[11px] font-bold text-brown/70"
+            <div className="hero-enter mt-6 flex flex-wrap gap-2 border-t border-dashed border-gold/35 pt-5 text-[11px] font-bold text-brown/70"
               style={{ animationDelay: "360ms" }}
             >
               <span className="inline-flex items-center gap-1.5 rounded-full bg-chili/10 px-3 py-2 text-chili">
@@ -91,7 +88,7 @@ export function HeroContent() {
             </div>
           </div>
 
-          <div className="scroll-reveal relative" style={{ animationDelay: "160ms" }}>
+          <div className="hero-enter relative" style={{ animationDelay: "160ms" }}>
             <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[1.6rem] border border-white/60 bg-white shadow-warm-lg lg:aspect-[6/5]">
               <div className="absolute inset-0">
                 <Image

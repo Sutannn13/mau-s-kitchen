@@ -1,3 +1,4 @@
+-- Versi unik 20260823010000 menghindari bentrok dengan migration klaim bayar.
 -- Selaraskan bucket `payment-proofs` dengan kontrak unggah bukti bayar.
 --
 -- Latar: migrasi 20260816_security_hardening.sql membatasi bucket ke
