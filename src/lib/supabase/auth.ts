@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 
 import { getSupabaseEnv } from "@/lib/supabase/config";
 
@@ -41,6 +41,7 @@ export function getAdminIdentity(user: AuthenticatedUser | null): AdminIdentity 
 // pemanggil wajib menangani mode itu (admin tidak tersedia).
 export function createSessionClientFromCookies(
   cookieGetter: () => Array<{ name: string; value: string }>,
+  cookieSetter?: SetAllCookies,
 ) {
   const env = getSupabaseEnv();
   if (!env) {
@@ -52,11 +53,8 @@ export function createSessionClientFromCookies(
       getAll() {
         return cookieGetter();
       },
-      // Middleware/route handler yang perlu memperbarui cookie menangani
-      // sendiri via getAll/setAll versi mereka; default di sini no-op agar
-      // verifikasi baca-saja aman dipakai di mana saja.
-      setAll() {
-        /* sengaja kosong: hanya verifikasi, tidak menulis cookie */
+      setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
+        return cookieSetter?.(cookiesToSet);
       },
     },
   });
@@ -65,8 +63,9 @@ export function createSessionClientFromCookies(
 // Verifikasi sesi admin. Mengembalikan user bila valid, null bila tidak.
 export async function verifyAdminSession(
   cookieGetter: () => Array<{ name: string; value: string }>,
+  cookieSetter?: SetAllCookies,
 ): Promise<AdminIdentity | null> {
-  const supabase = createSessionClientFromCookies(cookieGetter);
+  const supabase = createSessionClientFromCookies(cookieGetter, cookieSetter);
   if (!supabase) {
     return null;
   }
@@ -88,6 +87,7 @@ export async function verifyAdminSession(
 // mengekspos cookie API seperti NextRequest).
 export async function verifyAdminRequest(
   request: Request,
+  cookieSetter?: SetAllCookies,
 ): Promise<AdminIdentity | null> {
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookies = cookieHeader
@@ -102,5 +102,5 @@ export async function verifyAdminRequest(
       };
     });
 
-  return verifyAdminSession(() => cookies);
+  return verifyAdminSession(() => cookies, cookieSetter);
 }

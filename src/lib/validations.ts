@@ -121,7 +121,12 @@ export const createMenuItemSchema = z.object({
   isAddOnItem: z.boolean().default(false),
   sortOrder: z.number().int().default(0),
   variants: z.array(menuVariantInputSchema).default([]),
-  addOnIds: z.array(z.string().trim().min(1)).default([]),
+  addOnIds: z
+    .array(z.string().trim().min(1))
+    .refine((ids) => new Set(ids).size === ids.length, {
+      message: "Add-on tidak boleh duplikat",
+    })
+    .default([]),
 });
 
 export const updateMenuItemSchema = createMenuItemSchema

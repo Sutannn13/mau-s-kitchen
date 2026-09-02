@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { DatabaseZap } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { AdminSessionRefresher } from "@/components/admin/AdminSessionRefresher";
 import { MotionProvider } from "@/components/admin/MotionProvider";
 import {
   hasAdminAuthorizationConfigured,
@@ -75,6 +76,7 @@ export default async function AdminPanelLayout({
 
   return (
     <div className="min-h-screen bg-cream">
+      <AdminSessionRefresher />
       <AdminSidebar email={session.email} />
       {/* Sidebar desktop fixed; geser konten selebar sidebar (var --sidebar-w
           dikelola AdminSidebar agar padding ikut berubah saat sidebar

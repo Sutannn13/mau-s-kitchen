@@ -88,6 +88,51 @@ export interface AtomicMenuItemUpdate {
   addOnIds?: readonly string[];
 }
 
+export interface AtomicMenuItemCreate {
+  item: {
+    id: string;
+    categoryId: string;
+    name: string;
+    description: string;
+    basePrice: number;
+    unit: "porsi" | "cup" | "item";
+    isBestSeller: boolean;
+    isAddOnItem: boolean;
+    sortOrder: number;
+  };
+  variants: readonly AtomicMenuVariant[];
+  addOnIds: readonly string[];
+}
+
+// Creation must commit the item and every child row together; split the RPC
+// only if menu creation later needs a separate transactional domain.
+export async function createMenuItemAtomically(
+  supabase: SupabaseClient,
+  input: AtomicMenuItemCreate,
+): Promise<unknown | null> {
+  const result = await supabase.rpc("admin_create_menu_item", {
+    p_item: {
+      id: input.item.id,
+      category_id: input.item.categoryId,
+      name: input.item.name,
+      description: input.item.description,
+      base_price: input.item.basePrice,
+      unit: input.item.unit,
+      is_best_seller: input.item.isBestSeller,
+      is_addon_item: input.item.isAddOnItem,
+      sort_order: input.item.sortOrder,
+    },
+    p_variants: input.variants.map((variant) => ({
+      id: variant.id,
+      name: variant.name,
+      price: variant.price,
+      sort_order: variant.sortOrder,
+    })),
+    p_addon_ids: [...input.addOnIds],
+  });
+  return result.error;
+}
+
 // Satu RPC berarti update header + replace variants/add-ons berada dalam satu
 // transaksi PostgreSQL. Pecah hanya bila domain menu kelak punya write lain.
 export async function updateMenuItemAtomically(
