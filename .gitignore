@@ -40,6 +40,10 @@ Thumbs.db
 /.kilo/
 /gui-test-screenshots/
 /workflow-gate.json
+/.playwright-mcp/
+/supabase/.temp/
+# root-level QA screenshots (audit/homepage/kontak/etc) — keep src assets tracked
+/*.png
 
 # temporary staging concurrency test script (never commit)
 /scripts/test-staging-concurrency.mjs
