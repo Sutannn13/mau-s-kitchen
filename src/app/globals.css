@@ -482,3 +482,24 @@
     break-inside: avoid;
   }
 }
+
+/* ---------------------------------------------------------------------
+ * Skeleton loading admin (loading.tsx di (panel)) — shimmer lembut ala
+ * desain "dapur": gradasi bergerak dari kiri ke kanan di atas warna
+ * dasar brown/10. Dimatikan prefers-reduced-motion oleh jaring pengaman
+ * global (animation: none) supaya hanya blok statis yang tampil.
+ * --------------------------------------------------------------------- */
+@keyframes admin-skeleton-shimmer {
+  from { background-position: -180% 0; }
+  to { background-position: 180% 0; }
+}
+.admin-skeleton {
+  background-image: linear-gradient(
+    100deg,
+    rgba(107, 66, 38, 0.08) 35%,
+    rgba(199, 154, 75, 0.22) 50%,
+    rgba(107, 66, 38, 0.08) 65%
+  );
+  background-size: 200% 100%;
+  animation: admin-skeleton-shimmer 1.6s ease-in-out infinite;
+}
