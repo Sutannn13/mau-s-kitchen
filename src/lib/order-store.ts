@@ -92,6 +92,12 @@ export function evaluatePaymentClaim(order: Order): PaymentClaimResult | null {
       message: "Ongkir belum ditetapkan admin. Tunggu total akhir sebelum membayar.",
     };
   }
+  if (order.paymentMethod === "qris" && !order.paymentProofUrl) {
+    return {
+      outcome: "not-allowed",
+      message: "Unggah bukti pembayaran QRIS sebelum menandai sudah bayar.",
+    };
+  }
   if (order.paymentClaimedAt) {
     return { outcome: "already-claimed", claimedAt: order.paymentClaimedAt };
   }
@@ -119,7 +125,7 @@ export async function markPaymentClaimed(
         const claimedAt = new Date().toISOString();
         // Guard `is null` + `status BARU` membuat klaim aman terhadap
         // dua request bersamaan: yang kedua tidak mendapat baris.
-        const updated = await supabase
+        let updateQuery = supabase
           .from("orders")
           .update({ payment_claimed_at: claimedAt })
           .eq("code", code)
@@ -128,7 +134,11 @@ export async function markPaymentClaimed(
           .is("payment_claimed_at", null)
           .or(
             "order_type.eq.ambil,and(delivery_fee.not.is.null,delivery_provider.not.is.null,courier_cost.not.is.null)",
-          )
+          );
+        if (found.row.payment_method === "qris") {
+          updateQuery = updateQuery.not("payment_proof_url", "is", null);
+        }
+        const updated = await updateQuery
           .select("payment_claimed_at")
           .maybeSingle();
 

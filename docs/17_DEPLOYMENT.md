@@ -104,6 +104,9 @@ adalah `https://maukitchen.my.id`.
    deploy aplikasi terbaru. Preflight akan menolak deploy bila tabel counter
    atomik belum tersedia. Migration menambah RPC v2 tanpa menghapus RPC v1,
    sehingga production lama tetap melayani checkout selama rollout.
+9. Terapkan `supabase/migrations/20260904053000_harden_qris_verification.sql`
+   sebelum mengaktifkan flow QRIS baru. Verifikasi satu reference merchant tidak
+   dapat dipakai untuk dua order dan QRIS tanpa bukti tidak dapat dikonfirmasi.
 
 ### 17.5.1 Staging terisolasi
 

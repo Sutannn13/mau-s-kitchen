@@ -1,5 +1,12 @@
 import { z } from "zod";
 
+import {
+  isValidPaymentReference,
+  normalizePaymentReference,
+  PAYMENT_REFERENCE_MAX_LENGTH,
+  PAYMENT_REFERENCE_MIN_LENGTH,
+} from "@/lib/order-payment";
+
 // Skema dipakai ulang di form checkout (klien) dan route handler (server).
 // Lihat docs/11_API_SPEC.md §11.2 dan docs/16_TESTING_QA.md §16.2.
 export const phoneSchema = z
@@ -60,6 +67,23 @@ export const patchOrderSchema = z
   .object({
     status: z.enum(["BARU", "DIKONFIRMASI", "DIPROSES", "DIKIRIM", "SELESAI", "BATAL"]).optional(),
     paymentVerified: z.literal(true).optional(),
+    paymentReference: z
+      .string()
+      .trim()
+      .min(
+        PAYMENT_REFERENCE_MIN_LENGTH,
+        `Referensi transaksi minimal ${PAYMENT_REFERENCE_MIN_LENGTH} karakter`,
+      )
+      .max(
+        PAYMENT_REFERENCE_MAX_LENGTH,
+        `Referensi transaksi maksimal ${PAYMENT_REFERENCE_MAX_LENGTH} karakter`,
+      )
+      .transform(normalizePaymentReference)
+      .refine(
+        isValidPaymentReference,
+        "Referensi transaksi hanya boleh memakai huruf, angka, spasi, atau tanda ._:/#-",
+      )
+      .optional(),
     adminNote: z.string().trim().max(500, "Catatan admin maksimal 500 karakter").optional(),
     deliveryFee: z
       .number()
@@ -85,7 +109,27 @@ export const patchOrderSchema = z
       patch.deliveryProvider !== undefined ||
       patch.courierCost !== undefined,
     { message: "Tidak ada perubahan yang dikirim" },
-  );
+  )
+  .superRefine((patch, context) => {
+    if (patch.paymentVerified === true && patch.status === undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["paymentVerified"],
+        message: "Verifikasi pembayaran wajib dikirim bersama perubahan status",
+      });
+    }
+    if (
+      patch.paymentReference !== undefined &&
+      (patch.status === undefined || patch.paymentVerified !== true)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["paymentReference"],
+        message:
+          "Referensi transaksi wajib dikirim bersama verifikasi dan perubahan status",
+      });
+    }
+  });
 
 export type PatchOrderInput = z.infer<typeof patchOrderSchema>;
 

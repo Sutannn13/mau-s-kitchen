@@ -48,8 +48,21 @@ function buildOrder(overrides: Partial<Order> = {}): Order {
 }
 
 describe("evaluatePaymentClaim", () => {
-  it("mengizinkan klaim untuk qris/transfer berstatus BARU", () => {
-    expect(evaluatePaymentClaim(buildOrder())).toBeNull();
+  it("mewajibkan bukti sebelum QRIS dapat diklaim", () => {
+    const result = evaluatePaymentClaim(buildOrder());
+
+    expect(result).toMatchObject({ outcome: "not-allowed" });
+    expect(result && "message" in result ? result.message : "").toContain(
+      "Unggah bukti",
+    );
+  });
+
+  it("mengizinkan QRIS berbukti dan mempertahankan klaim transfer", () => {
+    expect(
+      evaluatePaymentClaim(
+        buildOrder({ paymentProofUrl: "payment-proofs/qris.webp" }),
+      ),
+    ).toBeNull();
     expect(
       evaluatePaymentClaim(buildOrder({ paymentMethod: "transfer" })),
     ).toBeNull();
@@ -96,6 +109,7 @@ describe("evaluatePaymentClaim", () => {
         deliveryProvider: "gosend",
         courierCost: 15_000,
         total: 37_000,
+        paymentProofUrl: "payment-proofs/delivery-qris.webp",
       }),
     );
 
@@ -104,7 +118,12 @@ describe("evaluatePaymentClaim", () => {
 
   it("mengembalikan already-claimed bila klaim sudah tercatat", () => {
     const claimedAt = "2026-08-23T06:00:00.000Z";
-    const result = evaluatePaymentClaim(buildOrder({ paymentClaimedAt: claimedAt }));
+    const result = evaluatePaymentClaim(
+      buildOrder({
+        paymentClaimedAt: claimedAt,
+        paymentProofUrl: "payment-proofs/qris.webp",
+      }),
+    );
     expect(result).toEqual({ outcome: "already-claimed", claimedAt });
   });
 });
@@ -113,7 +132,10 @@ describe("markPaymentClaimed", () => {
   let order: Order;
 
   beforeEach(async () => {
-    order = buildOrder({ code: `MK-260823-${Math.random().toString().slice(2, 5)}` });
+    order = buildOrder({
+      code: `MK-260823-${Math.random().toString().slice(2, 5)}`,
+      paymentProofUrl: "payment-proofs/qris.webp",
+    });
     await saveOrder(order);
   });
 

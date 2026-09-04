@@ -124,12 +124,15 @@ describe("buildOrderCode", () => {
 | E2E-34 | Admin mengunduh rekap Excel                                                        | File `.xlsx` terbuka dengan sheet Ringkasan, Pesanan, dan Item Pesanan; KPI sesuai data server          |
 | E2E-35 | Filter/sort tabel Pesanan di Excel                                                 | Header tetap terlihat, nilai tanggal/Rupiah dikenali sebagai tipe data, dan formula tidak rusak         |
 | E2E-36 | Admin mengunduh CSV Mentah                                                         | CSV hanya berisi satu header dan tabel detail; input berawalan karakter formula tetap dinetralisasi     |
-| E2E-37 | Admin mencoba memajukan QRIS/transfer BARU tanpa klaim/bukti atau acknowledgement   | API menolak `PAYMENT_SUBMISSION_REQUIRED`/`PAYMENT_VERIFICATION_REQUIRED`; pembatalan tetap boleh        |
+| E2E-37 | Admin memajukan QRIS BARU tanpa bukti/reference/acknowledgement                      | API menolak `PAYMENT_PROOF_REQUIRED`/`PAYMENT_REFERENCE_REQUIRED`/`PAYMENT_VERIFICATION_REQUIRED`; pembatalan tetap boleh |
 | E2E-38 | Kirim 20 checkout valid serentak dengan idempotency key berbeda                    | Seluruhnya berhasil dengan 20 kode unik berurutan; tidak ada `503`, header tanpa item, atau kode terpakai ulang |
 | E2E-39 | Cari kode yang tersimpan dari halaman "Pesanan Saya"                               | Navigasi memakai token lokal ke tautan privat yang valid                                                |
 | E2E-40 | Cari kode asing tanpa token dari halaman "Pesanan Saya"                            | Tetap di halaman daftar; error inline tampil dan fokus pencarian tetap dapat digunakan                  |
 | E2E-41 | Tempel tautan privat lengkap dari perangkat lain                                    | Navigasi ke rincian lokal dengan kode dan token yang tervalidasi; tidak ada open redirect               |
 | E2E-42 | Sinkronkan pesanan sampai status `DIKIRIM` pada lebar 360px                          | Pill dan timeline menampilkan "Dikirim" secara eksplisit tanpa scroll horizontal                      |
+| E2E-43 | Pelanggan QRIS mencoba klaim tanpa upload bukti                                     | API menolak `409 CLAIM_NOT_ALLOWED`; UI tidak menyediakan tombol lewati unggah                          |
+| E2E-44 | Dua order QRIS diverifikasi dengan reference merchant yang sama                     | Order pertama berhasil; order kedua ditolak `409 PAYMENT_REFERENCE_ALREADY_USED`                        |
+| E2E-45 | Buka daftar/detail admin untuk pembayaran non-tunai                                 | Klaim, bukti masuk, dan verifikasi admin tampil sebagai tiga keadaan terpisah                            |
 
 ---
 

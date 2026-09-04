@@ -12,6 +12,9 @@ sebelum seluruh bagian wajib di bawah lulus.
   (target 700KB, hasil maksimal 1MiB). Server memvalidasi ulang ukuran,
   signature, struktur container, dan dimensi sebelum menyimpan ke bucket privat;
   bukti hanya dapat dikirim sekali saat `BARU`.
+- QRIS wajib memiliki bukti unggahan dan reference transaksi merchant unik.
+  Reference serta waktu verifikasi disimpan atomik; unique index mencegah satu
+  mutasi dipakai untuk dua order.
 - Checkout dan upload bukti membatasi body saat stream dibaca, termasuk request
   chunked tanpa `Content-Length`. Checkout juga memiliki batas item/kuantitas,
   rate limiter Supabase lintas instance, dan gagal aman saat database atau
@@ -41,6 +44,8 @@ sebelum seluruh bagian wajib di bawah lulus.
 6. Audit daftar user; sisakan hanya akun admin sah.
 7. Pastikan bucket `payment-proofs` private, maksimum 1MiB, dan hanya menerima
    `image/jpeg`, `image/png`, `image/webp`. Migration mengaturnya otomatis.
+8. Jalankan `supabase/migrations/20260904053000_harden_qris_verification.sql`
+   dan uji bahwa duplicate `payment_reference` ditolak sebelum QRIS diaktifkan.
 
 ## Environment produksi — wajib
 

@@ -10,7 +10,10 @@ import {
   isDeliveryPlanReady,
 } from "@/lib/order-delivery";
 import { formatRupiah } from "@/lib/format";
-import { requiresManualPaymentVerification } from "@/lib/order-payment";
+import {
+  isValidPaymentReference,
+  requiresManualPaymentVerification,
+} from "@/lib/order-payment";
 import { canTransition, statusLabels } from "@/lib/order-status";
 import { canEditDeliveryFee } from "@/lib/order-pricing";
 import type {
@@ -78,6 +81,7 @@ export function OrderDetailActions({
   const [pendingPaymentStatus, setPendingPaymentStatus] =
     useState<OrderStatus | null>(null);
   const [paymentVerified, setPaymentVerified] = useState(false);
+  const [paymentReference, setPaymentReference] = useState("");
 
   async function patch(body: Record<string, unknown>): Promise<boolean> {
     setIsBusy(true);
@@ -123,15 +127,23 @@ export function OrderDetailActions({
     if (!pendingPaymentStatus || !paymentVerified) {
       return;
     }
+    if (paymentMethod === "qris" && !isValidPaymentReference(paymentReference)) {
+      setError("Masukkan referensi transaksi QRIS minimal 4 karakter.");
+      return;
+    }
     if (
       await patch({
         status: pendingPaymentStatus,
         paymentVerified: true,
+        ...(paymentMethod === "qris"
+          ? { paymentReference: paymentReference.trim() }
+          : {}),
       })
     ) {
       setNotice(`Pembayaran diverifikasi dan status berubah menjadi ${statusLabels[pendingPaymentStatus]}.`);
       setPendingPaymentStatus(null);
       setPaymentVerified(false);
+      setPaymentReference("");
     }
   }
 
@@ -198,7 +210,12 @@ export function OrderDetailActions({
     ? Number.parseInt(effectiveCostValue, 10)
     : null;
   const deliveryMargin = calculateDeliveryMargin(parsedFee, parsedCourierCost);
-  const paymentSubmissionPresent = paymentClaimed || paymentProofSubmitted;
+  const paymentSubmissionPresent =
+    paymentMethod === "qris"
+      ? paymentProofSubmitted
+      : paymentClaimed || paymentProofSubmitted;
+  const paymentReferenceValid =
+    paymentMethod !== "qris" || isValidPaymentReference(paymentReference);
 
   return (
     <section className="mt-3.5 sm:mt-6 space-y-4 sm:space-y-6 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
@@ -220,14 +237,36 @@ export function OrderDetailActions({
             </p>
             {!paymentSubmissionPresent ? (
               <p className="mt-2 font-semibold text-chili">
-                Belum bisa dikonfirmasi. Minta pelanggan menekan tombol sudah bayar atau mengunggah bukti terlebih dahulu.
+                {paymentMethod === "qris"
+                  ? "Belum bisa dikonfirmasi. Bukti pembayaran QRIS wajib diunggah pelanggan."
+                  : "Belum bisa dikonfirmasi. Minta pelanggan menekan tombol sudah bayar atau mengunggah bukti terlebih dahulu."}
               </p>
+            ) : null}
+            {paymentMethod === "qris" ? (
+              <label className="mt-3 block text-xs font-semibold text-brown/80">
+                Referensi transaksi pada mutasi QRIS
+                <input
+                  type="text"
+                  value={paymentReference}
+                  maxLength={100}
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  disabled={!paymentProofSubmitted}
+                  onChange={(event) => setPaymentReference(event.target.value)}
+                  placeholder="Contoh: 1234567890ABC"
+                  className="mt-1 min-h-11 w-full rounded-xl border border-gold/30 bg-cream px-3 text-sm uppercase text-brown-deep outline-none focus:border-gold focus:ring-2 focus:ring-gold/30 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+                <span className="mt-1 block font-normal leading-4 text-brown/65">
+                  Salin dari mutasi merchant. Referensi yang sudah dipakai order
+                  lain akan ditolak.
+                </span>
+              </label>
             ) : null}
             <label className="mt-3 flex min-h-11 cursor-pointer items-start gap-2 rounded-lg bg-cream/70 p-2.5">
               <input
                 type="checkbox"
                 checked={paymentVerified}
-                disabled={!paymentSubmissionPresent}
+                disabled={!paymentSubmissionPresent || !paymentReferenceValid}
                 onChange={(event) => setPaymentVerified(event.target.checked)}
                 className="mt-0.5 size-5 accent-gold"
               />
@@ -236,7 +275,12 @@ export function OrderDetailActions({
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
-                disabled={isBusy || !paymentSubmissionPresent || !paymentVerified}
+                disabled={
+                  isBusy ||
+                  !paymentSubmissionPresent ||
+                  !paymentReferenceValid ||
+                  !paymentVerified
+                }
                 onClick={() => void handleVerifiedPaymentStatus()}
                 className="min-h-11 rounded-full bg-gold px-4 font-bold text-brown-deep disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -248,6 +292,7 @@ export function OrderDetailActions({
                 onClick={() => {
                   setPendingPaymentStatus(null);
                   setPaymentVerified(false);
+                  setPaymentReference("");
                 }}
                 className="min-h-11 rounded-full border border-gold/40 px-4 font-semibold text-brown"
               >

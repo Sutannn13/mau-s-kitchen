@@ -203,6 +203,7 @@ Mengembalikan detail pesanan untuk halaman pelacakan pelanggan.
 {
   "status": "DIKONFIRMASI",
   "paymentVerified": true,
+  "paymentReference": "QRIS-1234567890",
   "adminNote": "Bukti transfer valid",
   "deliveryFee": 12000,
   "deliveryProvider": "gosend",
@@ -213,11 +214,15 @@ Mengembalikan detail pesanan untuk halaman pelacakan pelanggan.
 Aturan:
 - Transisi status wajib mengikuti state machine di `04_BUSINESS_FLOW.md`.
 - Transisi tidak sah → `400 INVALID_STATUS_TRANSITION`.
-- Untuk QRIS/transfer, perpindahan dari `BARU` ke status maju wajib mengirim
-  `paymentVerified: true` setelah admin mencocokkan mutasi/bukti dengan total
-  server. Pesanan juga harus sudah memiliki klaim bayar atau bukti unggahan;
-  jika belum API menolak `409 PAYMENT_SUBMISSION_REQUIRED`, sedangkan request
-  tanpa acknowledgement ditolak `409 PAYMENT_VERIFICATION_REQUIRED`.
+- Untuk QRIS, perpindahan dari `BARU` ke status maju wajib memiliki bukti
+  unggahan, `paymentVerified: true`, dan `paymentReference` merchant sepanjang
+  4–100 karakter. Reference dinormalisasi uppercase dan wajib unik lintas order.
+  Tanpa bukti API menolak `409 PAYMENT_PROOF_REQUIRED`; tanpa reference menolak
+  `409 PAYMENT_REFERENCE_REQUIRED`; reference yang pernah dipakai menolak
+  `409 PAYMENT_REFERENCE_ALREADY_USED`.
+- Transfer mempertahankan syarat klaim atau bukti unggahan ditambah
+  `paymentVerified: true`; kegagalan menghasilkan `PAYMENT_SUBMISSION_REQUIRED`
+  atau `PAYMENT_VERIFICATION_REQUIRED`.
 - `paymentVerified` hanya acknowledgement request admin dan tidak boleh menjadi
   satu-satunya perubahan dalam body PATCH.
 - `deliveryFee`, `deliveryProvider`, dan `courierCost` wajib dikirim bersama
@@ -259,11 +264,13 @@ Aturan:
 ## 11.6b `POST /api/orders/[kode]/claim`
 
 Pelanggan menandai pesanannya sudah dibayar dari halaman `/pembayaran/[kode]`
-(tombol "Saya Sudah Bayar & Kirim Bukti").
+(tombol "Saya Sudah Bayar").
 
 - Wajib query `token` acak milik pesanan; tanpa login pelanggan.
-- Hanya pesanan **non-tunai** berstatus **`BARU`** dengan total dan rencana pengantaran final. Delivery
-  tanpa rencana lengkap ditolak sebagai `not-allowed`.
+- Hanya pesanan **non-tunai** berstatus **`BARU`** dengan total dan rencana
+  pengantaran final. Untuk QRIS, bukti pembayaran wajib sudah tersimpan;
+  klaim tanpa bukti ditolak `409 CLAIM_NOT_ALLOWED`. Transfer mempertahankan
+  fallback klaim tanpa upload aplikasi.
 - **Tidak mengubah status pesanan.** Hanya mengisi `payment_claimed_at`;
   verifikasi & transisi ke `DIKONFIRMASI` tetap wewenang admin (§4.3).
 - Idempoten: klaim berulang tetap `200`.

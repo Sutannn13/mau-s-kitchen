@@ -9,7 +9,8 @@ import {
 } from "@/lib/order-db";
 import { canTransition } from "@/lib/order-status";
 import {
-  hasPaymentSubmission,
+  evaluateManualPaymentVerification,
+  normalizePaymentReference,
   requiresManualPaymentVerification,
 } from "@/lib/order-payment";
 import {
@@ -246,6 +247,7 @@ export async function getAdminOrder(
 export interface UpdateOrderPatch {
   status?: OrderStatus;
   paymentVerified?: true;
+  paymentReference?: string;
   adminNote?: string;
   deliveryFee?: number;
   deliveryProvider?: DeliveryProvider;
@@ -276,6 +278,13 @@ export async function persistOrderUpdate(
   const updated = await updateQuery.select("*").maybeSingle();
 
   if (updated.error) {
+    if (updated.error.code === "23505") {
+      throw new AdminError(
+        409,
+        "PAYMENT_REFERENCE_ALREADY_USED",
+        "Referensi transaksi sudah dipakai untuk pesanan lain. Cocokkan kembali mutasi QRIS.",
+      );
+    }
     throw new AdminError(500, "INTERNAL_ERROR", "Gagal menyimpan perubahan.");
   }
   if (!updated.data) {
@@ -345,26 +354,26 @@ export async function updateOrder(
         current.row.payment_method,
       )
     ) {
-      if (
-        !hasPaymentSubmission(
-          current.row.payment_claimed_at,
-          current.row.payment_proof_url,
-        )
-      ) {
+      const verificationError = evaluateManualPaymentVerification({
+        paymentMethod: current.row.payment_method,
+        paymentClaimedAt: current.row.payment_claimed_at,
+        paymentProofUrl: current.row.payment_proof_url,
+        paymentVerified: patch.paymentVerified === true,
+        paymentReference: patch.paymentReference,
+      });
+      if (verificationError) {
         throw new AdminError(
           409,
-          "PAYMENT_SUBMISSION_REQUIRED",
-          "Pelanggan belum mengirim klaim atau bukti pembayaran.",
-        );
-      }
-      if (patch.paymentVerified !== true) {
-        throw new AdminError(
-          409,
-          "PAYMENT_VERIFICATION_REQUIRED",
-          "Periksa mutasi rekening atau bukti bayar dan cocokkan nominal sebelum mengonfirmasi pesanan.",
+          verificationError.code,
+          verificationError.message,
         );
       }
       update.payment_verified_at = new Date().toISOString();
+      if (current.row.payment_method === "qris") {
+        update.payment_reference = normalizePaymentReference(
+          patch.paymentReference ?? "",
+        );
+      }
     }
     if (
       statusRequiresFinalTotal(patch.status) &&
@@ -377,6 +386,17 @@ export async function updateOrder(
       );
     }
     update.status = patch.status;
+  }
+
+  if (
+    patch.paymentReference !== undefined &&
+    update.payment_reference === undefined
+  ) {
+    throw new AdminError(
+      400,
+      "PAYMENT_REFERENCE_NOT_ALLOWED",
+      "Referensi transaksi hanya dapat disimpan saat memverifikasi pembayaran QRIS.",
+    );
   }
 
   if (patch.adminNote !== undefined) {

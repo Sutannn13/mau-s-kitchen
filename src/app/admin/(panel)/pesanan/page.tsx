@@ -192,15 +192,16 @@ export default async function AdminPesananPage({
               (total, item) => total + item.quantity,
               0,
             );
-            const awaitingVerification =
-              Boolean(order.paymentClaimedAt) && order.status === "BARU";
+            const paymentClaimed = Boolean(order.paymentClaimedAt);
+            const proofUploaded = Boolean(order.paymentProofUrl);
+            const paymentVerified = Boolean(order.paymentVerifiedAt);
             return (
               <li
                 // Key menyertakan status + klaim bayar: perubahan salah satunya
                 // me-remount kartu sehingga animasi card-update/card-new
                 // memutar sekali — admin langsung tahu kartu mana yang berubah
                 // di tengah auto-refresh 30 detik (docs/14 §14.2).
-                key={`${order.code}-${order.status}-${awaitingVerification ? "claim" : "no-claim"}`}
+                key={`${order.code}-${order.status}-${paymentClaimed ? "claim" : "no-claim"}-${proofUploaded ? "proof" : "no-proof"}-${paymentVerified ? "verified" : "unverified"}`}
                 className={`au-card rounded-2xl p-4 ${
                   order.status === "BARU"
                     ? "animate-card-new !border-flame/50 bg-flame/[0.04]"
@@ -212,14 +213,24 @@ export default async function AdminPesananPage({
                     {order.code}
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
-                    {awaitingVerification ? (
+                    {paymentClaimed ? (
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-bold text-success ring-1 ring-inset ring-success/20">
                         <BadgeCheck
                           aria-hidden="true"
                           className="size-3.5"
                           strokeWidth={2.25}
                         />
-                        Klaim sudah bayar
+                        Klaim tercatat
+                      </span>
+                    ) : null}
+                    {proofUploaded ? (
+                      <span className="inline-flex items-center rounded-full bg-info/10 px-3 py-1 text-xs font-bold text-info ring-1 ring-inset ring-info/20">
+                        Bukti masuk
+                      </span>
+                    ) : null}
+                    {paymentVerified ? (
+                      <span className="inline-flex items-center rounded-full bg-gold/20 px-3 py-1 text-xs font-bold text-brown-deep ring-1 ring-inset ring-gold/30">
+                        Pembayaran terverifikasi
                       </span>
                     ) : null}
                     {order.paymentMethod === "tunai" && order.status === "BARU" ? (

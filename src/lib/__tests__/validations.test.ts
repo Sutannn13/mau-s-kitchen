@@ -168,6 +168,39 @@ describe("patchOrderSchema (docs/11 §11.5)", () => {
         paymentVerified: false,
       }).success,
     ).toBe(false);
+    expect(
+      patchOrderSchema.safeParse({
+        status: "DIKONFIRMASI",
+        paymentVerified: true,
+        paymentReference: "QRIS-OK\nforged-log-entry",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("menormalisasi reference dan mewajibkannya terikat ke verifikasi status", () => {
+    const valid = patchOrderSchema.safeParse({
+      status: "DIKONFIRMASI",
+      paymentVerified: true,
+      paymentReference: "  qris-ab12  ",
+    });
+    expect(valid.success).toBe(true);
+    if (valid.success) {
+      expect(valid.data.paymentReference).toBe("QRIS-AB12");
+    }
+
+    expect(
+      patchOrderSchema.safeParse({ paymentReference: "QRIS-AB12" }).success,
+    ).toBe(false);
+    expect(
+      patchOrderSchema.safeParse({ paymentVerified: true }).success,
+    ).toBe(false);
+    expect(
+      patchOrderSchema.safeParse({
+        status: "DIKONFIRMASI",
+        paymentVerified: true,
+        paymentReference: " ",
+      }).success,
+    ).toBe(false);
   });
 
   it("menolak status di luar daftar resmi", () => {

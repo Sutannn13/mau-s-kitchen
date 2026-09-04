@@ -119,4 +119,30 @@ describe("persistOrderUpdate", () => {
       ),
     ).rejects.toMatchObject({ statusCode: 409, code: "ORDER_CONFLICT" });
   });
+
+  it("menolak verifikasi order kedua ketika reference sudah dipakai", async () => {
+    const { supabase } = updateClient({
+      data: null,
+      error: {
+        code: "23505",
+        message: 'duplicate key violates "orders_payment_reference_idx"',
+      },
+    });
+
+    await expect(
+      persistOrderUpdate(
+        supabase,
+        "MK-260904-002",
+        { status: "BARU", updated_at: "2026-09-04T05:00:00.000Z" },
+        {
+          status: "DIKONFIRMASI",
+          payment_reference: "QRIS-TRANSACTION-001",
+        },
+        true,
+      ),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+      code: "PAYMENT_REFERENCE_ALREADY_USED",
+    });
+  });
 });

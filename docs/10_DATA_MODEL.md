@@ -160,6 +160,11 @@ create table public.orders (
   -- Waktu pelanggan menekan "Saya Sudah Bayar" di /pembayaran/[kode].
   -- Klaim saja: status tetap BARU sampai admin memverifikasi (§4.3).
   payment_claimed_at timestamptz,
+  -- Diisi server ketika admin menyelesaikan verifikasi manual.
+  payment_verified_at timestamptz,
+  -- Reference mutasi merchant, dinormalisasi uppercase dan unik lintas order.
+  -- Wajib untuk QRIS baru yang bergerak keluar dari BARU.
+  payment_reference text,
 
   status          text not null default 'BARU'
                   check (status in ('BARU','DIKONFIRMASI','DIPROSES','DIKIRIM','SELESAI','BATAL')),
@@ -400,9 +405,10 @@ memerlukan pasangan kode + `public_token`.
   diterapkan sebelum kode aplikasi terbaru agar checkout serentak tidak berebut
   kode dan RPC mengembalikan kode final ke server. RPC v1 sengaja tidak dihapus:
   migrasi dapat diterapkan sebelum deploy tanpa merusak aplikasi production lama.
-- Migrasi yang sama menambah `payment_verified_at` dan trigger database. QRIS /
-  transfer tidak dapat meninggalkan status `BARU` tanpa klaim/bukti serta jejak
-  verifikasi admin, bahkan bila update tidak sengaja melewati helper aplikasi.
+- Migrasi atomic order menambah `payment_verified_at`. Hardening berikutnya di
+  `20260904053000_harden_qris_verification.sql` menambah `payment_reference`
+  unik. QRIS tidak dapat meninggalkan `BARU` tanpa bukti, reference, dan jejak
+  verifikasi admin; transfer tetap membutuhkan klaim/bukti dan verifikasi.
 - Project yang terlanjur menjalankan migrasi integritas sebelum migrasi klaim
   pembayaran wajib menjalankan
   `supabase/migrations/20260824000100_payment_claim_repair.sql`. Tanpa kolom

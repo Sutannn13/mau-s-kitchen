@@ -102,7 +102,9 @@ export async function POST(
     return jsonError(
       503,
       "FITUR_BELUM_AKTIF",
-      "Penyimpanan bukti bayar belum dikonfigurasi. Kirim bukti lewat WhatsApp ya.",
+      order.paymentMethod === "qris"
+        ? "Unggah bukti QRIS sedang tidak tersedia. Hubungi admin sebelum melanjutkan."
+        : "Penyimpanan bukti bayar belum dikonfigurasi. Kirim bukti lewat WhatsApp ya.",
     );
   }
 

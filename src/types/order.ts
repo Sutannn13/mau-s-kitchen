@@ -53,6 +53,10 @@ export interface Order {
    * mengonfirmasi (docs/04_BUSINESS_FLOW.md §4.3).
    */
   paymentClaimedAt?: string;
+  /** Referensi transaksi merchant yang dicatat admin saat verifikasi QRIS. */
+  paymentReference?: string;
+  /** Waktu server mencatat verifikasi pembayaran manual oleh admin. */
+  paymentVerifiedAt?: string;
   status: OrderStatus;
   adminNote?: string;
   updatedAt: string;

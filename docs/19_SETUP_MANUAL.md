@@ -189,7 +189,7 @@ Untuk mengizinkan admin melalui claim alih-alih allowlist, set
 
 ## Migrasi klaim pembayaran pelanggan
 
-Tombol "Saya Sudah Bayar & Kirim Bukti" menyimpan waktu klaim di kolom baru
+Tombol "Saya Sudah Bayar" menyimpan waktu klaim di kolom
 `orders.payment_claimed_at`.
 
 - **Project baru**: sudah termasuk di `supabase/schema.sql`.
@@ -217,6 +217,14 @@ Migrasi ini menambah unique idempotency key checkout serta RPC transaksi
 `insert_order_with_items` dan `admin_update_menu_item`. Deploy kode tanpa
 migrasi ini akan membuat checkout dan edit menu gagal tertutup (`5xx`), bukan
 diam-diam menulis data parsial. File migrasi aman dijalankan ulang.
+
+## Migrasi hardening verifikasi QRIS
+
+Sebelum merilis flow QRIS baru, jalankan
+`supabase/migrations/20260904053000_harden_qris_verification.sql`. Migration ini
+menambah `orders.payment_reference`, unique index lintas order, dan trigger yang
+mewajibkan bukti + reference + waktu verifikasi sebelum QRIS keluar dari
+`BARU`. Kolom nullable menjaga order lama tetap dapat dibaca.
 
 ➡️ Kembali ke `README.md`, `docs/17_DEPLOYMENT.md`, atau
 `docs/20_SECURITY_GO_LIVE.md` untuk detail teknis.

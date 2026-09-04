@@ -38,21 +38,19 @@ Halaman /pembayaran/[kode] menampilkan:
    ↓
 Pelanggan pindai QRIS → ketik nominal sendiri → bayar
    ↓
-Pelanggan tekan "Saya Sudah Bayar & Kirim Bukti"
+Pelanggan unggah bukti QRIS di website
    ↓
-WhatsApp terbuka dengan pesan konfirmasi otomatis
+Pelanggan tekan "Saya Sudah Bayar"
    ↓
-Admin cek mutasi → konfirmasi pesanan
+Admin cek mutasi → masukkan reference transaksi merchant → konfirmasi pesanan
 ```
 
-Tombol pelanggan hanya membuat **klaim**, bukan bukti pembayaran yang dipercaya.
-Saat admin hendak mengubah QRIS/transfer dari `BARU` ke status maju, UI wajib
-memastikan klaim/bukti sudah ada, menampilkan total server, dan meminta checkbox
-pemeriksaan manual. API menolak request tanpa pengajuan pembayaran atau tanpa
-`paymentVerified: true`, sehingga lompatan status lewat dropdown maupun request
-langsung tidak dapat melewati langkah pemeriksaan. Server menulis
-`payment_verified_at`; trigger database menolak non-tunai keluar dari `BARU`
-tanpa klaim/bukti dan timestamp tersebut.
+Klaim pelanggan bukan bukti yang dipercaya. QRIS wajib memiliki bukti unggahan;
+admin tetap mencocokkan bukti, nominal, dan mutasi merchant. Saat mengonfirmasi,
+admin memasukkan `payment_reference` dari mutasi. Server menormalisasinya ke
+uppercase, menyimpan reference dan `payment_verified_at` secara atomik, sedangkan
+unique index menolak reference yang sama pada order kedua. Trigger database
+menolak QRIS keluar dari `BARU` tanpa bukti, timestamp, dan reference tersebut.
 
 **Aturan total sebelum bayar:**
 
@@ -78,7 +76,9 @@ tanpa klaim/bukti dan timestamp tersebut.
 ### Tips mengurangi kesalahan nominal
 
 1. Tampilkan nominal sangat besar dan jelas, dengan tombol salin.
-2. Tambahkan **kode unik 3 digit terakhir** agar mutasi mudah dicocokkan.
+2. Opsional: tambahkan **kode unik 3 digit terakhir** bila pemilik menyetujui
+   perubahan nominal. Implementasi saat ini memilih reference transaksi merchant
+   agar total pelanggan tetap sama dengan harga + ongkir.
    Contoh: total Rp118.000 → tagih **Rp118.007** (007 = urutan pesanan hari itu).
    ```ts
    // total unik = total dibulatkan ke ribuan + urutan harian
@@ -179,8 +179,8 @@ export const paymentConfig = {
 | Sub-judul | "Pesanan kamu sudah kami catat. Tinggal bayar ya 🙌" |
 | Label QRIS | "Scan QRIS di bawah ini" |
 | Keterangan QRIS | "Bisa dibayar pakai DANA, GoPay, OVO, ShopeePay, atau m-banking apa pun." |
-| Peringatan nominal | "Pastikan nominal sesuai, termasuk 3 angka terakhir ya." |
-| Tombol utama | "Saya Sudah Bayar & Kirim Bukti" |
+| Peringatan nominal | "Pastikan nominal yang dibayar sama persis dengan total pesanan." |
+| Tombol utama | "Unggah Bukti Bayar", lalu "Saya Sudah Bayar" |
 | Tombol sekunder | "Kirim Ulang Pesanan ke WhatsApp" |
 | Info tunai | "Kamu memilih bayar tunai. Siapkan Rp118.000 saat pesanan datang ya." |
 | Catatan bawah | "Pesanan diproses setelah pembayaran dikonfirmasi admin." |

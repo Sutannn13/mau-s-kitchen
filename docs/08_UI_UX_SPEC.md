@@ -274,16 +274,18 @@ Langkah pembayaran:
 [ ⬆ Unggah Bukti Bayar ]  ← tombol utama
   JPG/PNG/WebP, pilih maks 4MB; otomatis disimpan maks 1MB
       ↓ unggah berhasil (animasi fade + slide)
-[ ✅ Saya Sudah Bayar & Kirim Bukti ]  ← buka WhatsApp
+[ ✅ Saya Sudah Bayar ]  ← catat klaim setelah bukti QRIS tersimpan
 [ Kirim Ulang Pesanan ke WhatsApp ]
 ```
 
 - Tombol utama **tunggal**: selama bukti belum terunggah tampil "Unggah Bukti
   Bayar"; begitu unggah sukses tombol itu sendiri beranimasi berganti menjadi
-  "Saya Sudah Bayar & Kirim Bukti" (`PaymentProofActions.tsx`). Unggah gagal →
+  "Saya Sudah Bayar" (`PaymentProofActions.tsx`). Unggah gagal →
   tombol tetap di mode unggah agar pelanggan bisa coba lagi.
-- Bila unggah tidak tersedia (metode tunai, bukti sudah ada, atau Supabase
-  Storage belum dikonfigurasi), tombol konfirmasi WhatsApp langsung tampil.
+- QRIS tidak memiliki tombol lewati unggah. Bila Storage tidak tersedia, flow
+  gagal tertutup dan meminta pelanggan menghubungi admin tanpa mencatat klaim.
+- Untuk transfer, fallback "Kirim bukti lewat WhatsApp" benar-benar membuka
+  WhatsApp; sesudahnya CTA aplikasi hanya bertuliskan "Saya Sudah Bayar".
 
 - Jika metode = Transfer: tampilkan nomor rekening BCA + tombol salin.
 - Jika metode = Tunai/COD: lewati halaman ini, langsung ke `/pesanan/[kode]`.
@@ -418,7 +420,7 @@ plus label `sr-only` "Memuat…"):
 
 Tombol tetap `disabled` selama busy agar tidak dikirim dua kali. Setelah bukti
 terkirim, tombol unggah beranimasi berganti (`AnimatePresence mode="wait"`,
-fade + slide 0.22s) menjadi tombol hijau "Saya Sudah Bayar & Kirim Bukti"
+fade + slide 0.22s) menjadi tombol hijau "Saya Sudah Bayar"
 disertai mikroteks status "Bukti bayar terkirim…" (`role="status"`). Jika unggah
 gagal, pesan `role="alert"` muncul dan tombol tetap di mode unggah.
 

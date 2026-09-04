@@ -186,8 +186,13 @@ Setiap pesanan ditampilkan sebagai kartu berisi:
   perubahan status dan mengarahkan admin ke halaman detail. Di halaman detail,
   admin harus mencocokkan mutasi/bukti dengan total server lalu mencentang
   acknowledgement sebelum status dapat dimajukan. Tombol tetap nonaktif sampai
-  klaim bayar atau bukti unggahan tersedia. API menegakkan aturan yang sama
-  untuk menutup bypass request langsung.
+  pengajuan pembayaran tersedia. Khusus QRIS, bukti unggahan dan reference
+  transaksi merchant yang unik wajib ada. API dan constraint database
+  menegakkan aturan yang sama untuk menutup bypass request langsung maupun race
+  antar-admin.
+- Daftar dan detail menampilkan tiga keadaan berbeda: klaim pelanggan, bukti
+  unggahan, dan verifikasi admin. Status tersebut tidak boleh disimpulkan hanya
+  dari status pesanan.
 - Panel dropdown dirender ke `document.body` sebagai overlay berposisi tetap,
   membuka ke atas bila ruang bawah sempit, dan dibatasi tinggi viewport. Ini
   mencegah panel tertutup kartu berikutnya atau terpotong stacking context
@@ -208,7 +213,8 @@ Susunan konten dari atas ke bawah:
 3. **Rincian item** - nama item, varian, add-on, catatan, jumlah, subtotal per baris
 4. **Ringkasan biaya** - subtotal, ongkir pelanggan, provider, biaya kurir aktual,
    margin/subsidi ongkir, dan total
-5. **Pembayaran** - metode, status, tombol "Lihat bukti transfer" bila sudah diunggah
+5. **Pembayaran** - metode, klaim, bukti unggahan, waktu verifikasi admin,
+   reference QRIS, dan tombol "Lihat Bukti Pembayaran"
 6. **Catatan pelanggan** - teks apa adanya dari pelanggan
 7. **Catatan admin** - textarea yang bisa disimpan
 8. **Aksi status** - deretan tombol: Konfirmasi, Proses, Kirim, Selesai, Batal

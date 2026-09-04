@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  BadgeCheck,
   ExternalLink,
   MapPin,
   MessageCircle,
@@ -256,21 +255,36 @@ export default async function AdminDetailPesananPage({
           <p className="mt-2.5 sm:mt-3 text-xs sm:text-sm text-brown-deep">
             Metode: <strong>{paymentMethodLabels[order.paymentMethod]}</strong>
           </p>
-          {/* Klaim pelanggan, bukan verifikasi — admin tetap wajib mengecek
-              mutasi/bukti sebelum mengubah status (docs/04 §4.3). */}
-          {order.paymentClaimedAt ? (
-            <p className="mt-2.5 sm:mt-3 flex items-start gap-1.5 sm:gap-2 rounded-xl bg-success/10 px-3 py-2.5 sm:px-4 sm:py-3 text-[11px] sm:text-xs leading-4 sm:leading-5 text-brown-deep">
-              <BadgeCheck
-                aria-hidden="true"
-                className="mt-0.5 size-3.5 sm:size-4 shrink-0 text-success"
-                strokeWidth={2.25}
-              />
-              <span>
-                Pelanggan menandai sudah bayar pada{" "}
-                <strong>{formatJakartaDateTime(order.paymentClaimedAt)} WIB</strong>.
-                Cek mutasi/bukti sebelum mengubah status.
-              </span>
-            </p>
+          {order.paymentMethod !== "tunai" ? (
+            <dl className="mt-3 space-y-2 rounded-xl border border-gold/20 bg-cream/60 p-3 text-[11px] leading-5 sm:text-xs">
+              <div className="flex items-start justify-between gap-3">
+                <dt className="font-semibold text-brown/70">Klaim pelanggan</dt>
+                <dd className="text-right font-bold text-brown-deep">
+                  {order.paymentClaimedAt
+                    ? `Tercatat ${formatJakartaDateTime(order.paymentClaimedAt)} WIB`
+                    : "Belum ada"}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="font-semibold text-brown/70">Bukti unggahan</dt>
+                <dd className="text-right font-bold text-brown-deep">
+                  {proofUrl ? "Tersimpan" : "Belum ada"}
+                </dd>
+              </div>
+              <div className="flex items-start justify-between gap-3">
+                <dt className="font-semibold text-brown/70">Verifikasi admin</dt>
+                <dd className="text-right font-bold text-brown-deep">
+                  {order.paymentVerifiedAt
+                    ? `Terverifikasi ${formatJakartaDateTime(order.paymentVerifiedAt)} WIB`
+                    : "Belum diverifikasi"}
+                  {order.paymentReference ? (
+                    <span className="block font-mono font-semibold">
+                      Ref: {order.paymentReference}
+                    </span>
+                  ) : null}
+                </dd>
+              </div>
+            </dl>
           ) : null}
           {order.paymentMethod === "tunai" && order.status === "BARU" ? (
             <div className="mt-2.5 sm:mt-3 rounded-xl border border-amber-400/50 bg-amber-50 p-3 sm:p-3.5 text-[11px] sm:text-xs text-amber-950 shadow-sm">
@@ -290,7 +304,7 @@ export default async function AdminDetailPesananPage({
               className="mt-3 flex min-h-9 sm:min-h-11 w-full items-center justify-center gap-1.5 sm:gap-2 rounded-full border border-gold/40 px-4 py-2 sm:px-5 sm:py-2.5 text-xs sm:text-sm font-semibold text-brown transition-colors hover:bg-gold/15 sm:w-auto"
             >
               <ExternalLink aria-hidden="true" className="size-3.5 sm:size-4" strokeWidth={1.75} />
-              Lihat Bukti Transfer
+              Lihat Bukti Pembayaran
             </a>
           ) : order.paymentMethod !== "tunai" ? (
             <p className="mt-2 text-[11px] sm:text-xs leading-4 sm:leading-5 text-brown/60">

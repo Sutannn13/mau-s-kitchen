@@ -93,11 +93,11 @@ flowchart TD
 
 **Transisi yang diperbolehkan**
 
-Untuk QRIS/transfer, setiap transisi dari `BARU` ke status maju (termasuk
-lompatan langsung) baru boleh dilakukan setelah pelanggan mengirim klaim
-"sudah bayar" atau bukti. Request juga wajib disertai acknowledgement admin
-bahwa mutasi rekening atau bukti sudah diperiksa dan nominalnya sama dengan
-total server. Klaim pelanggan sendiri tidak pernah dianggap sebagai verifikasi.
+Untuk QRIS, setiap transisi dari `BARU` ke status maju (termasuk lompatan
+langsung) membutuhkan bukti unggahan, acknowledgement admin, dan reference
+transaksi merchant yang unik. Transfer tetap membutuhkan klaim atau bukti serta
+acknowledgement admin. Klaim pelanggan sendiri tidak pernah dianggap sebagai
+verifikasi.
 
 Alur normal pesanan berurutan satu arah:
 
@@ -119,10 +119,11 @@ Aturan transisi (berlaku untuk perubahan status oleh admin):
 
 **Klaim pembayaran pelanggan (bukan status)**
 
-Di `/pembayaran/[kode]` pelanggan menekan "Saya Sudah Bayar & Kirim Bukti".
-Aksi itu **tidak mengubah status pesanan** — hanya mencatat
-`payment_claimed_at` (lihat §10.3) lalu halaman menampilkan keadaan
-"menunggu konfirmasi admin".
+Untuk QRIS, pelanggan wajib mengunggah bukti lebih dulu lalu menekan
+"Saya Sudah Bayar". Aksi terakhir **tidak mengubah status pesanan** — hanya
+mencatat `payment_claimed_at` (lihat §10.3) lalu halaman menampilkan keadaan
+"menunggu konfirmasi admin". Transfer tetap boleh memakai bukti aplikasi atau
+fallback WhatsApp yang benar-benar membuka percakapan admin.
 
 Alasan pemisahan: pembayaran hanya sah setelah admin melihat mutasi/bukti,
 jadi pelanggan tidak boleh menggerakkan state machine sendiri. Efeknya:
@@ -130,10 +131,11 @@ jadi pelanggan tidak boleh menggerakkan state machine sendiri. Efeknya:
 | Sisi | Tampilan |
 |---|---|
 | Pelanggan | Loader "Menunggu konfirmasi admin" di halaman pembayaran & banner di `/pesanan/[kode]` selama status masih `BARU` |
-| Admin | Badge "Klaim sudah bayar" di daftar pesanan + waktu klaim di detail pesanan, sebagai antrean verifikasi |
+| Admin | Badge terpisah untuk klaim, bukti masuk, dan pembayaran terverifikasi; detail menampilkan waktunya |
 
 Setelah admin memverifikasi, status berpindah `BARU → DIKONFIRMASI` seperti
-biasa dan penanda klaim berhenti tampil di sisi pelanggan.
+biasa. Untuk QRIS, admin wajib mencocokkan mutasi, memasukkan reference transaksi
+merchant yang belum pernah dipakai order lain, lalu mencentang acknowledgement.
 
 **Invoice**
 

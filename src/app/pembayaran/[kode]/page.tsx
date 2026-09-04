@@ -284,6 +284,7 @@ export default async function PembayaranPage({
             resendUrl={resendUrl}
             trackingUrl={trackingUrl}
             canUploadProof={canUploadProof}
+            proofRequired={order.paymentMethod === "qris"}
             proofSubmitted={Boolean(order.paymentProofUrl)}
             claimedAt={order.paymentClaimedAt ?? null}
             canClaim={canClaim}

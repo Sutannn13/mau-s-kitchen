@@ -21,7 +21,7 @@ import {
 // Satu tombol utama di /pembayaran/[kode] (docs/11 §11.6, docs/08 §8.9),
 // tiga fase beranimasi:
 //   unggah    → "Unggah Bukti Bayar" (bila Storage aktif & belum ada bukti)
-//   konfirmasi→ "Saya Sudah Bayar & Kirim Bukti" → POST /claim
+//   konfirmasi→ "Saya Sudah Bayar" → POST /claim
 //   menunggu  → loader dapur "Menunggu konfirmasi admin"
 // Klaim tidak mengubah status pesanan; admin tetap yang memverifikasi
 // (docs/04 §4.3). Fase awal diturunkan dari server agar tahan refresh.
@@ -40,6 +40,8 @@ interface PaymentProofActionsProps {
   resendUrl: string;
   trackingUrl: string;
   canUploadProof: boolean;
+  /** QRIS wajib menyimpan bukti di aplikasi sebelum klaim dapat dibuat. */
+  proofRequired: boolean;
   proofSubmitted: boolean;
   /** ISO waktu klaim bila pelanggan sudah menekan tombol sebelumnya. */
   claimedAt: string | null;
@@ -54,16 +56,20 @@ export function PaymentProofActions({
   resendUrl,
   trackingUrl,
   canUploadProof,
+  proofRequired,
   proofSubmitted,
   claimedAt,
   canClaim,
 }: PaymentProofActionsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [phase, setPhase] = useState<Phase>(() => {
-    if (claimedAt !== null) {
+    if (claimedAt !== null && (!proofRequired || proofSubmitted)) {
       return "awaiting";
     }
-    return canUploadProof ? "upload" : "confirm";
+    if (proofSubmitted) {
+      return "confirm";
+    }
+    return "upload";
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
@@ -112,6 +118,11 @@ export function PaymentProofActions({
     // Tanpa jalur klaim (mis. tunai), tombol tetap membuka WhatsApp.
     if (!canClaim) {
       window.open(confirmationUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (proofRequired && !proofSubmitted && !uploadedNow) {
+      setError("Bukti pembayaran QRIS wajib diunggah terlebih dahulu.");
+      setPhase("upload");
       return;
     }
 
@@ -222,7 +233,7 @@ export function PaymentProofActions({
                     className="size-4"
                     strokeWidth={2}
                   />
-                  Saya Sudah Bayar &amp; Kirim Bukti
+                  Saya Sudah Bayar
                 </>
               )}
             </motion.button>
@@ -284,7 +295,7 @@ export function PaymentProofActions({
             />
             <motion.button
               type="button"
-              disabled={isUploading}
+              disabled={isUploading || !canUploadProof}
               onClick={() => {
                 inputRef.current?.click();
               }}
@@ -313,16 +324,32 @@ export function PaymentProofActions({
               disimpan maksimal 1MB.
             </p>
 
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                setPhase("confirm");
-              }}
-              className="mt-2 min-h-11 w-full text-xs font-semibold text-brown/80 underline underline-offset-4 transition-colors hover:text-brown-deep"
-            >
-              Lewati unggah, saya kirim bukti lewat WhatsApp
-            </button>
+            {!canUploadProof && proofRequired ? (
+              <p role="alert" className="mt-2 text-center text-xs font-semibold leading-5 text-chili">
+                Unggah bukti QRIS sedang tidak tersedia. Hubungi admin dan
+                jangan tandai sudah bayar sampai bukti berhasil tersimpan.
+              </p>
+            ) : null}
+            {!canUploadProof && !proofRequired ? (
+              <p className="mt-2 text-center text-xs leading-5 text-brown/70">
+                Unggah di website sedang tidak tersedia. Gunakan tombol
+                WhatsApp di bawah untuk mengirim bukti.
+              </p>
+            ) : null}
+            {!proofRequired ? (
+              <a
+                href={confirmationUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  setError(null);
+                  setPhase("confirm");
+                }}
+                className="mt-2 flex min-h-11 w-full items-center justify-center text-xs font-semibold text-brown/80 underline underline-offset-4 transition-colors hover:text-brown-deep"
+              >
+                Kirim bukti lewat WhatsApp
+              </a>
+            ) : null}
             {error !== null ? (
               <div className="mt-3 space-y-2 text-center">
                 <p role="alert" className="text-xs font-semibold text-chili">

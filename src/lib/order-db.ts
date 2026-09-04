@@ -29,6 +29,8 @@ export interface OrderRow {
   payment_method: "qris" | "transfer" | "tunai";
   payment_proof_url: string | null;
   payment_claimed_at?: string | null;
+  payment_reference?: string | null;
+  payment_verified_at?: string | null;
   status: Order["status"];
   admin_note: string | null;
 }
@@ -80,6 +82,8 @@ function orderToRow(
     payment_method: order.paymentMethod,
     payment_proof_url: order.paymentProofUrl ?? null,
     payment_claimed_at: order.paymentClaimedAt ?? null,
+    payment_reference: order.paymentReference ?? null,
+    payment_verified_at: order.paymentVerifiedAt ?? null,
     status: order.status,
     admin_note: order.adminNote ?? null,
   };
@@ -165,6 +169,12 @@ export function rowToOrder(row: OrderRow, itemRows: readonly OrderItemRow[]): Or
       : {}),
     ...(row.payment_claimed_at
       ? { paymentClaimedAt: row.payment_claimed_at }
+      : {}),
+    ...(row.payment_reference
+      ? { paymentReference: row.payment_reference }
+      : {}),
+    ...(row.payment_verified_at
+      ? { paymentVerifiedAt: row.payment_verified_at }
       : {}),
     status: row.status,
     ...(row.admin_note ? { adminNote: row.admin_note } : {}),

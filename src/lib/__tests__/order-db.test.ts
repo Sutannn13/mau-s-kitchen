@@ -42,6 +42,9 @@ describe("rowToOrder", () => {
     total: 118000,
     payment_method: "qris" as const,
     payment_proof_url: null,
+    payment_claimed_at: "2026-08-16T03:04:00.000Z",
+    payment_reference: "QRIS-1234",
+    payment_verified_at: "2026-08-16T03:05:00.000Z",
     status: "BARU" as const,
     admin_note: null,
   };
@@ -71,6 +74,8 @@ describe("rowToOrder", () => {
     expect(order.status).toBe("BARU");
     expect(order.deliveryProvider).toBeNull();
     expect(order.courierCost).toBeNull();
+    expect(order.paymentReference).toBe("QRIS-1234");
+    expect(order.paymentVerifiedAt).toBe("2026-08-16T03:05:00.000Z");
   });
 
   it("mengisi image item dari katalog menu.json", () => {
