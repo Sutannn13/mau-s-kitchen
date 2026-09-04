@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { requireAdminService } from "@/lib/admin/menu";
 import { MAX_MENU_IMAGE_BYTES, validateMenuImage } from "@/lib/menu-image";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
+import {
+  readRequestBytesWithLimit,
+  RequestBodyTooLargeError,
+} from "@/lib/request-body";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -52,8 +56,27 @@ export async function POST(
 
   let formData: FormData;
   try {
-    formData = await request.formData();
-  } catch {
+    // Body dibaca dengan batas keras sebelum parse — Content-Length pre-check
+    // di atas bisa absen pada chunked encoding (pola route proof upload).
+    const rawBytes = await readRequestBytesWithLimit(
+      request,
+      MAX_MULTIPART_SIZE_BYTES,
+    );
+    const boundedBody = new Uint8Array(rawBytes.byteLength);
+    boundedBody.set(rawBytes);
+    const boundedHeaders = new Headers(request.headers);
+    boundedHeaders.delete("content-length");
+    boundedHeaders.delete("transfer-encoding");
+    const boundedRequest = new Request(request.url, {
+      method: "POST",
+      headers: boundedHeaders,
+      body: boundedBody.buffer,
+    });
+    formData = await boundedRequest.formData();
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return jsonError(413, "PAYLOAD_TOO_LARGE", "Ukuran berkas maksimal 3MB.");
+    }
     return jsonError(400, "VALIDATION_ERROR", "Format unggahan tidak valid.");
   }
 
