@@ -45,6 +45,16 @@ const config: Config = {
           DEFAULT: "#2A1A12",
           mid: "#6B4226",
         },
+        // Warm Luxe admin (2026-09-04): ramp cokelat sangat gelap premium
+        // untuk chrome sidebar/drawer — selaras token --au-cocoa-* globals.
+        cocoa: {
+          "950": "#140B07",
+          "900": "#1D110B",
+          "850": "#241610",
+          "800": "#2C1B13",
+          "700": "#3A251A",
+          "600": "#4A3021",
+        },
         berry: {
           DEFAULT: "#C0392B",
         },
@@ -77,6 +87,14 @@ const config: Config = {
         "warm-lg": "0 18px 50px rgba(62, 35, 24, 0.16)",
         // Skeleton halus agar loading state tidak berdebar (docs/08 §8.9).
         skeleton: "0 1px 2px rgba(62, 35, 24, 0.06)",
+        // Warm Luxe admin (2026-09-04): bayangan berlapis gold-tinted.
+        luxe:
+          "0 1px 2px rgba(62, 35, 24, 0.05), 0 2px 8px rgba(62, 35, 24, 0.06)",
+        "luxe-lg":
+          "0 2px 6px rgba(62, 35, 24, 0.06), 0 16px 40px rgba(62, 35, 24, 0.14)",
+        "luxe-hover":
+          "0 4px 12px rgba(62, 35, 24, 0.08), 0 24px 56px rgba(62, 35, 24, 0.18)",
+        "gold-glow": "0 0 24px rgba(199, 154, 75, 0.18)",
       },
       // Token z-index terpadu — sumber nilai CSS var di globals.css :root.
       // Pakai z-base/z-dropdown/z-fab/z-sticky/z-toast/z-dialog, BUKAN angka

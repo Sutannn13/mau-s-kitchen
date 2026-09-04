@@ -5,9 +5,9 @@ import {
   type RekapPreset,
 } from "@/components/admin/RekapFilters";
 import { RekapDownloadButtons } from "@/components/admin/RekapDownloadButtons";
+import { AdminPageHeader, StatTile } from "@/components/admin/primitives";
 import { getRekapData } from "@/lib/admin/orders";
 import { formatRupiah } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { paymentMethodLabels } from "@/lib/whatsapp";
 import type { PaymentMethod } from "@/types/order";
 
@@ -87,22 +87,19 @@ export default async function AdminRekapPage({ searchParams }: RekapPageProps) {
     : [];
 
   return (
-    <main className="stagger-in mx-auto w-full max-w-content px-4 pt-6 md:px-8">
+    <main className="stagger-in mx-auto w-full max-w-content px-4 pb-16 pt-6 md:px-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
-          Rekap Penjualan
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-brown/75">
-          Omzet hanya menghitung pesanan berstatus SELESAI. Zona waktu
-          Asia/Jakarta.
-        </p>
+        <AdminPageHeader
+          title="Rekap Penjualan"
+          desc="Omzet hanya menghitung pesanan berstatus SELESAI. Zona waktu Asia/Jakarta."
+        />
 
-        <div className="mt-4 rounded-2xl border border-gold/20 bg-cream-soft p-4">
+        <div className="au-card mt-4 rounded-2xl p-4">
           <RekapFilters preset={preset} dari={dari} sampai={sampai} />
         </div>
 
         {rekap === null ? (
-          <div className="mt-6 flex flex-col items-center rounded-2xl border border-gold/20 bg-cream-soft py-12 text-center">
+          <div className="au-card mt-6 flex flex-col items-center rounded-2xl py-12 text-center">
             <BarChart3
               aria-hidden="true"
               className="size-10 text-gold"
@@ -122,23 +119,12 @@ export default async function AdminRekapPage({ searchParams }: RekapPageProps) {
             </div>
 
             <dl className="mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-5">
-              {metrics.map((metric, index) => (
-                <div
+              {metrics.map((metric) => (
+                <StatTile
                   key={metric.label}
-                  className={cn(
-                    "min-w-0 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3 sm:p-4",
-                    index === metrics.length - 1 &&
-                      metrics.length % 2 === 1 &&
-                      "col-span-2 sm:col-span-1 lg:col-span-1",
-                  )}
-                >
-                  <dt className="text-[11px] sm:text-xs font-semibold text-brown/60 truncate">
-                    {metric.label}
-                  </dt>
-                  <dd className="mt-1 text-base sm:text-lg font-bold tabular-nums text-brown-deep truncate">
-                    {metric.value}
-                  </dd>
-                </div>
+                  label={metric.label}
+                  value={metric.value}
+                />
               ))}
             </dl>
 
@@ -147,11 +133,11 @@ export default async function AdminRekapPage({ searchParams }: RekapPageProps) {
                 Menu Terlaris
               </h2>
               {rekap.itemTerlaris.length === 0 ? (
-                <p className="mt-2 rounded-2xl border border-gold/20 bg-cream-soft p-4 text-sm text-brown/70">
+                <p className="au-card mt-2 rounded-2xl p-4 text-sm text-brown/70">
                   Belum ada penjualan pada periode ini.
                 </p>
               ) : (
-                <ol className="mt-3 divide-y divide-gold/15 rounded-2xl border border-gold/20 bg-cream-soft">
+                <ol className="au-card mt-3 divide-y divide-gold/15 rounded-2xl">
                   {rekap.itemTerlaris.map((item, index) => (
                     <li
                       key={item.itemId}
@@ -177,7 +163,7 @@ export default async function AdminRekapPage({ searchParams }: RekapPageProps) {
                 {methodOrder.map((method) => (
                   <li
                     key={method}
-                    className="rounded-2xl border border-gold/20 bg-cream-soft p-4 text-center"
+                    className="au-card au-card-hover rounded-2xl p-4 text-center"
                   >
                     <p className="text-xs font-semibold text-brown/60">
                       {paymentMethodLabels[method].split(" (")[0]}

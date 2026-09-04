@@ -503,3 +503,110 @@
   background-size: 200% 100%;
   animation: admin-skeleton-shimmer 1.6s ease-in-out infinite;
 }
+
+/* ---------------------------------------------------------------------
+ * WARM LUXE ADMIN — lapisan token premium panel admin (2026-09-04).
+ * Arsitektur 3 lapis: primitive → semantic → component. Semua komponen
+ * admin baru wajib mereferensikan token ini, bukan hex mentah, agar
+ * mood panel dapat disetel dari satu tempat.
+ *
+ * Sidebar & chrome gelap: cokelat sangat dalam dengan nuansa kemerahan
+ * (chocolate-black), aksen emas, dan glass ring halus.
+ * --------------------------------------------------------------------- */
+:root {
+  /* Primitive — depth ramp cokelat gelap premium (10 langkah). */
+  --au-cocoa-950: #140b07;
+  --au-cocoa-900: #1d110b;
+  --au-cocoa-850: #241610;
+  --au-cocoa-800: #2c1b13;
+  --au-cocoa-700: #3a251a;
+  --au-cocoa-600: #4a3021;
+
+  /* Primitive — gold ramp (untuk aksen premium di permukaan gelap). */
+  --au-gold-500: #c79a4b;
+  --au-gold-400: #d9b36a;
+  --au-gold-300: #e8ce97;
+  --au-gold-200: #f2e1be;
+
+  /* Semantic — permukaan chrome admin (sidebar, topbar, drawer). */
+  --au-chrome-bg: linear-gradient(
+    180deg,
+    var(--au-cocoa-900) 0%,
+    var(--au-cocoa-950) 100%
+  );
+  --au-chrome-border: rgba(217, 179, 106, 0.14);
+  --au-chrome-item-hover: rgba(247, 238, 228, 0.06);
+  --au-chrome-item-active: linear-gradient(
+    135deg,
+    rgba(199, 154, 75, 0.22) 0%,
+    rgba(199, 154, 75, 0.08) 100%
+  );
+  --au-chrome-glow: 0 0 24px rgba(199, 154, 75, 0.18);
+
+  /* Semantic — konten terang (kartu, panel, halaman) warm luxe. */
+  --au-surface-raised: linear-gradient(
+    180deg,
+    #fdfaf6 0%,
+    #fbf6f0 100%
+  );
+  --au-surface-inset: #f6eee1;
+  --au-surface-border: rgba(199, 154, 75, 0.22);
+  --au-surface-border-strong: rgba(199, 154, 75, 0.38);
+  --au-surface-shadow-sm: 0 1px 2px rgba(62, 35, 24, 0.05),
+    0 2px 8px rgba(62, 35, 24, 0.06);
+  --au-surface-shadow-lg: 0 2px 6px rgba(62, 35, 24, 0.06),
+    0 16px 40px rgba(62, 35, 24, 0.14);
+  --au-surface-hover-shadow: 0 4px 12px rgba(62, 35, 24, 0.08),
+    0 24px 56px rgba(62, 35, 24, 0.18);
+
+  /* Semantic — teks. */
+  --au-text-strong: #3e2318;
+  --au-text-body: #6b5138;
+  --au-text-muted: #9a7f5f;
+
+  /* Component — pill navigasi aktif (glow emas halus). */
+  --au-nav-pill-glow: 0 0 0 1px rgba(217, 179, 106, 0.25),
+    0 4px 16px rgba(199, 154, 75, 0.16);
+
+  /* Component — topbar glass (blur di atas konten yang digulir). */
+  --au-topbar-bg: rgba(251, 246, 240, 0.82);
+  --au-topbar-border: rgba(199, 154, 75, 0.2);
+}
+
+/* Glass ring halus untuk chip/tombol di permukaan gelap. */
+.au-glass-chip {
+  background: rgba(247, 238, 228, 0.05);
+  border: 1px solid rgba(217, 179, 106, 0.16);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Gradien teks emas untuk angka/judul hero di panel gelap. */
+.au-gold-text {
+  background: linear-gradient(120deg, #e8ce97 0%, #d9b36a 45%, #c79a4b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Kartu konten warm luxe — gradien permukaan + border ganda halus. */
+.au-card {
+  background: var(--au-surface-raised);
+  border: 1px solid var(--au-surface-border);
+  box-shadow: var(--au-surface-shadow-sm);
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+.au-card-hover:hover {
+  transform: translateY(-2px);
+  border-color: var(--au-surface-border-strong);
+  box-shadow: var(--au-surface-hover-shadow);
+}
+@media (prefers-reduced-motion: reduce) {
+  .au-card,
+  .au-card-hover:hover {
+    transform: none;
+  }
+}

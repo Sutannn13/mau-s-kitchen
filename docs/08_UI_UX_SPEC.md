@@ -452,4 +452,61 @@ lebih cepat dari masuk. Jangan animasikan properti layout (`width`/`height`/
 
 ---
 
+## 8.11 Warm Luxe Admin — upgrade UI/UX panel admin (2026-09-04)
+
+Redesign premium panel `/admin` dengan bahasa visual "Warm Luxe": evolusi
+brand warm MAU'S Kitchen (bukan ganti identitas) — chrome gelap cokelat
+cocoa bercita-rasa mewah + konten terang cream, aksen emas di seluruh
+lapisan. Perpustakaan komponen tetap shadcn-style di atas Radix pattern +
+motion; **tanpa dependensi baru**.
+
+### Token arsitektur (3 lapis)
+
+Ditambahkan di `globals.css` (`--au-*` = Admin UI):
+
+| Lapis | Token | Kegunaan |
+|---|---|---|
+| Primitive | `--au-cocoa-950…600` | Ramp cokelat sangat gelap 10 langkah (chrome gelap) |
+| Primitive | `--au-gold-500…200` | Ramp emas untuk aksen di permukaan gelap |
+| Semantic | `--au-chrome-bg/border/item-*` | Permukaan sidebar/drawer/topbar + interaksi item |
+| Semantic | `--au-surface-raised/inset/border*/shadow*` | Kartu konten terang (gradien + border ganda) |
+| Semantic | `--au-text-strong/body/muted` | Hierarki teks konten |
+| Component | `--au-nav-pill-glow`, `--au-topbar-bg` | Pill aktif sidebar, glass topbar |
+
+Kelas utilitas: `.au-card` / `.au-card-hover` (kartu premium), `.au-glass-chip`
+(chip glass di permukaan gelap), `.au-gold-text` (gradien teks emas).
+Tailwind: warna `cocoa-*`, shadow `luxe` / `luxe-lg` / `luxe-hover` /
+`gold-glow`.
+
+### Shell
+
+| Komponen | Perubahan |
+|---|---|
+| `AdminSidebar` | Gradien cocoa + glow ambient; **grup navigasi** (Operasional / Analitik) dengan deskripsi per item; pill aktif gradien emas + **rail emas kiri**; **profile card glass dengan menu dropdown** (identitas + keluar) menggantikan blok statis; footer versi |
+| `AdminTopbar` (baru) | Desktop glass sticky (blur 12px): breadcrumb `Panel / Seksi / (kode)`, chip **Live** berdenyut, chip zona waktu — orientasi konteks tanpa lihat sidebar |
+| Login `/admin/login` | **Split-screen premium**: panel brand gelap diagonal (md+) + kartu form `au-card` dengan input focus `shadow-luxe` |
+
+### Halaman
+
+| Halaman | Perubahan |
+|---|---|
+| Dashboard | `AdminPageHeader`; KPI `au-card` + hairline emas hover; banner operasional gradien cocoa 3-stop + glow; PanelCard → `au-card` |
+| Pesanan | StatTile (ikon chip gradien, tone gold/success/warning per metrik); filter card + kartu pesanan + paginasi `au-card`; badge ring halus |
+| Kelola Menu | `AdminPageHeader` + kartu pesan `au-card` |
+| Rekap | StatTile metrics; kartu menu terlaris + metode bayar `au-card` |
+| Detail pesanan | Semua section `au-card au-card-hover` |
+
+### Primitif baru (`components/admin/primitives.tsx`)
+
+`AdminCard`, `AdminPanelHeader`, `AdminPageHeader`, `StatTile`,
+`SegmentedControl` — dipakai lintas halaman admin agar konsisten.
+
+### A11y yang dipertahankan
+
+Drawer seluler tetap dialog a11y penuh (focus trap + Esc + restore focus);
+semua hover-lift dimatikan `prefers-reduced-motion`; target sentuh tetap
+min 44px; fokus terlihat ring emas; pill aktif tetap `aria-current="page"`.
+
+---
+
 ➡️ Lanjut ke `09_TECH_STACK.md`

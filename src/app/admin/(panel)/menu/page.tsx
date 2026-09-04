@@ -4,6 +4,7 @@ import {
   type ManagedCategory,
   type ManagedItem,
 } from "@/components/admin/MenuManager";
+import { AdminPageHeader } from "@/components/admin/primitives";
 import { formatRupiah } from "@/lib/format";
 import { getAdminMenu } from "@/lib/menu-data";
 
@@ -21,12 +22,10 @@ export default async function AdminMenuPage() {
         ? "Tabel menu belum dibuat di database. Jalankan file supabase/migrations/20260817_menu_crud.sql di Supabase SQL Editor (dashboard → SQL Editor → paste → Run) untuk membuat tabel menu, RLS, dan seed data."
         : "Database belum dikonfigurasi. Ikuti petunjuk di docs/19_SETUP_MANUAL.md untuk mengaktifkan kelola menu mandiri.";
     return (
-      <main className="mx-auto w-full max-w-content px-4 pt-6 md:px-8">
+      <main className="mx-auto w-full max-w-content px-4 pb-16 pt-6 md:px-8">
         <div className="mx-auto max-w-2xl">
-          <h1 className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
-            {heading}
-          </h1>
-          <p className="mt-3 rounded-2xl border border-gold/20 bg-cream-soft p-4 text-sm leading-6 text-brown/75">
+          <AdminPageHeader title={heading} />
+          <p className="au-card mt-3 rounded-2xl p-4 text-sm leading-6 text-brown/75">
             {message}
           </p>
         </div>
@@ -70,15 +69,12 @@ export default async function AdminMenuPage() {
   }));
 
   return (
-    <main className="mx-auto w-full max-w-content px-4 pt-6 md:px-8">
+    <main className="mx-auto w-full max-w-content px-4 pb-16 pt-6 md:px-8">
       <div className="mx-auto max-w-2xl">
-        <h1 className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
-          Kelola Menu
-        </h1>
-        <p className="mt-2 text-sm leading-6 text-brown/75">
-          Tambah, ubah, atau arsip menu dari dasbor. Perubahan tampil ke
-          pelanggan maksimal 60 detik.
-        </p>
+        <AdminPageHeader
+          title="Kelola Menu"
+          desc="Tambah, ubah, atau arsip menu dari dasbor. Perubahan tampil ke pelanggan maksimal 60 detik."
+        />
         <div className="mt-4">
           <MenuManager categories={categories} items={items} addOns={addOns} />
         </div>

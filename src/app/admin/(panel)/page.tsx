@@ -19,6 +19,7 @@ import { paymentMethodColors } from "@/components/admin/dashboard/palette";
 import { PeriodeSwitcher } from "@/components/admin/dashboard/PeriodeSwitcher";
 import type { PeriodePreset } from "@/components/admin/dashboard/PeriodeSwitcher";
 import { RevenueAreaChart } from "@/components/admin/dashboard/RevenueAreaChart";
+import { AdminPageHeader } from "@/components/admin/primitives";
 import { getDailySeries, getRekapData, getTodayStats } from "@/lib/admin/orders";
 import { formatRupiah } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -137,7 +138,7 @@ function PanelCard({
   return (
     <section
       className={cn(
-        "flex h-full flex-col rounded-2xl border border-gold/15 bg-cream-soft p-5 shadow-warm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-warm-lg",
+        "au-card au-card-hover flex h-full flex-col rounded-2xl p-5",
         className,
       )}
     >
@@ -147,7 +148,8 @@ function PanelCard({
             {title}
           </h2>
           {desc ? (
-            <p className="mt-1 text-xs leading-5 text-brown/60">{desc}</p>
+            <p className="mt-1 text-xs leading-5 text-brown/60">{desc}
+            </p>
           ) : null}
         </div>
         {action}
@@ -246,21 +248,16 @@ export default async function AdminDashboardPage({
       <AutoRefresh intervalMs={60_000} silent />
 
       {/* Judul + pemilih periode */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm leading-6 text-brown/70">
-            Ringkasan kinerja MAU&apos;S Kitchen. Zona waktu Asia/Jakarta
-            (WIB).{" "}
-            <span className="text-brown/45">
-              Diperbarui otomatis tiap 60 detik.
-            </span>
-          </p>
-        </div>
-        <PeriodeSwitcher active={periode} />
-      </div>
+      <AdminPageHeader
+        title="Dashboard"
+        desc={
+          <>
+            Ringkasan kinerja MAU&apos;S Kitchen · Asia/Jakarta (WIB).{" "}
+            <span className="text-brown/45">Diperbarui otomatis tiap 60 detik.</span>
+          </>
+        }
+        action={<PeriodeSwitcher active={periode} />}
+      />
 
       {/* KPI + banner + chart — key=periode agar remount + fade setiap
           ganti periode (AnimatedSection), chart recharts ikut replay;
@@ -320,12 +317,18 @@ export default async function AdminDashboardPage({
         </div>
       </div>
 
-      {/* Banner operasional — ditempatkan setelah KPI (permintaan pemilik
-          2026-08-23). Grid 2 kolom di desktop (mobile stack): kiri pill
-          live indikator + judul + CTA, kanan mini-stats. Pill berdenyut
+      {/* Banner operasional Warm Luxe — permukaan gelap cocoa premium dengan
+          glow emas. Grid 2 kolom di desktop (mobile stack): kiri pill live
+          indikator + judul + CTA, kanan mini-stats. Pill berdenyut
           (animate-ping, dimatikan jaring reduce-motion): pistachio saat
           aman, chili saat ada yang menunggu konfirmasi. */}
-      <section className="relative mt-3 overflow-hidden rounded-2xl bg-gradient-to-br from-choco to-brown-deep p-5 text-cream shadow-warm-lg ring-1 ring-gold/20 md:p-6 lg:grid lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-8">
+      <section
+        className="relative mt-3 overflow-hidden rounded-2xl p-5 text-cream shadow-luxe-lg ring-1 ring-gold/20 md:p-6 lg:grid lg:grid-cols-[1.15fr_1fr] lg:items-center lg:gap-8"
+        style={{
+          background:
+            "linear-gradient(135deg, #241610 0%, #1d110b 55%, #140b07 100%)",
+        }}
+      >
         <div
           aria-hidden="true"
           className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-gold/15 blur-3xl"

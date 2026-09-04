@@ -5,6 +5,7 @@ import { DatabaseZap } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminSessionRefresher } from "@/components/admin/AdminSessionRefresher";
+import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { MotionProvider } from "@/components/admin/MotionProvider";
 import {
   hasAdminAuthorizationConfigured,
@@ -82,6 +83,7 @@ export default async function AdminPanelLayout({
           dikelola AdminSidebar agar padding ikut berubah saat sidebar
           menciut/melebar). Di seluler tidak ada offset (drawer menumpang). */}
       <div className="lg:pl-[var(--sidebar-w)] lg:transition-[padding-left] lg:duration-200 lg:ease-out">
+        <AdminTopbar />
         <MotionProvider>{children}</MotionProvider>
       </div>
     </div>

@@ -72,7 +72,7 @@ export function LoginForm() {
           onChange={(event) => {
             setEmail(event.target.value);
           }}
-          className="mt-1.5 min-h-12 w-full rounded-xl border border-gold/30 bg-cream px-4 text-base text-brown-deep outline-none transition-colors focus:border-gold focus:ring-2 focus:ring-gold/30"
+          className="mt-1.5 min-h-12 w-full rounded-xl border border-gold/30 bg-cream px-4 text-base text-brown-deep outline-none transition-all duration-200 placeholder:text-brown/40 focus:border-gold focus:ring-2 focus:ring-gold/30 focus:shadow-luxe"
         />
       </div>
 
@@ -92,12 +92,12 @@ export function LoginForm() {
           onChange={(event) => {
             setPassword(event.target.value);
           }}
-          className="mt-1.5 min-h-12 w-full rounded-xl border border-gold/30 bg-cream px-4 text-base text-brown-deep outline-none transition-colors focus:border-gold focus:ring-2 focus:ring-gold/30"
+          className="mt-1.5 min-h-12 w-full rounded-xl border border-gold/30 bg-cream px-4 text-base text-brown-deep outline-none transition-all duration-200 placeholder:text-brown/40 focus:border-gold focus:ring-2 focus:ring-gold/30 focus:shadow-luxe"
         />
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-xl bg-chili/10 px-4 py-3 text-sm text-chili">
+        <p role="alert" className="rounded-xl bg-chili/10 px-4 py-3 text-sm text-chili ring-1 ring-inset ring-chili/20">
           {error}
         </p>
       ) : null}
@@ -105,7 +105,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isBusy}
-        className="min-h-12 w-full rounded-full bg-gold px-6 text-sm font-bold text-brown-deep shadow-warm transition-colors hover:bg-gold-light disabled:opacity-60"
+        className="min-h-12 w-full rounded-full bg-gold px-6 text-sm font-bold text-brown-deep shadow-warm transition-all duration-200 hover:bg-gold-light hover:shadow-luxe-lg disabled:opacity-60"
       >
         {isBusy ? "Memproses…" : "Masuk"}
       </button>

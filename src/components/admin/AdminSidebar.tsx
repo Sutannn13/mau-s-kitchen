@@ -2,22 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { motion } from "motion/react";
 import {
   BarChart3,
+  ChevronUp,
   ExternalLink,
   Inbox,
   LayoutDashboard,
+  LogOut,
   Menu as MenuIcon,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldCheck,
   UtensilsCrossed,
   X,
 } from "lucide-react";
 
-import { LogoutButton } from "@/components/admin/LogoutButton";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
@@ -25,21 +27,35 @@ import { cn } from "@/lib/utils";
 // Lebar sidebar desktop. --sidebar-w (di :root globals.css) default ke
 // EXPANDED_WIDTH; saat admin menciutkan sidebar, useCollapsed() memutakhirkan
 // variabel itu agar padding konten layout ikut mengecil.
-const EXPANDED_WIDTH = 264;
-const COLLAPSED_WIDTH = 76;
+const EXPANDED_WIDTH = 272;
+const COLLAPSED_WIDTH = 78;
 const STORAGE_KEY = "maus-admin:sidebar-collapsed";
 
 interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
+  desc: string;
 }
 
-const navItems: readonly NavItem[] = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/pesanan", label: "Pesanan", icon: Inbox },
-  { href: "/admin/menu", label: "Kelola Menu", icon: UtensilsCrossed },
-  { href: "/admin/rekap", label: "Rekap", icon: BarChart3 },
+// Grup navigasi Warm Luxe: OPERASIONAL (alur harian) dipisah dari
+// ANALITIK (pembacaan kinerja) — scan-ability lebih baik daripada
+// daftar datar 4 item.
+const navGroups: readonly { label: string; items: readonly NavItem[] }[] = [
+  {
+    label: "Operasional",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, desc: "Ringkasan hari ini" },
+      { href: "/admin/pesanan", label: "Pesanan", icon: Inbox, desc: "Konfirmasi & proses" },
+      { href: "/admin/menu", label: "Kelola Menu", icon: UtensilsCrossed, desc: "Katalog & harga" },
+    ],
+  },
+  {
+    label: "Analitik",
+    items: [
+      { href: "/admin/rekap", label: "Rekap", icon: BarChart3, desc: "Laporan penjualan" },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -117,21 +133,27 @@ function ExpandedBrand({ onNavigate }: { onNavigate?: () => void }) {
     <Link
       href="/admin"
       onClick={onNavigate}
-      className="flex items-center gap-3"
+      className="group flex items-center gap-3"
       aria-label="Beranda dashboard admin MAU'S Kitchen"
     >
-      <Image
-        src="/assets/brand/logo-maus-kitchen.jpeg"
-        alt="Logo MAU'S Kitchen"
-        width={44}
-        height={44}
-        className="size-11 shrink-0 rounded-full border border-gold/40 object-cover"
-      />
+      <span className="relative shrink-0">
+        <Image
+          src="/assets/brand/logo-maus-kitchen.jpeg"
+          alt="Logo MAU'S Kitchen"
+          width={44}
+          height={44}
+          className="size-11 rounded-2xl border border-gold/40 object-cover shadow-gold-glow"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute -inset-1 rounded-2xl bg-gold/10 opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-100"
+        />
+      </span>
       <span className="flex flex-col leading-tight">
         <span className="font-serif text-base font-bold text-cream">
           MAU&apos;S Kitchen
         </span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold/80">
+        <span className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.22em] text-gold/70">
           Panel Admin
         </span>
       </span>
@@ -151,7 +173,7 @@ function CollapsedBrand() {
         alt="Logo MAU'S Kitchen"
         width={44}
         height={44}
-        className="size-11 shrink-0 rounded-full border border-gold/40 object-cover"
+        className="size-11 rounded-2xl border border-gold/40 object-cover shadow-gold-glow"
       />
     </Link>
   );
@@ -181,32 +203,57 @@ function NavLink({ item, active, collapsed, pillId, onNavigate }: NavLinkProps) 
         collapsed ? "justify-center px-0" : "gap-3 px-3",
         active
           ? "text-cream"
-          : "text-cream/70 hover:bg-white/5 hover:text-cream",
+          : "text-cream/60 hover:bg-white/[0.06] hover:text-cream",
       )}
     >
       {active ? (
-        // Pill aktif meluncur antar item navigasi saat rute berubah
-        // (layout animation, pola sama dengan PeriodeSwitcher dashboard).
+        // Pill aktif Warm Luxe: gradien emas + glow + ring, meluncur antar
+        // item saat rute berubah (layout animation).
         <motion.span
           aria-hidden="true"
           layoutId={pillId}
           transition={{ type: "spring", stiffness: 400, damping: 32 }}
-          className="absolute inset-0 rounded-xl bg-gold/15 ring-1 ring-inset ring-gold/30"
+          className="absolute inset-0 rounded-xl"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(199,154,75,0.24) 0%, rgba(199,154,75,0.08) 100%)",
+            boxShadow:
+              "0 0 0 1px rgba(217,179,106,0.28), 0 4px 16px rgba(199,154,75,0.16)",
+          }}
+        />
+      ) : null}
+      {/* Rail aksen emas di sisi kiri item aktif — penanda premium. */}
+      {active ? (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-gold-light to-gold shadow-gold-glow"
         />
       ) : null}
       <Icon
         aria-hidden="true"
         className={cn(
-          "relative size-5 shrink-0",
-          active ? "text-gold" : "text-cream/60",
+          "relative size-5 shrink-0 transition-colors",
+          active ? "text-gold" : "text-cream/50 group-hover:text-cream/75",
         )}
         strokeWidth={1.75}
       />
-      {collapsed ? null : <span className="relative">{item.label}</span>}
+      {collapsed ? null : (
+        <span className="relative flex flex-col leading-tight">
+          <span>{item.label}</span>
+          <span
+            className={cn(
+              "text-[11px] font-medium",
+              active ? "text-cream/55" : "text-cream/35",
+            )}
+          >
+            {item.desc}
+          </span>
+        </span>
+      )}
       {collapsed ? (
         <span
           role="tooltip"
-          className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-brown-deep px-2 py-1 text-xs font-medium text-cream shadow-warm-lg group-hover:block group-focus-visible:block"
+          className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-cocoa-900 px-2 py-1 text-xs font-medium text-cream shadow-warm-lg group-hover:block group-focus-visible:block"
         >
           {item.label}
         </span>
@@ -224,21 +271,28 @@ interface NavLinksProps {
 function NavLinks({ pathname, collapsed, onNavigate }: NavLinksProps) {
   const pillId = useId();
   return (
-    <nav aria-label="Navigasi admin" className="flex flex-1 flex-col gap-1">
-      {collapsed ? null : (
-        <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cream/40">
-          Navigasi
-        </p>
-      )}
-      {navItems.map((item) => (
-        <NavLink
-          key={item.href}
-          item={item}
-          active={isActive(pathname, item.href)}
-          collapsed={collapsed}
-          pillId={pillId}
-          onNavigate={onNavigate}
-        />
+    <nav
+      aria-label="Navigasi admin"
+      className="flex flex-1 flex-col gap-4 overflow-y-auto"
+    >
+      {navGroups.map((group) => (
+        <div key={group.label} className="flex flex-col gap-1">
+          {collapsed ? null : (
+            <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-[0.22em] text-cream/30">
+              {group.label}
+            </p>
+          )}
+          {group.items.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              active={isActive(pathname, item.href)}
+              collapsed={collapsed}
+              pillId={pillId}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </div>
       ))}
 
       <Link
@@ -247,20 +301,20 @@ function NavLinks({ pathname, collapsed, onNavigate }: NavLinksProps) {
         title={collapsed ? "Lihat Situs Pelanggan" : undefined}
         aria-label={collapsed ? "Lihat Situs Pelanggan" : undefined}
         className={cn(
-          "group relative mt-2 flex min-h-11 items-center rounded-xl text-sm font-semibold text-cream/55 transition-colors hover:bg-white/5 hover:text-cream/80",
+          "group relative mt-1 flex min-h-11 items-center rounded-xl text-sm font-semibold text-cream/50 transition-colors hover:bg-white/[0.06] hover:text-cream/80",
           collapsed ? "justify-center px-0" : "gap-3 px-3",
         )}
       >
         <ExternalLink
           aria-hidden="true"
-          className="size-4 shrink-0 text-cream/45"
+          className="size-4 shrink-0 text-cream/40"
           strokeWidth={1.75}
         />
         {collapsed ? null : "Lihat Situs Pelanggan"}
         {collapsed ? (
           <span
             role="tooltip"
-            className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-brown-deep px-2 py-1 text-xs font-medium text-cream shadow-warm-lg group-hover:block group-focus-visible:block"
+            className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-cocoa-900 px-2 py-1 text-xs font-medium text-cream shadow-warm-lg group-hover:block group-focus-visible:block"
           >
             Lihat Situs Pelanggan
           </span>
@@ -270,48 +324,181 @@ function NavLinks({ pathname, collapsed, onNavigate }: NavLinksProps) {
   );
 }
 
-interface ProfileBlockProps {
-  email: string;
-  collapsed: boolean;
-}
+/**
+ * Kartu profil premium dengan menu pop-up (bukan sekadar blok statis):
+ * klik kartu membuka menu kecil berisi identitas + tombol keluar.
+ * Menu ditutup dengan klik luar / Escape / blur — pola dropdown ringan
+ * tanpa dependensi Radix baru.
+ */
+function ProfileCard({ email, collapsed }: { email: string; collapsed: boolean }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-function ProfileBlock({ email, collapsed }: ProfileBlockProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function onPointerDown(event: PointerEvent): void {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  const initial = (
+    <span
+      aria-hidden="true"
+      className="au-glass-chip flex size-10 shrink-0 items-center justify-center rounded-xl font-serif text-lg font-bold text-gold-light"
+    >
+      {adminInitial(email)}
+    </span>
+  );
+
   if (collapsed) {
     return (
       <div className="flex flex-col items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gold/20 font-serif text-lg font-bold text-gold"
-          title={email}
-        >
-          {adminInitial(email)}
-        </span>
-        <LogoutButton
-          iconOnly
-          className="w-full justify-center text-cream/80 hover:bg-gold/15 hover:text-cream"
-        />
+        <span title={email}>{initial}</span>
+        <CollapsedLogoutIconButton />
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-white/5 p-3 ring-1 ring-inset ring-white/10">
-      <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gold/20 font-serif text-lg font-bold text-gold"
-        >
-          {adminInitial(email)}
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-cream">
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        className="au-glass-chip flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition-colors hover:border-gold/30"
+      >
+        {initial}
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-cream">
             {siteConfig.name}
-          </p>
-          <p className="truncate text-xs text-cream/50">{email}</p>
+          </span>
+          <span className="block truncate text-xs text-cream/45">{email}</span>
+        </span>
+        <ChevronUp
+          aria-hidden="true"
+          className={cn(
+            "size-4 shrink-0 text-cream/40 transition-transform duration-200",
+            open && "rotate-180",
+          )}
+          strokeWidth={2}
+        />
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          aria-label="Menu akun admin"
+          className="absolute bottom-full left-0 z-dropdown mb-2 w-full overflow-hidden rounded-2xl border border-gold/20 bg-cocoa-850 p-1.5 shadow-warm-lg"
+        >
+          <div className="flex items-center gap-2 px-2.5 py-2">
+            <ShieldCheck
+              aria-hidden="true"
+              className="size-4 shrink-0 text-gold/80"
+              strokeWidth={1.75}
+            />
+            <p className="text-xs font-medium text-cream/60">
+              Sesi terverifikasi
+            </p>
+          </div>
+          <div aria-hidden="true" className="my-1 border-t border-gold/10" />
+          <ProfileLogoutMenuItem
+            onAfterNavigate={() => {
+              setOpen(false);
+            }}
+          />
         </div>
-      </div>
-      <LogoutButton className="mt-3 w-full justify-center text-cream/80 hover:bg-gold/15 hover:text-cream" />
+      ) : null}
     </div>
+  );
+}
+
+function ProfileLogoutMenuItem({ onAfterNavigate }: { onAfterNavigate?: () => void }) {
+  const router = useRouter();
+  const [isBusy, setIsBusy] = useState(false);
+
+  async function handleLogout(): Promise<void> {
+    setIsBusy(true);
+    try {
+      const { createBrowserClient } = await import("@supabase/ssr");
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+      );
+      await supabase.auth.signOut();
+      router.replace("/admin/login");
+      router.refresh();
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      disabled={isBusy}
+      onClick={() => {
+        void handleLogout().finally(() => onAfterNavigate?.());
+      }}
+      className="flex min-h-11 w-full items-center gap-2 rounded-xl px-2.5 text-sm font-semibold text-cream/70 outline-none transition-colors hover:bg-chili/15 hover:text-cream focus-visible:ring-2 focus-visible:ring-gold/40 disabled:opacity-60"
+    >
+      <LogOut aria-hidden="true" className="size-4" strokeWidth={1.75} />
+      {isBusy ? "Keluar…" : "Keluar"}
+    </button>
+  );
+}
+
+function CollapsedLogoutIconButton() {
+  const router = useRouter();
+  const [isBusy, setIsBusy] = useState(false);
+
+  async function handleLogout(): Promise<void> {
+    setIsBusy(true);
+    try {
+      const { createBrowserClient } = await import("@supabase/ssr");
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+      );
+      await supabase.auth.signOut();
+      router.replace("/admin/login");
+      router.refresh();
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        void handleLogout();
+      }}
+      disabled={isBusy}
+      aria-label="Keluar"
+      title="Keluar"
+      className="flex size-10 items-center justify-center rounded-xl text-cream/60 transition-colors hover:bg-chili/15 hover:text-cream disabled:opacity-60"
+    >
+      <LogOut aria-hidden="true" className="size-4" strokeWidth={1.75} />
+    </button>
   );
 }
 
@@ -330,16 +517,16 @@ function CollapseToggle({ collapsed, onToggle }: CollapseToggleProps) {
       aria-expanded={!collapsed}
       title={collapsed ? "Lebarkan sidebar" : "Ciutkan sidebar"}
       className={cn(
-        "group relative flex min-h-11 items-center rounded-xl text-sm font-semibold text-cream/60 transition-colors hover:bg-white/5 hover:text-cream",
-        collapsed ? "justify-center px-0" : "gap-3 px-3",
+        "group relative flex min-h-10 items-center rounded-xl text-xs font-semibold text-cream/45 transition-colors hover:bg-white/[0.06] hover:text-cream/75",
+        collapsed ? "justify-center px-0" : "gap-2.5 px-3",
       )}
     >
-      <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
-      {collapsed ? null : "Ciutkan"}
+      <Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
+      {collapsed ? null : "Ciutkan panel"}
       {collapsed ? (
         <span
           role="tooltip"
-          className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-brown-deep px-2 py-1 text-xs font-medium text-cream shadow-warm-lg group-hover:block group-focus-visible:block"
+          className="pointer-events-none absolute left-full ml-2 hidden whitespace-nowrap rounded-md bg-cocoa-900 px-2 py-1 text-xs font-medium text-cream shadow-warm-lg group-hover:block group-focus-visible:block"
         >
           Lebarkan sidebar
         </span>
@@ -366,8 +553,8 @@ function SidebarContent({
   return (
     <div
       className={cn(
-        "flex h-full flex-col gap-6",
-        collapsed ? "p-3" : "p-5",
+        "flex h-full flex-col gap-5",
+        collapsed ? "p-3.5" : "p-5",
       )}
     >
       {collapsed ? <CollapsedBrand /> : <ExpandedBrand onNavigate={onNavigate} />}
@@ -376,11 +563,16 @@ function SidebarContent({
         collapsed={collapsed}
         onNavigate={onNavigate}
       />
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-2">
         {onToggle ? (
           <CollapseToggle collapsed={collapsed} onToggle={onToggle} />
         ) : null}
-        <ProfileBlock email={email} collapsed={collapsed} />
+        <ProfileCard email={email} collapsed={collapsed} />
+        {collapsed ? null : (
+          <p className="px-1 text-[10px] font-medium tracking-wide text-cream/25">
+            MAU&apos;S Kitchen Admin · v1.0
+          </p>
+        )}
       </div>
     </div>
   );
@@ -406,7 +598,7 @@ function AdminMobileDrawer({
         type="button"
         aria-label="Tutup menu navigasi admin"
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-brown-deep/55 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-cocoa-950/60 backdrop-blur-sm"
       />
       <div
         id="admin-drawer"
@@ -417,9 +609,12 @@ function AdminMobileDrawer({
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-gradient-to-b from-choco to-brown-deep shadow-warm-lg outline-none",
+          "fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col shadow-warm-lg outline-none",
           "animate-drawer-in motion-reduce:animate-none",
         )}
+        style={{
+          background: "linear-gradient(180deg, #1d110b 0%, #140b07 100%)",
+        }}
       >
         <button
           type="button"
@@ -487,19 +682,27 @@ export function AdminSidebar({ email }: { email: string }) {
         <div className="w-11" aria-hidden="true" />
       </header>
 
-      {/* Sidebar desktop — fixed, latar gelap premium. Lebar diatur lewat
-          variabel --sidebar-w (juga dipakai layout untuk offset konten)
-          sehingga saat menciut/melebar, padding konten ikut transisi. */}
+      {/* Sidebar desktop — fixed, latar gelap premium Warm Luxe (token
+          --au-chrome-bg). Lebar diatur lewat variabel --sidebar-w (juga
+          dipakai layout untuk offset konten) sehingga saat menciut/melebar,
+          padding konten ikut transisi. */}
       <aside
         aria-label="Navigasi admin"
         className={cn(
-          "hidden bg-gradient-to-b from-choco to-brown-deep lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-gold/15",
-          "lg:transition-[width] lg:duration-200 lg:ease-out lg:overflow-hidden",
+          "hidden lg:fixed lg:left-0 lg:top-0 lg:z-40 lg:flex lg:h-screen lg:flex-col lg:border-r lg:overflow-hidden",
+          "lg:transition-[width] lg:duration-200 lg:ease-out",
         )}
         style={{
           width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
+          background: "linear-gradient(180deg, #1d110b 0%, #140b07 100%)",
+          borderRight: "1px solid rgba(217, 179, 106, 0.14)",
         }}
       >
+        {/* Glow ambient emas di puncak sidebar — aksen premium halus. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl"
+        />
         <SidebarContent
           pathname={pathname}
           email={email}

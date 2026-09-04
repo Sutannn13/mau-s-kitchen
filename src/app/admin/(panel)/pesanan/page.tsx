@@ -1,8 +1,16 @@
 import Link from "next/link";
-import { BadgeCheck, Inbox, ReceiptText } from "lucide-react";
+import {
+  BadgeCheck,
+  CalendarClock,
+  Inbox,
+  Loader2,
+  ReceiptText,
+  Wallet,
+} from "lucide-react";
 
 import { AutoRefresh } from "@/components/admin/AutoRefresh";
 import { OrderFilters } from "@/components/admin/OrderFilters";
+import { AdminPageHeader, StatTile } from "@/components/admin/primitives";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { StatusSelect } from "@/components/admin/StatusSelect";
 import { getTodayStats, listOrders } from "@/lib/admin/orders";
@@ -92,41 +100,60 @@ export default async function AdminPesananPage({
 
   const statCards = stats
     ? [
-        { label: "Pesanan hari ini", value: String(stats.totalHariIni) },
-        { label: "Menunggu konfirmasi", value: String(stats.menungguKonfirmasi) },
-        { label: "Sedang diproses", value: String(stats.sedangDiproses) },
-        { label: "Omzet hari ini", value: formatRupiah(stats.omzetHariIni) },
+        {
+          label: "Pesanan hari ini",
+          value: String(stats.totalHariIni),
+          icon: <Inbox className="size-5" strokeWidth={1.75} />,
+          tone: "gold" as const,
+        },
+        {
+          label: "Menunggu konfirmasi",
+          value: String(stats.menungguKonfirmasi),
+          icon: <CalendarClock className="size-5" strokeWidth={1.75} />,
+          tone:
+            stats.menungguKonfirmasi > 0
+              ? ("warning" as const)
+              : ("success" as const),
+        },
+        {
+          label: "Sedang diproses",
+          value: String(stats.sedangDiproses),
+          icon: <Loader2 className="size-5" strokeWidth={1.75} />,
+          tone: "gold" as const,
+        },
+        {
+          label: "Omzet hari ini",
+          value: formatRupiah(stats.omzetHariIni),
+          icon: <Wallet className="size-5" strokeWidth={1.75} />,
+          tone: "success" as const,
+        },
       ]
     : [];
 
   return (
-    <main className="mx-auto w-full max-w-content px-4 pt-6 md:px-8">
+    <main className="mx-auto w-full max-w-content px-4 pb-16 pt-6 md:px-8">
       <AutoRefresh />
 
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="font-serif text-2xl font-bold text-brown-deep md:text-3xl">
-          Daftar Pesanan
-        </h1>
-        <span className="text-xs text-brown/60">Perbarui otomatis tiap 30 detik</span>
-      </div>
+      <AdminPageHeader
+        title="Daftar Pesanan"
+        desc="Perbarui otomatis tiap 30 detik."
+      />
 
       {statCards.length > 0 ? (
-        <dl className="stagger-in mt-4 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+        <dl className="stagger-in mt-5 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
           {statCards.map((card) => (
-            <div
+            <StatTile
               key={card.label}
-              className="min-w-0 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3 sm:p-4"
-            >
-              <dt className="text-[11px] sm:text-xs font-semibold text-brown/60 truncate">{card.label}</dt>
-              <dd className="mt-1 text-base sm:text-xl font-bold tabular-nums text-brown-deep truncate">
-                {card.value}
-              </dd>
-            </div>
+              label={card.label}
+              value={card.value}
+              icon={card.icon}
+              tone={card.tone}
+            />
           ))}
         </dl>
       ) : null}
 
-      <div className="mt-4 rounded-2xl border border-gold/20 bg-cream-soft p-4">
+      <div className="au-card mt-4 rounded-2xl p-4">
         <OrderFilters
           currentRange={
             rentang === "hari-ini" ||
@@ -145,7 +172,7 @@ export default async function AdminPesananPage({
       </div>
 
       {result === null || result.orders.length === 0 ? (
-        <div className="mt-6 flex flex-col items-center rounded-2xl border border-gold/20 bg-cream-soft py-12 text-center">
+        <div className="au-card mt-6 flex flex-col items-center rounded-2xl py-12 text-center">
           <Inbox aria-hidden="true" className="size-10 text-gold" strokeWidth={1.5} />
           <p className="mt-3 text-sm font-semibold text-brown-deep">
             {result === null
@@ -174,10 +201,10 @@ export default async function AdminPesananPage({
                 // memutar sekali — admin langsung tahu kartu mana yang berubah
                 // di tengah auto-refresh 30 detik (docs/14 §14.2).
                 key={`${order.code}-${order.status}-${awaitingVerification ? "claim" : "no-claim"}`}
-                className={`rounded-2xl border p-4 ${
+                className={`au-card rounded-2xl p-4 ${
                   order.status === "BARU"
-                    ? "animate-card-new border-flame/50 bg-flame/5"
-                    : "animate-card-update border-gold/20 bg-cream-soft"
+                    ? "animate-card-new !border-flame/50 bg-flame/[0.04]"
+                    : "animate-card-update"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -186,7 +213,7 @@ export default async function AdminPesananPage({
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
                     {awaitingVerification ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-bold text-success">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1 text-xs font-bold text-success ring-1 ring-inset ring-success/20">
                         <BadgeCheck
                           aria-hidden="true"
                           className="size-3.5"
@@ -196,19 +223,19 @@ export default async function AdminPesananPage({
                       </span>
                     ) : null}
                     {order.paymentMethod === "tunai" && order.status === "BARU" ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-800">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-flame/15 px-2.5 py-1 text-xs font-bold text-brown-deep ring-1 ring-inset ring-flame/25">
                         ⚠️ Tunai (Konfirmasi WA)
                       </span>
                     ) : null}
                     {order.customer.scheduledAt ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-800">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-info/10 px-2.5 py-1 text-xs font-semibold text-info ring-1 ring-inset ring-info/20">
                         🗓️ Jadwal: {formatJakartaTime(order.customer.scheduledAt)}
                       </span>
                     ) : null}
                     <StatusBadge status={order.status} />
                   </div>
                 </div>
-                <p className="mt-1 text-sm text-brown/75">
+                <p className="mt-1.5 text-sm text-brown/75">
                   {formatJakartaTime(order.createdAt)} WIB · {order.customer.name} ·{" "}
                   {order.customer.orderType === "antar" ? "Antar" : "Ambil"}
                 </p>
@@ -219,7 +246,7 @@ export default async function AdminPesananPage({
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                   <Link
                     href={`/admin/pesanan/${order.code}`}
-                    className="flex min-h-11 items-center gap-2 rounded-full border border-gold/40 px-4 text-sm font-semibold text-brown transition-colors hover:bg-gold/15"
+                    className="btn-press flex min-h-11 items-center gap-2 rounded-full border border-gold/40 bg-cream-soft px-4 text-sm font-semibold text-brown transition-colors hover:border-gold hover:bg-gold/15"
                   >
                     <ReceiptText
                       aria-hidden="true"
@@ -250,7 +277,7 @@ export default async function AdminPesananPage({
           {page > 1 ? (
             <Link
               href={pageHref(page - 1)}
-              className="flex min-h-11 items-center rounded-full border border-gold/40 px-4 text-sm font-semibold text-brown transition-colors hover:bg-gold/15"
+              className="btn-press flex min-h-11 items-center rounded-full border border-gold/40 bg-cream-soft px-4 text-sm font-semibold text-brown transition-colors hover:border-gold hover:bg-gold/15"
             >
               Sebelumnya
             </Link>
@@ -263,7 +290,7 @@ export default async function AdminPesananPage({
           {page < totalPages ? (
             <Link
               href={pageHref(page + 1)}
-              className="flex min-h-11 items-center rounded-full border border-gold/40 px-4 text-sm font-semibold text-brown transition-colors hover:bg-gold/15"
+              className="btn-press flex min-h-11 items-center rounded-full border border-gold/40 bg-cream-soft px-4 text-sm font-semibold text-brown transition-colors hover:border-gold hover:bg-gold/15"
             >
               Berikutnya
             </Link>

@@ -18,9 +18,40 @@ export default function AdminLoginPage() {
     isSupabaseConfigured() && hasAdminAuthorizationConfigured();
 
   return (
-    <main className="mx-auto w-full max-w-content px-4 pb-16 pt-12 md:px-8">
-      <div className="mx-auto max-w-md">
-        <div className="fade-up rounded-2xl border border-gold/25 bg-cream-soft p-6 shadow-warm md:p-8">
+    <main className="min-h-screen bg-cream">
+      {/* Panel brand gelap (md+) — split-screen premium ala halaman login
+          SaaS modern; seluler hanya kartu form. */}
+      <div
+        className="hidden md:block"
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(135deg, #241610 0%, #1d110b 55%, #140b07 100%)",
+          clipPath: "polygon(0 0, 46% 0, 40% 100%, 0 100%)",
+        }}
+        aria-hidden="true"
+      >
+        <div className="absolute left-[12%] top-1/2 max-w-sm -translate-y-1/2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-gold/70">
+            MAU&apos;S Kitchen
+          </p>
+          <h2 className="mt-3 font-serif text-4xl font-bold leading-tight text-cream">
+            Panel Admin
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-cream/55">
+            Kelola pesanan, menu, dan rekap penjualan — semua dari satu
+            dasbor yang aman.
+          </p>
+        </div>
+        <div
+          className="absolute -left-16 top-16 size-64 rounded-full bg-gold/10 blur-3xl"
+        />
+      </div>
+
+      <div className="relative mx-auto flex min-h-screen w-full max-w-content items-center justify-center px-4 py-12 md:px-8">
+        <div className="fade-up w-full max-w-md">
+          <div className="au-card rounded-2xl p-6 shadow-luxe-lg md:p-8">
           <div className="flex items-center gap-3">
             <span className="flex size-12 items-center justify-center rounded-2xl bg-gold/20">
               <Lock
@@ -73,6 +104,7 @@ export default function AdminLoginPage() {
           </Link>
         </p>
       </div>
+    </div>
     </main>
   );
 }

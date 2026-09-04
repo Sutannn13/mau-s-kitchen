@@ -101,7 +101,7 @@ export default async function AdminDetailPesananPage({
 
         {/* Linimasa progres (A10) — komponen presentational yang sama dengan
             halaman /pesanan/[kode] pelanggan (status-only, tanpa logika). */}
-        <section className="mt-3.5 sm:mt-5 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
+        <section className="au-card au-card-hover mt-3.5 sm:mt-5 rounded-2xl p-3.5 sm:p-5">
           <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-brown/60">
             Progres Pesanan
           </h2>
@@ -110,7 +110,7 @@ export default async function AdminDetailPesananPage({
           </div>
         </section>
 
-        <section className="mt-3.5 sm:mt-5 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
+        <section className="au-card au-card-hover mt-3.5 sm:mt-5 rounded-2xl p-3.5 sm:p-5">
           <h2 className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-brown/60">
             <User aria-hidden="true" className="size-3.5 sm:size-4" strokeWidth={1.75} />
             Data Pemesan
@@ -170,7 +170,7 @@ export default async function AdminDetailPesananPage({
           </a>
         </section>
 
-        <section className="mt-3.5 sm:mt-4 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
+        <section className="au-card au-card-hover mt-3.5 sm:mt-4 rounded-2xl p-3.5 sm:p-5">
           <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-brown/60">
             Rincian Item
           </h2>
@@ -249,7 +249,7 @@ export default async function AdminDetailPesananPage({
           </dl>
         </section>
 
-        <section className="mt-3.5 sm:mt-4 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
+        <section className="au-card au-card-hover mt-3.5 sm:mt-4 rounded-2xl p-3.5 sm:p-5">
           <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-brown/60">
             Pembayaran
           </h2>
@@ -300,7 +300,7 @@ export default async function AdminDetailPesananPage({
         </section>
 
         {order.customer.note ? (
-          <section className="mt-3.5 sm:mt-4 rounded-xl sm:rounded-2xl border border-gold/20 bg-cream-soft p-3.5 sm:p-5">
+          <section className="au-card au-card-hover mt-3.5 sm:mt-4 rounded-2xl p-3.5 sm:p-5">
             <h2 className="text-xs sm:text-sm font-bold uppercase tracking-[0.12em] sm:tracking-[0.14em] text-brown/60">
               Catatan Pelanggan
             </h2>
