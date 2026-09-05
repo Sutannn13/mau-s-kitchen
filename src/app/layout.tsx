@@ -86,6 +86,7 @@ function restaurantJsonLd(): Record<string, unknown> {
     description:
       "UMKM kuliner rumahan: sate taichan, minuman, dan dessert ChocoBerry.",
     slogan: siteConfig.tagline,
+    url: siteConfig.siteUrl,
     image: `${siteConfig.siteUrl}/assets/brand/logo-maus-kitchen.jpeg`,
     telephone: `+${siteConfig.whatsappNumber}`,
     servesCuisine: ["Indonesian", "Street Food", "Dessert"],

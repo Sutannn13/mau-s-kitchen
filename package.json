@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "data:purge": "node scripts/purge-expired-orders.mjs",
     "security:preflight": "node scripts/security-preflight.mjs",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

@@ -67,7 +67,8 @@ export const metadata: Metadata = {
   "name": "MAU'S Kitchen",
   "description": "UMKM kuliner rumahan: sate taichan, minuman, dan dessert ChocoBerry.",
   "slogan": "Homemade with Love",
-  "image": "https://mauskitchen.com/assets/brand/logo-maus-kitchen.jpeg",
+  "url": "https://maukitchen.my.id",
+  "image": "https://maukitchen.my.id/assets/brand/logo-maus-kitchen.jpeg",
   "telephone": "+6281617691585",
   "servesCuisine": ["Indonesian", "Street Food", "Dessert"],
   "priceRange": "Rp5.000 - Rp48.000",
@@ -79,7 +80,7 @@ export const metadata: Metadata = {
   },
   "potentialAction": {
     "@type": "OrderAction",
-    "target": "https://mauskitchen.com/menu"
+    "target": "https://maukitchen.my.id/menu"
   }
 }
 ```
@@ -229,14 +230,51 @@ export default function robots(): MetadataRoute.Robots {
 
 ### Pendaftaran Google Search Console (gratis)
 
-1. Tambahkan property domain `maukitchen.my.id` di Google Search Console.
+1. Buka [Google Search Console](https://search.google.com/search-console), lalu
+   tambahkan **Domain property** `maukitchen.my.id` (tanpa `https://` dan tanpa
+   path).
 2. Salin record TXT verifikasi dari Google ke DNS Cloudflare, lalu jalankan
    verifikasi di Search Console. Jangan menghapus TXT setelah berhasil.
 3. Kirim sitemap `https://maukitchen.my.id/sitemap.xml` melalui menu **Sitemaps**.
-4. Gunakan **URL Inspection** untuk `https://maukitchen.my.id/`, pastikan URL dapat
-   diindeks, lalu pilih **Request indexing**.
+4. Gunakan **URL Inspection** untuk homepage, `/menu`, dan 1 halaman produk;
+   pastikan URL dapat diindeks, lalu pilih **Request indexing**. Jangan mengirim
+   URL yang sama berulang-ulang karena tidak mempercepat crawl.
 5. Pantau menu **Page indexing** dan **Performance**. Crawling serta pemrosesan
    nama situs dapat memerlukan beberapa hari sampai beberapa minggu.
+
+Sitemap hanya membantu discovery dan bukan jaminan indexing atau ranking. Nilai
+`lastmod` dihasilkan dari waktu perubahan menu yang nyata; halaman statis tanpa
+sumber tanggal tidak mengarang tanggal build. Google mengabaikan `priority` dan
+`changefreq`, tetapi dapat memakai `lastmod` bila konsisten dan akurat.
+
+### Bing dan search engine lain (gratis)
+
+1. Buka [Bing Webmaster Tools](https://www.bing.com/webmasters/), lalu pilih
+   **Import from Google Search Console** setelah property Google terverifikasi.
+   Cara ini ikut membawa sitemap dan bukti kepemilikan.
+2. Bila tidak memakai import, tambahkan site secara manual dan submit
+   `https://maukitchen.my.id/sitemap.xml` melalui menu **Sitemaps**.
+3. Aktifkan **Cloudflare → Cache / CDN → Advanced configuration → Crawler
+   Hints**. Fitur gratis ini memakai IndexNow untuk memberi tahu Bing dan mesin
+   pencari peserta lain ketika konten berubah, sekaligus mengurangi crawl yang
+   tidak perlu ke Worker.
+4. Pantau **URL Inspection**, **Site Scan**, dan **IndexNow** di Bing Webmaster
+   Tools. Hindari menambah integrasi IndexNow buatan sendiri selama Crawler Hints
+   sudah aktif; satu jalur native lebih sederhana dan tidak menambah beban Worker.
+
+Google tidak memakai IndexNow. Untuk Google, jalur resminya tetap Search Console,
+sitemap, URL Inspection, konten yang berguna, dan tautan eksternal yang wajar.
+
+### Checklist local search MAU'S Kitchen
+
+1. Tambahkan atau klaim [Google Business Profile](https://business.google.com/add)
+   memakai akun yang tetap dimiliki pemilik usaha.
+2. Isi nama, alamat/service area, nomor telepon, jam buka, kategori usaha, foto,
+   menu, dan URL `https://maukitchen.my.id` hanya dari data bisnis yang sudah
+   dikonfirmasi.
+3. Samakan NAP (**Name, Address, Phone**) di website, Google Business Profile,
+   WhatsApp Business, Instagram, dan platform lain.
+4. Minta ulasan asli pelanggan tanpa imbalan atau ulasan palsu.
 
 ---
 

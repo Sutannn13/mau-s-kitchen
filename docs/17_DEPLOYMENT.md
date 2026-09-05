@@ -257,9 +257,10 @@ Catatan penting:
   Bila env hanya diberikan ke step build terpisah, artefak yang benar-benar
   ter-deploy berisi nilai kosong (login admin dan URL absolut rusak).
 - `concurrency` mencegah dua deploy berjalan bersamaan.
-- Setelah deploy, workflow memanggil `/api/health` (maksimum 6 percobaan, jeda
-  10 detik). Endpoint hanya membalas `200` bila Supabase, allowlist admin, dan
-  konfigurasi privasi siap — jadi rilis rusak langsung terlihat merah.
+- Setelah deploy, workflow menjalankan `npm run verify:deployment` terhadap
+  homepage, `/menu`, `robots.txt`, `sitemap.xml`, dan `/api/health`. Pengecekan
+  berurutan ini menangkap render publik 1102 sekaligus konfigurasi discovery
+  crawler yang rusak tanpa membuat burst ke Worker Free.
 - Cloudflare Workers membagi request dan auto-scale di jaringan edge; load
   balancer aplikasi tambahan tidak diperlukan untuk 10–20 checkout serentak.
   Konsistensi burst dijaga counter kode atomik dan RPC transaksi Supabase.
@@ -290,6 +291,31 @@ menjalankan NextServer. Jika log endpoint dinamis masih melewati batas CPU
 10 ms, tindakan operasionalnya adalah memakai Workers Paid dan menetapkan
 `limits.cpu_ms` berdasarkan hasil observasi; jangan sekadar menaikkan limit tanpa
 memeriksa P99 CPU.
+
+### Monitoring dan respons insiden
+
+Workflow `.github/workflows/monitor-production.yml` menjalankan smoke check tiap
+30 menit dan dapat dijalankan manual. Aktifkan notifikasi kegagalan GitHub
+Actions pada akun pemilik agar hasil merah benar-benar diterima. Scheduled
+workflow berjalan dari default branch dan dapat dinonaktifkan GitHub setelah
+60 hari tanpa aktivitas pada repository public; periksa tab Actions secara rutin.
+
+Saat alarm atau laporan pelanggan masuk:
+
+1. Catat URL, waktu UTC/WIB, status HTTP, dan Cloudflare Ray ID.
+2. Buka Workers **Metrics/Observability** dan bedakan `exceededResources`
+   (umumnya CPU/free-tier) dari `exceededMemory`; Error 1102 dapat berasal dari
+   keduanya.
+3. Jalankan `npm run verify:deployment -- https://maukitchen.my.id` untuk melihat
+   jalur mana yang gagal serta `cf-ray` dan status cache tiap respons.
+4. Jika mulai sesudah deploy, rollback ke versi Worker terakhir yang sehat.
+   Jika hanya cache miss yang berat, periksa binding R2/D1/DO dan cache
+   interception sebelum mengubah aplikasi.
+5. Jangan mengandalkan `/api/health` saja. Backend dapat sehat ketika render
+   homepage atau sitemap melewati limit CPU.
+6. Jika route dinamis yang sudah diprofilkan tetap membutuhkan lebih dari limit
+   Workers Free, Workers Paid adalah mitigasi kapasitas yang jujur; cache tidak
+   dapat menghilangkan seluruh kerja auth, validasi, atau SSR per request.
 
 ### Secrets repository yang wajib diisi
 
