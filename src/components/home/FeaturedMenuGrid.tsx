@@ -6,6 +6,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { CircleOff, LayoutGrid, Plus, Search, Star } from "lucide-react";
 
+import { useCartFly } from "@/components/cart/CartFlyContext";
 import { formatRupiah } from "@/lib/format";
 import { useCart } from "@/lib/cart-store";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
   const deferredSearchTerm = useDeferredValue(searchTerm.trim().toLowerCase());
 
   const addItem = useCart((state) => state.addItem);
+  const { flyFromElement } = useCartFly();
 
   const handleToastDismiss = useCallback(() => {
     setToast(null);
@@ -80,7 +82,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
     setActiveItem(null);
   }
 
-  function handleQuickAdd(item: MenuItem): void {
+  function handleQuickAdd(item: MenuItem, source: Element): void {
     if (!item.available) {
       return;
     }
@@ -91,6 +93,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
     }
 
     // Jika item tanpa varian (misal Taichan Daging / Aren Latte), langsung tambah ke keranjang
+    flyFromElement(source, item.image);
     addItem(item, {
       variant: null,
       addOns: [],
@@ -275,7 +278,7 @@ export function FeaturedMenuGrid({ categories, items }: FeaturedMenuGridProps) {
                       </p>
                       <button
                         type="button"
-                         onClick={() => handleQuickAdd(item)}
+                        onClick={(event) => handleQuickAdd(item, event.currentTarget)}
                         disabled={!item.available}
                         aria-label={`Tambah ${item.name}`}
                         className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brown-deep text-cream shadow-warm transition-colors hover:bg-brown disabled:cursor-not-allowed disabled:bg-neutral-300"

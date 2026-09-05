@@ -6,6 +6,8 @@ import { createContext, useCallback, useContext, useRef, useState } from "react"
 import { motion, useReducedMotion } from "motion/react";
 import { Plus } from "lucide-react";
 
+import { findNearestVisibleRect } from "@/lib/cart-animation";
+
 // Animasi "terbang ke keranjang" (docs/08_UI_UX_SPEC.md §8.3): saat item
 // ditambahkan, thumbnail produk meluncur melengkung dari tombol Tambah ke
 // ikon keranjang di Header (elemen bertanda data-cart-target) lalu mengecil
@@ -36,6 +38,7 @@ export function useCartFly(): CartFly {
 }
 
 const DOT_SIZE = 40;
+const MAX_ACTIVE_FLIGHTS = 4;
 
 export function CartFlyProvider({ children }: { children: ReactNode }) {
   const [flights, setFlights] = useState<readonly Flight[]>([]);
@@ -49,25 +52,32 @@ export function CartFlyProvider({ children }: { children: ReactNode }) {
       if (prefersReducedMotion) {
         return;
       }
-      const target = document.querySelector("[data-cart-target]");
-      if (!target) {
+      const from = element.getBoundingClientRect();
+      if (from.width <= 0 || from.height <= 0) {
         return;
       }
-      const from = element.getBoundingClientRect();
-      const to = target.getBoundingClientRect();
-      if (from.width === 0 || to.width === 0) {
+      const targets = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-cart-target]"),
+        (target) => target.getBoundingClientRect(),
+      );
+      const to = findNearestVisibleRect(from, targets);
+      if (!to) {
         return;
       }
       nextIdRef.current += 1;
       const flight: Flight = {
         id: nextIdRef.current,
-        image: image || undefined,
+        image: image ?? undefined,
         x: from.left + from.width / 2,
         y: from.top + from.height / 2,
         targetX: to.left + to.width / 2,
         targetY: to.top + to.height / 2,
       };
-      setFlights((current) => [...current, flight]);
+      // Batasi overlay saat rapid-click; naikkan hanya jika UI mendukung bulk add.
+      setFlights((current) => [
+        ...current.slice(-(MAX_ACTIVE_FLIGHTS - 1)),
+        flight,
+      ]);
     },
     [prefersReducedMotion],
   );
@@ -112,6 +122,7 @@ function FlyDot({
         x: [flight.x - half, midX - half, flight.targetX - half],
         y: [flight.y - half, midY - half, flight.targetY - half],
         scale: [1, 0.85, 0.2],
+        rotate: [-6, 5, 0],
         opacity: [1, 1, 0.85],
       }}
       transition={{
@@ -122,7 +133,7 @@ function FlyDot({
       onAnimationComplete={() => {
         onDone(flight.id);
       }}
-      className="pointer-events-none fixed left-0 top-0 z-toast flex size-10 items-center justify-center overflow-hidden rounded-full border-2 border-gold bg-cream shadow-warm-lg"
+      className="pointer-events-none fixed left-0 top-0 z-toast flex size-10 will-change-transform items-center justify-center overflow-hidden rounded-full border-2 border-gold bg-cream shadow-warm-lg"
     >
       {flight.image ? (
         <Image

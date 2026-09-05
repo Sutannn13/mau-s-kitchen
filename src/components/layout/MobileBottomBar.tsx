@@ -51,6 +51,7 @@ export function MobileBottomBar() {
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
+                data-cart-target={item.badge ? "" : undefined}
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold transition-colors",
                   active

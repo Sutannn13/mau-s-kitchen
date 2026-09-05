@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "motion/react";
+
 import { useCart, useRehydrateCart } from "@/lib/cart-store";
 
 // Badge jumlah item keranjang, sinkron real-time dengan store (T3.6).
@@ -18,11 +20,15 @@ export function CartBadge() {
   }
 
   return (
-    <span
+    <motion.span
+      key={totalQuantity}
+      initial={{ opacity: 0, scale: 0.55 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: "spring", stiffness: 520, damping: 18, mass: 0.55 }}
       className="absolute -right-0.5 -top-0.5 flex min-w-5 items-center justify-center rounded-full bg-chili px-1 py-0.5 text-[10px] font-bold leading-none text-white"
     >
       {totalQuantity > 99 ? "99+" : totalQuantity}
       <span className="sr-only"> item di keranjang</span>
-    </span>
+    </motion.span>
   );
 }

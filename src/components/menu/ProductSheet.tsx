@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from "react";
 import { ShoppingBag, X } from "lucide-react";
 
+import { useCartFly } from "@/components/cart/CartFlyContext";
 import { QuantityStepper } from "@/components/common/QuantityStepper";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { formatRupiah } from "@/lib/format";
@@ -40,6 +41,7 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
   const [note, setNote] = useState("");
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const { flyFromElement } = useCartFly();
 
   const requiresVariant = item.variants.length > 0;
   const selectedVariant =
@@ -70,10 +72,11 @@ export function ProductSheet({ item, onClose, onAdd }: ProductSheetProps) {
     });
   }
 
-  function handleAdd(): void {
+  function handleAdd(event: React.MouseEvent<HTMLButtonElement>): void {
     if (!isVariantValid) {
       return;
     }
+    flyFromElement(event.currentTarget, item.image);
     onAdd({
       variant: selectedVariant,
       addOns: selectedAddOns,

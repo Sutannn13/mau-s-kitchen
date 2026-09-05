@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { CartFlyProvider } from "@/components/cart/CartFlyContext";
+import { MotionProvider } from "@/components/common/MotionProvider";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { MobileBottomBar } from "@/components/layout/MobileBottomBar";
@@ -26,14 +28,18 @@ export function ChromeShell({ children }: { children: ReactNode }) {
   }
 
   return (
-      <div className={cn("flex min-h-screen flex-col", "pb-16 md:pb-0")}>
-        <Header />
-        <div className="flex-1">
-          {children}
+    <MotionProvider>
+      <CartFlyProvider>
+        <div className={cn("flex min-h-screen flex-col", "pb-16 md:pb-0")}>
+          <Header />
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
+          <WhatsAppFab />
+          <MobileBottomBar />
         </div>
-        <Footer />
-        <WhatsAppFab />
-        <MobileBottomBar />
-      </div>
+      </CartFlyProvider>
+    </MotionProvider>
   );
 }

@@ -178,6 +178,11 @@ Aturan:
 - Tombol nonaktif sampai varian wajib dipilih.
 - Total pada tombol diperbarui real-time.
 - Setelah ditambahkan, tampilkan toast "Ditambahkan ke keranjang ✓".
+- Thumbnail produk terbang melengkung dari tombol ke target keranjang terdekat:
+  ikon header di desktop atau bottom navigation di mobile. Badge jumlah kemudian
+  muncul dengan spring singkat sebagai konfirmasi visual kedua.
+- Animasi memakai `transform` dan `opacity`, maksimal empat flight bersamaan,
+  serta dinonaktifkan saat pengguna memilih `prefers-reduced-motion`.
 
 ---
 
