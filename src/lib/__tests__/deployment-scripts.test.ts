@@ -17,10 +17,18 @@ describe("production release commands", () => {
     const packageFile = JSON.parse(readProjectFile("package.json")) as PackageFile;
 
     expect(packageFile.scripts.deploy).toBe(
-      "npm run security:preflight && opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+      "npm run security:preflight && opennextjs-cloudflare build && node scripts/deploy-worker.mjs",
+    );
+    expect(packageFile.scripts["deploy:staging"]).toBe(
+      "npm run security:preflight && opennextjs-cloudflare build --env staging && node scripts/deploy-worker.mjs --env staging",
     );
     expect(packageFile.scripts.upload).toBe(
       "npm run security:preflight && opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    );
+    // Wrapper deploy wajib memutus delegasi balik wrangler -> OpenNext
+    // supaya tidak terjadi loop rekrusif saat deploy.
+    expect(readProjectFile("scripts/deploy-worker.mjs")).toContain(
+      'OPEN_NEXT_DEPLOY: "true"',
     );
   });
 
