@@ -1,4 +1,5 @@
 import menuJson from "../../data/menu.json";
+import { cache } from "react";
 
 import { getAuthorizedAdminServiceClient } from "@/lib/supabase/current-admin";
 import type {
@@ -267,9 +268,12 @@ export async function getMenu(options: {
   }
 }
 
-// Cache (ISR 60s) untuk halaman katalog pelanggan.
+const getMenuForServerRender = cache(() => getMenu({ noStore: false }));
+
+// Cache (ISR 60s) untuk halaman katalog pelanggan. React cache memastikan
+// parsing dan pemetaan respons hanya sekali saat beberapa komponen merender menu.
 export async function getCachedMenu(): Promise<LoadedMenu> {
-  return getMenu({ noStore: false });
+  return getMenuForServerRender();
 }
 
 // Tanpa cache + fail-closed untuk checkout: harga tidak boleh pakai fallback

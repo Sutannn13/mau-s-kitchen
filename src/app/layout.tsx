@@ -34,6 +34,7 @@ const bebasNeue = Bebas_Neue({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.siteUrl),
+  applicationName: siteConfig.name,
   title: {
     default: "MAU'S Kitchen — Taichan, Minuman & ChocoBerry",
     template: "%s | MAU'S Kitchen",

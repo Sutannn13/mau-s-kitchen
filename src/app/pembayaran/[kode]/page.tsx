@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { ArrowRight, CheckCircle2, Clock3, MessageCircle } from "lucide-react";
 
 import { CopyButton } from "@/components/common/CopyButton";
@@ -36,13 +34,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// QRIS statis adalah aset dari pemilik; jika berkas belum ada, tampilkan
-// placeholder tanpa mengarang gambar (docs/12_PAYMENT_QRIS.md §12.2/§12.7).
+// QRIS statis adalah aset resmi dari pemilik (public/assets/payment/qris.jpeg,
+// ter-commit di repo dan ikut ter-deploy sebagai aset statis). Pemeriksaan
+// `existsSync(process.cwd()/public)` tidak bisa dipakai di runtime Cloudflare
+// Workers karena `public/` tidak di-mount di worker — cukup andalkan flag
+// `enabled` yang di-set saat aset tersedia (docs/12_PAYMENT_QRIS.md §12.2/§12.7).
 function getExistingQrisImagePath(): string | null {
-  const imagePath = paymentConfig.qris.imagePath;
-  return existsSync(join(process.cwd(), "public", imagePath))
-    ? imagePath
-    : null;
+  return paymentConfig.qris.enabled ? paymentConfig.qris.imagePath : null;
 }
 
 export default async function PembayaranPage({

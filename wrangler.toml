@@ -17,6 +17,27 @@ head_sampling_rate = 0.01
 directory = ".open-next/assets"
 binding = "ASSETS"
 
+[[r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "maus-kitchen-next-cache"
+
+[[services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "maus-kitchen"
+
+[[d1_databases]]
+binding = "NEXT_TAG_CACHE_D1"
+database_name = "maus-kitchen-next-tags"
+database_id = "38f8673b-c537-482c-80bd-866b82dc6d92"
+
+[[durable_objects.bindings]]
+name = "NEXT_CACHE_DO_QUEUE"
+class_name = "DOQueueHandler"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DOQueueHandler"]
+
 # Custom Domain menjadikan Worker sebagai origin; Cloudflare membuat DNS dan
 # sertifikat TLS otomatis saat deployment berhasil.
 [[routes]]
@@ -86,6 +107,27 @@ head_sampling_rate = 0.01
 [env.staging.assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[[env.staging.r2_buckets]]
+binding = "NEXT_INC_CACHE_R2_BUCKET"
+bucket_name = "maus-kitchen-staging-next-cache"
+
+[[env.staging.services]]
+binding = "WORKER_SELF_REFERENCE"
+service = "maus-kitchen-staging"
+
+[[env.staging.d1_databases]]
+binding = "NEXT_TAG_CACHE_D1"
+database_name = "maus-kitchen-staging-next-tags"
+database_id = "995f35c1-3223-4ecc-b92f-52b7281bcf5f"
+
+[[env.staging.durable_objects.bindings]]
+name = "NEXT_CACHE_DO_QUEUE"
+class_name = "DOQueueHandler"
+
+[[env.staging.migrations]]
+tag = "v1"
+new_sqlite_classes = ["DOQueueHandler"]
 
 [[env.staging.routes]]
 pattern = "staging.maukitchen.my.id"

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { ShoppingBag } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { CartBadge } from "@/components/layout/CartBadge";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,9 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  // Hormati preferensi "reduce motion" pengguna: transisi dinonaktifkan
+  // bila sistem mengaturnya, panel tetap muncul/hilang tanpa animasi.
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!isMenuOpen) {
@@ -155,37 +159,77 @@ export function Header() {
               </span>
             </button>
 
-              {isMenuOpen ? (
-                <nav
-                  id={panelId}
-                  aria-label="Navigasi seluler"
-                  className="absolute right-0 top-12 w-56 rounded-2xl border border-[#EAE3DB] bg-cream-soft p-2 shadow-warm-lg"
-                >
-                  {navigationItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => {
-                        setIsMenuOpen(false);
+              {/* AnimatePresence memungkinkan animasi exit (fade + scale)
+                  saat panel ditutup, bukan hilang seketika. */}
+              <AnimatePresence>
+                {isMenuOpen ? (
+                  <motion.nav
+                    id={panelId}
+                    aria-label="Navigasi seluler"
+                    initial={
+                      shouldReduceMotion
+                        ? false
+                        : { opacity: 0, y: -8, scale: 0.96 }
+                    }
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={
+                      shouldReduceMotion
+                        ? undefined
+                        : { opacity: 0, y: -8, scale: 0.96 }
+                    }
+                    transition={{ duration: 0.18, ease: "easeOut" }}
+                    style={{ transformOrigin: "top right" }}
+                    className="absolute right-0 top-12 w-56 rounded-2xl border border-[#EAE3DB] bg-cream-soft p-2 shadow-warm-lg"
+                  >
+                    {navigationItems.map((item, index) => (
+                      <motion.div
+                        key={item.href}
+                        initial={
+                          shouldReduceMotion ? false : { opacity: 0, x: 12 }
+                        }
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.18,
+                          ease: "easeOut",
+                          delay: shouldReduceMotion ? 0 : 0.04 * index,
+                        }}
+                      >
+                        <Link
+                          href={item.href}
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                          }}
+                          className="flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-brown transition-colors hover:bg-gold/15 hover:text-brown-deep"
+                        >
+                          {item.label}
+                        </Link>
+                      </motion.div>
+                    ))}
+                    <motion.div
+                      initial={shouldReduceMotion ? false : { opacity: 0, x: 12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.18,
+                        ease: "easeOut",
+                        delay: shouldReduceMotion
+                          ? 0
+                          : 0.04 * navigationItems.length,
                       }}
-                      className="flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-brown transition-colors hover:bg-gold/15 hover:text-brown-deep"
+                      className="mt-2 border-t border-[#EAE3DB] pt-2"
                     >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <div className="mt-2 border-t border-[#EAE3DB] pt-2">
-                    <Link
-                      href="/menu"
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                      }}
-                      className="btn-press flex min-h-11 items-center justify-center rounded-xl bg-[#1A110B] px-4 text-sm font-semibold text-white"
-                    >
-                      Pesan Sekarang
-                    </Link>
-                  </div>
-                </nav>
-              ) : null}
+                      <Link
+                        href="/menu"
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                        }}
+                        className="btn-press flex min-h-11 items-center justify-center rounded-xl bg-[#1A110B] px-4 text-sm font-semibold text-white"
+                      >
+                        Pesan Sekarang
+                      </Link>
+                    </motion.div>
+                  </motion.nav>
+                ) : null}
+              </AnimatePresence>
           </div>
         </div>
       </div>

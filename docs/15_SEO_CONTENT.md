@@ -86,6 +86,23 @@ export const metadata: Metadata = {
 
 Tambahkan juga `Menu` + `MenuItem` schema di halaman `/menu` agar harga bisa muncul di hasil pencarian.
 
+Homepage menerbitkan schema `WebSite` tersendiri agar Google menerima sinyal nama
+situs yang eksplisit:
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "MAU'S Kitchen",
+  "alternateName": "maukitchen.my.id",
+  "url": "https://maukitchen.my.id/"
+}
+```
+
+`WebSite` hanya dipasang pada homepage. Nama yang sama harus tetap konsisten pada
+`<title>`, `og:site_name`, heading, dan teks brand. Google menentukan tampilan
+akhir secara otomatis; markup ini menyatakan preferensi, bukan jaminan tampilan.
+
 ---
 
 ## 15.4 Copywriting siap pakai
@@ -209,6 +226,17 @@ export default function robots(): MetadataRoute.Robots {
   }
 }
 ```
+
+### Pendaftaran Google Search Console (gratis)
+
+1. Tambahkan property domain `maukitchen.my.id` di Google Search Console.
+2. Salin record TXT verifikasi dari Google ke DNS Cloudflare, lalu jalankan
+   verifikasi di Search Console. Jangan menghapus TXT setelah berhasil.
+3. Kirim sitemap `https://maukitchen.my.id/sitemap.xml` melalui menu **Sitemaps**.
+4. Gunakan **URL Inspection** untuk `https://maukitchen.my.id/`, pastikan URL dapat
+   diindeks, lalu pilih **Request indexing**.
+5. Pantau menu **Page indexing** dan **Performance**. Crawling serta pemrosesan
+   nama situs dapat memerlukan beberapa hari sampai beberapa minggu.
 
 ---
 

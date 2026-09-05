@@ -263,9 +263,33 @@ Catatan penting:
 - Cloudflare Workers membagi request dan auto-scale di jaringan edge; load
   balancer aplikasi tambahan tidak diperlukan untuk 10–20 checkout serentak.
   Konsistensi burst dijaga counter kode atomik dan RPC transaksi Supabase.
+- OpenNext memakai R2 `maus-kitchen-next-cache`, Durable Object
+  `NEXT_CACHE_DO_QUEUE`, D1 `maus-kitchen-next-tags`, dan cache interception.
+  Kombinasi ini membuat hit halaman ISR/SSG melewati NextServer. Resource staging
+  memakai nama terpisah dengan awalan `maus-kitchen-staging-`.
 - Aktifkan Workers Observability sebelum go-live agar error runtime, CPU, dan
   respons `5xx` dapat dilacak. Pantau pula limit harian paket Cloudflare dan
   kapasitas/kuota Supabase; keduanya batas layanan, bukan load balancer kode.
+
+### Diagnosis downtime
+
+Untuk halaman Cloudflare `Error 1102`, buka **Workers & Pages → maus-kitchen →
+Observability → Logs**, pilih waktu kejadian, lalu filter
+`$workers.outcome = exceededResources`. Nilai `$workers.cpuTimeMs` yang berhenti
+pada 10 ms menunjukkan limit CPU Workers Free; `exceededMemory` menunjukkan
+limit memory. Ray ID dan waktu UTC dari halaman error dipakai untuk mempersempit
+rentang pencarian.
+
+Periksa **Supabase → Logs → API/Postgres** bila invocation Worker berstatus
+`success` tetapi aplikasi mengembalikan `5xx`, timeout fetch/PostgREST, atau log
+aplikasi menyebut kegagalan query. Error 1102 dibuat oleh runtime Cloudflare,
+bukan oleh Supabase.
+
+Cache mengurangi render ulang halaman publik, tetapi endpoint dinamis tetap
+menjalankan NextServer. Jika log endpoint dinamis masih melewati batas CPU
+10 ms, tindakan operasionalnya adalah memakai Workers Paid dan menetapkan
+`limits.cpu_ms` berdasarkan hasil observasi; jangan sekadar menaikkan limit tanpa
+memeriksa P99 CPU.
 
 ### Secrets repository yang wajib diisi
 
