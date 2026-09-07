@@ -7,7 +7,7 @@ import {
   getOrderByPublicAccess,
   OrderStoreUnavailableError,
 } from "@/lib/order-store";
-import { getClientIp, isPublicReadRateLimited } from "@/lib/rate-limit";
+import { getClientIp, isPublicRateLimited } from "@/lib/rate-limit";
 import { verifyAdminRequest } from "@/lib/supabase/auth";
 import { patchOrderSchema } from "@/lib/validations";
 import type { Order } from "@/types/order";
@@ -39,7 +39,7 @@ export async function GET(
     return jsonError(404, "NOT_FOUND", "Pesanan tidak ditemukan.");
   }
   if (
-    await isPublicReadRateLimited(
+    await isPublicRateLimited(
       "ORDER_READ_RATE_LIMITER",
       `order-read:${getClientIp(request.headers)}`,
       { maxRequests: 120, windowSeconds: 60 },

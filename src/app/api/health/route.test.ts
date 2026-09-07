@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   getServiceClient: vi.fn(),
   hasAdminAuthorizationConfigured: vi.fn(),
   isPrivacyConfigurationReady: vi.fn(),
-  isPublicReadRateLimited: vi.fn(),
+  isPublicRateLimited: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -18,7 +18,7 @@ vi.mock("@/lib/privacy", () => ({
 }));
 vi.mock("@/lib/rate-limit", () => ({
   getClientIp: () => "192.0.2.40",
-  isPublicReadRateLimited: mocks.isPublicReadRateLimited,
+  isPublicRateLimited: mocks.isPublicRateLimited,
 }));
 
 import { GET } from "@/app/api/health/route";
@@ -26,7 +26,7 @@ import { GET } from "@/app/api/health/route";
 describe("GET /api/health", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.isPublicReadRateLimited.mockResolvedValue(false);
+    mocks.isPublicRateLimited.mockResolvedValue(false);
   });
 
   it("menghentikan request terbatas sebelum probe database", async () => {
@@ -34,7 +34,7 @@ describe("GET /api/health", () => {
     mocks.getServiceClient.mockReturnValue({ from });
     mocks.hasAdminAuthorizationConfigured.mockReturnValue(true);
     mocks.isPrivacyConfigurationReady.mockReturnValue(true);
-    mocks.isPublicReadRateLimited.mockResolvedValue(true);
+    mocks.isPublicRateLimited.mockResolvedValue(true);
 
     const response = await GET(new Request("https://example.test/api/health"));
 

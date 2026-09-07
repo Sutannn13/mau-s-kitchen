@@ -100,6 +100,20 @@ describe("production release commands", () => {
   it("mengonfigurasi rate limit pra-database untuk endpoint publik", () => {
     const wrangler = readProjectFile("wrangler.toml");
 
+    expect(wrangler).toContain(`[[ratelimits]]
+name = "ORDER_CREATE_RATE_LIMITER"
+namespace_id = "26090703"
+
+[ratelimits.simple]
+limit = 5
+period = 60`);
+    expect(wrangler).toContain(`[[env.staging.ratelimits]]
+name = "ORDER_CREATE_RATE_LIMITER"
+namespace_id = "26090713"
+
+[env.staging.ratelimits.simple]
+limit = 5
+period = 60`);
     expect(wrangler).toContain('name = "ORDER_READ_RATE_LIMITER"');
     expect(wrangler).toContain('name = "HEALTH_RATE_LIMITER"');
     expect(wrangler).toContain('DEPLOYMENT_PLATFORM = "cloudflare"');

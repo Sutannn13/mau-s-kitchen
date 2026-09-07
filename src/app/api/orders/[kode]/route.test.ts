@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getOrderByPublicAccess: vi.fn(),
-  isPublicReadRateLimited: vi.fn(),
+  isPublicRateLimited: vi.fn(),
 }));
 
 vi.mock("@/lib/admin/orders", () => ({
@@ -15,7 +15,7 @@ vi.mock("@/lib/order-store", () => ({
 }));
 vi.mock("@/lib/rate-limit", () => ({
   getClientIp: () => "192.0.2.40",
-  isPublicReadRateLimited: mocks.isPublicReadRateLimited,
+  isPublicRateLimited: mocks.isPublicRateLimited,
 }));
 vi.mock("@/lib/supabase/auth", () => ({
   verifyAdminRequest: vi.fn(),
@@ -34,7 +34,7 @@ function requestFor(code: string): Request {
 describe("GET /api/orders/[kode]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.isPublicReadRateLimited.mockResolvedValue(false);
+    mocks.isPublicRateLimited.mockResolvedValue(false);
   });
 
   it.each(["1", "2", "../orders"])(
@@ -45,13 +45,13 @@ describe("GET /api/orders/[kode]", () => {
       });
 
       expect(response.status).toBe(404);
-      expect(mocks.isPublicReadRateLimited).not.toHaveBeenCalled();
+    expect(mocks.isPublicRateLimited).not.toHaveBeenCalled();
       expect(mocks.getOrderByPublicAccess).not.toHaveBeenCalled();
     },
   );
 
   it("menghentikan request terbatas sebelum lookup database", async () => {
-    mocks.isPublicReadRateLimited.mockResolvedValue(true);
+    mocks.isPublicRateLimited.mockResolvedValue(true);
 
     const response = await GET(requestFor("MK-260827-001"), {
       params: Promise.resolve({ kode: "MK-260827-001" }),

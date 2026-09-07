@@ -13,6 +13,7 @@ interface RateLimitStore {
 }
 
 type EdgeRateLimitBindingName =
+  | "ORDER_CREATE_RATE_LIMITER"
   | "ORDER_READ_RATE_LIMITER"
   | "HEALTH_RATE_LIMITER";
 
@@ -107,7 +108,7 @@ function isEdgeRateLimitBinding(value: unknown): value is EdgeRateLimitBinding {
   );
 }
 
-export async function isPublicReadRateLimited(
+export async function isPublicRateLimited(
   bindingName: EdgeRateLimitBindingName,
   key: string,
   fallbackOptions: RateLimitOptions,

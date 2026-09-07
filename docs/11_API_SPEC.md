@@ -444,7 +444,7 @@ Add-on global reusable lintas item.
 3. Kode error menggunakan `SCREAMING_SNAKE_CASE`.
 4. `message` selalu Bahasa Indonesia (langsung bisa ditampilkan ke pengguna).
 5. Semua endpoint tulis wajib memvalidasi ulang input di server.
-6. Rate limit `POST /api/orders`: maksimal 30 permintaan per IP Cloudflare per
+6. Rate limit `POST /api/orders`: maksimal 5 permintaan per IP Cloudflare per
    menit. Nilai ini mengizinkan burst 20 checkout dari jaringan NAT/Wi-Fi yang
    sama tanpa menghilangkan perlindungan spam dasar.
 7. Jangan pernah mengembalikan `SUPABASE_SERVICE_ROLE_KEY` atau data internal lain.

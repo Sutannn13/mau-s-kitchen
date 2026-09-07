@@ -78,8 +78,13 @@ describe("rate limiting", () => {
 
   it("memblokir setelah batas tercapai", async () => {
     const key = `test-${Math.random()}`;
-    expect(await isRateLimited(key, { maxRequests: 2 }, 1_000)).toBe(false);
-    expect(await isRateLimited(key, { maxRequests: 2 }, 1_001)).toBe(false);
-    expect(await isRateLimited(key, { maxRequests: 2 }, 1_002)).toBe(true);
+    const options = { maxRequests: 5, windowSeconds: 60 };
+
+    for (let requestNumber = 0; requestNumber < 5; requestNumber += 1) {
+      expect(await isRateLimited(key, options, 1_000 + requestNumber)).toBe(
+        false,
+      );
+    }
+    expect(await isRateLimited(key, options, 1_005)).toBe(true);
   });
 });

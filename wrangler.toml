@@ -45,6 +45,14 @@ pattern = "maukitchen.my.id"
 custom_domain = true
 
 [[ratelimits]]
+name = "ORDER_CREATE_RATE_LIMITER"
+namespace_id = "26090703"
+
+[ratelimits.simple]
+limit = 5
+period = 60
+
+[[ratelimits]]
 name = "ORDER_READ_RATE_LIMITER"
 namespace_id = "26082701"
 
@@ -132,6 +140,14 @@ new_sqlite_classes = ["DOQueueHandler"]
 [[env.staging.routes]]
 pattern = "staging.maukitchen.my.id"
 custom_domain = true
+
+[[env.staging.ratelimits]]
+name = "ORDER_CREATE_RATE_LIMITER"
+namespace_id = "26090713"
+
+[env.staging.ratelimits.simple]
+limit = 5
+period = 60
 
 [[env.staging.ratelimits]]
 name = "ORDER_READ_RATE_LIMITER"
