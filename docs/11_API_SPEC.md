@@ -38,6 +38,9 @@ Membuat pesanan baru.
 Header wajib: `Idempotency-Key: <UUID v4>`. Browser menyimpan key per payload di
 `sessionStorage` sampai respons sukses. Retry dengan key + payload identik
 mengembalikan pesanan yang sama; key identik untuk payload berbeda ditolak.
+Browser juga wajib mengirim `Origin` yang sama dengan `NEXT_PUBLIC_SITE_URL`
+atau `Sec-Fetch-Site: same-origin`; metadata lintas origin ditolak sebelum
+checkout diproses. Client non-browser wajib mengirim `Origin` deployment aktif.
 
 ### Request
 
@@ -103,6 +106,7 @@ mengembalikan pesanan yang sama; key identik untuk payload berbeda ditolak.
 | Kode | Kondisi | Body |
 |---|---|---|
 | `400` | Validasi gagal / key retry tidak sah | `VALIDATION_ERROR` atau `INVALID_IDEMPOTENCY_KEY` |
+| `403` | Origin browser bukan milik deployment aktif | `UNTRUSTED_ORIGIN` |
 | `409` | Ada item yang habis | `{ "success": false, "error": "ITEM_UNAVAILABLE", "items": ["thai-tea"] }` |
 | `409` | Key retry dipakai untuk payload berbeda | `{ "success": false, "error": "IDEMPOTENCY_CONFLICT" }` |
 | `422` | Keranjang kosong | `{ "success": false, "error": "EMPTY_CART" }` |

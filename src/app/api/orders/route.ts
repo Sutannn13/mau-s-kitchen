@@ -26,6 +26,7 @@ import {
 } from "@/lib/order-pricing";
 import { isPrivacyConfigurationReady } from "@/lib/privacy";
 import { getClientIp, isStrictPublicRateLimited } from "@/lib/rate-limit";
+import { isTrustedOrderRequest } from "@/lib/request-origin";
 import {
   readRequestBytesWithLimit,
   RequestBodyTooLargeError,
@@ -67,6 +68,14 @@ function omitPublicToken(order: Order): Omit<Order, "publicToken"> {
 // tolak dengan 503 MENU_STORE_UNAVAILABLE (jangan pakai fallback JSON yang
 // mungkin stale). Lihat docs/11_API_SPEC.md §11.2.
 export async function POST(request: Request): Promise<NextResponse> {
+  if (!isTrustedOrderRequest(request.headers)) {
+    return jsonError(
+      403,
+      "UNTRUSTED_ORIGIN",
+      "Permintaan checkout tidak diizinkan.",
+    );
+  }
+
   if (
     await isStrictPublicRateLimited(
       "ORDER_CREATE_RATE_LIMITER",
