@@ -2,13 +2,22 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getCloudflareContext: vi.fn(),
+  getServiceClient: vi.fn(),
 }));
 
 vi.mock("@opennextjs/cloudflare", () => ({
   getCloudflareContext: mocks.getCloudflareContext,
 }));
 
-import { getClientIp, isPublicRateLimited } from "@/lib/rate-limit";
+vi.mock("@/lib/supabase/admin", () => ({
+  getServiceClient: mocks.getServiceClient,
+}));
+
+import {
+  getClientIp,
+  isPublicRateLimited,
+  isStrictPublicRateLimited,
+} from "@/lib/rate-limit";
 
 describe("getClientIp", () => {
   afterEach(() => {
@@ -99,5 +108,44 @@ describe("Cloudflare rate limiting", () => {
         { maxRequests: 5, windowSeconds: 60 },
       ),
     ).resolves.toBe(true);
+  });
+
+  it("memakai limiter atomik sebagai backstop counter edge", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DEPLOYMENT_PLATFORM", "cloudflare");
+    const edgeLimit = vi.fn().mockResolvedValue({ success: true });
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: false, error: null })
+      .mockResolvedValueOnce({ data: true, error: null });
+    mocks.getCloudflareContext.mockResolvedValue({
+      env: { ORDER_CREATE_RATE_LIMITER: { limit: edgeLimit } },
+    });
+    mocks.getServiceClient.mockReturnValue({ rpc });
+    const key = "order-create:198.51.100.4";
+    const options = { maxRequests: 5, windowSeconds: 60 };
+
+    for (let requestNumber = 0; requestNumber < 5; requestNumber += 1) {
+      expect(
+        await isStrictPublicRateLimited(
+          "ORDER_CREATE_RATE_LIMITER",
+          key,
+          options,
+        ),
+      ).toBe(false);
+    }
+    expect(
+      await isStrictPublicRateLimited(
+        "ORDER_CREATE_RATE_LIMITER",
+        key,
+        options,
+      ),
+    ).toBe(true);
+    expect(edgeLimit).toHaveBeenCalledTimes(6);
+    expect(rpc).toHaveBeenCalledTimes(6);
   });
 });

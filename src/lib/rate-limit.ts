@@ -144,6 +144,24 @@ export async function isPublicRateLimited(
   }
 }
 
+export async function isStrictPublicRateLimited(
+  bindingName: EdgeRateLimitBindingName,
+  key: string,
+  options: RateLimitOptions,
+): Promise<boolean> {
+  if (process.env.DEPLOYMENT_PLATFORM !== "cloudflare") {
+    return isRateLimited(key, options);
+  }
+
+  if (await isPublicRateLimited(bindingName, key, options)) {
+    return true;
+  }
+
+  // Edge counters are approximate; keep the atomic Supabase RPC as the
+  // cross-location backstop for state-changing public endpoints.
+  return isRateLimited(key, options);
+}
+
 export function getClientIp(headers: Headers): string {
   if (
     process.env.NODE_ENV !== "production" ||

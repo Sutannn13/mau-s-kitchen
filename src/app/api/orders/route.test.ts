@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   isPrivacyConfigurationReady: vi.fn(),
-  isPublicRateLimited: vi.fn(),
+  isStrictPublicRateLimited: vi.fn(),
 }));
 
 vi.mock("@/lib/privacy", () => ({
@@ -11,7 +11,7 @@ vi.mock("@/lib/privacy", () => ({
 
 vi.mock("@/lib/rate-limit", () => ({
   getClientIp: () => "192.0.2.40",
-  isPublicRateLimited: mocks.isPublicRateLimited,
+  isStrictPublicRateLimited: mocks.isStrictPublicRateLimited,
 }));
 
 import { POST } from "@/app/api/orders/route";
@@ -20,7 +20,7 @@ describe("POST /api/orders rate limit", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.isPrivacyConfigurationReady.mockReturnValue(true);
-    mocks.isPublicRateLimited.mockResolvedValue(true);
+    mocks.isStrictPublicRateLimited.mockResolvedValue(true);
   });
 
   it("menolak checkout setelah lima permintaan per menit dari IP yang sama", async () => {
@@ -30,7 +30,7 @@ describe("POST /api/orders rate limit", () => {
       }),
     );
 
-    expect(mocks.isPublicRateLimited).toHaveBeenCalledWith(
+    expect(mocks.isStrictPublicRateLimited).toHaveBeenCalledWith(
       "ORDER_CREATE_RATE_LIMITER",
       "order-create:192.0.2.40",
       { maxRequests: 5, windowSeconds: 60 },

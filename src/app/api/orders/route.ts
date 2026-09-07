@@ -25,7 +25,7 @@ import {
   getInitialDeliveryFee,
 } from "@/lib/order-pricing";
 import { isPrivacyConfigurationReady } from "@/lib/privacy";
-import { getClientIp, isPublicRateLimited } from "@/lib/rate-limit";
+import { getClientIp, isStrictPublicRateLimited } from "@/lib/rate-limit";
 import {
   readRequestBytesWithLimit,
   RequestBodyTooLargeError,
@@ -68,7 +68,7 @@ function omitPublicToken(order: Order): Omit<Order, "publicToken"> {
 // mungkin stale). Lihat docs/11_API_SPEC.md §11.2.
 export async function POST(request: Request): Promise<NextResponse> {
   if (
-    await isPublicRateLimited(
+    await isStrictPublicRateLimited(
       "ORDER_CREATE_RATE_LIMITER",
       `order-create:${getClientIp(request.headers)}`,
       { maxRequests: 5, windowSeconds: 60 },
