@@ -445,8 +445,8 @@ Add-on global reusable lintas item.
 4. `message` selalu Bahasa Indonesia (langsung bisa ditampilkan ke pengguna).
 5. Semua endpoint tulis wajib memvalidasi ulang input di server.
 6. Rate limit `POST /api/orders`: maksimal 5 permintaan per IP Cloudflare per
-   menit. Nilai ini mengizinkan burst 20 checkout dari jaringan NAT/Wi-Fi yang
-   sama tanpa menghilangkan perlindungan spam dasar.
+   menit. Limiter edge dilapis counter atomik lintas Worker agar permintaan
+   keenam dalam jendela yang sama menghasilkan `429 RATE_LIMITED`.
 7. Jangan pernah mengembalikan `SUPABASE_SERVICE_ROLE_KEY` atau data internal lain.
 8. Untuk `orderType=ambil`, server membuang `address` dan `addressNote` walaupun
    browser mengirim nilai lama, agar PII yang tidak dibutuhkan tidak tersimpan.
