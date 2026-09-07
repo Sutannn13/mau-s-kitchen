@@ -13,6 +13,17 @@ const required = (name) => {
 };
 const isTbd = (value) => !value || value.trim().toUpperCase() === "TBD";
 const isEnabled = (value) => value?.trim().toLowerCase() === "true";
+const deploymentTarget = process.argv
+  .find((argument) => argument.startsWith("--target="))
+  ?.slice("--target=".length);
+const expectedHostname = {
+  production: "maukitchen.my.id",
+  staging: "staging.maukitchen.my.id",
+}[deploymentTarget];
+
+if (deploymentTarget && !expectedHostname) {
+  errors.push("Target deployment harus production atau staging.");
+}
 
 const siteUrl = required("NEXT_PUBLIC_SITE_URL");
 const supabaseUrl = required("NEXT_PUBLIC_SUPABASE_URL").replace(/\/+$/, "");
@@ -27,6 +38,11 @@ try {
   const parsed = new URL(siteUrl);
   if (parsed.protocol !== "https:" || parsed.hostname === "localhost") {
     errors.push("NEXT_PUBLIC_SITE_URL harus domain HTTPS produksi.");
+  }
+  if (expectedHostname && parsed.hostname !== expectedHostname) {
+    errors.push(
+      `NEXT_PUBLIC_SITE_URL untuk target ${deploymentTarget} harus https://${expectedHostname}.`,
+    );
   }
 } catch {
   errors.push("NEXT_PUBLIC_SITE_URL bukan URL valid.");

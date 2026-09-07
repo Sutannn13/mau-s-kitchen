@@ -17,13 +17,13 @@ describe("production release commands", () => {
     const packageFile = JSON.parse(readProjectFile("package.json")) as PackageFile;
 
     expect(packageFile.scripts.deploy).toBe(
-      "npm run security:preflight && opennextjs-cloudflare build && node scripts/deploy-worker.mjs",
+      "npm run security:preflight -- --target=production && opennextjs-cloudflare build && node scripts/deploy-worker.mjs",
     );
     expect(packageFile.scripts["deploy:staging"]).toBe(
-      "npm run security:preflight && opennextjs-cloudflare build --env staging && node scripts/deploy-worker.mjs --env staging",
+      "npm run security:preflight -- --target=staging && opennextjs-cloudflare build --env staging && node scripts/deploy-worker.mjs --env staging",
     );
     expect(packageFile.scripts.upload).toBe(
-      "npm run security:preflight && opennextjs-cloudflare build && opennextjs-cloudflare upload",
+      "npm run security:preflight -- --target=production && opennextjs-cloudflare build && opennextjs-cloudflare upload",
     );
     // Wrapper deploy wajib memutus delegasi balik wrangler -> OpenNext
     // supaya tidak terjadi loop rekrusif saat deploy.
@@ -36,6 +36,9 @@ describe("production release commands", () => {
     const packageFile = JSON.parse(readProjectFile("package.json")) as PackageFile;
 
     expect(packageFile.scripts.build).toBe("next build");
+    expect(packageFile.scripts["build:production"]).toBe(
+      "npm run security:preflight -- --target=production && npm run build",
+    );
     expect(packageFile.scripts["build:vercel"]).toBe(
       "node scripts/vercel-build.mjs",
     );
@@ -74,6 +77,23 @@ describe("production release commands", () => {
 
     expect(preflight).toContain(
       "NEXT_PUBLIC_ENABLE_QRIS wajib true untuk rilis produksi MAU'S Kitchen.",
+    );
+  });
+
+  it("mengikat build dan verifier ke hostname deployment yang benar", () => {
+    const preflight = readProjectFile("scripts/security-preflight.mjs");
+    const productionWorkflow = readProjectFile(".github/workflows/deploy.yml");
+    const stagingWorkflow = readProjectFile(
+      ".github/workflows/deploy-staging.yml",
+    );
+
+    expect(preflight).toContain('production: "maukitchen.my.id"');
+    expect(preflight).toContain('staging: "staging.maukitchen.my.id"');
+    expect(productionWorkflow).toContain(
+      "npm run verify:deployment -- https://maukitchen.my.id",
+    );
+    expect(stagingWorkflow).toContain(
+      "npm run verify:deployment -- https://staging.maukitchen.my.id",
     );
   });
 

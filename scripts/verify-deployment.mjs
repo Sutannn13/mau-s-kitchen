@@ -28,9 +28,27 @@ function assertIncludes(body, expected, label) {
   }
 }
 
+function assertNotIncludes(body, unexpected, label) {
+  if (body.includes(unexpected)) {
+    throw new Error(`${label} masih ditemukan pada respons.`);
+  }
+}
+
 const siteUrl = normalizeSiteUrl(
   process.argv[2] ?? process.env.NEXT_PUBLIC_SITE_URL,
 );
+const isStaging = new URL(siteUrl).hostname === "staging.maukitchen.my.id";
+
+function assertDeploymentRobotsHeader(response) {
+  const robotsHeader = response.headers.get("x-robots-tag")?.toLowerCase();
+
+  if (isStaging) {
+    assertIncludes(robotsHeader ?? "", "noindex", "X-Robots-Tag noindex");
+    assertIncludes(robotsHeader ?? "", "nofollow", "X-Robots-Tag nofollow");
+  } else if (robotsHeader) {
+    throw new Error("X-Robots-Tag tidak boleh aktif pada production.");
+  }
+}
 
 const checks = [
   {
@@ -60,11 +78,15 @@ const checks = [
         "User-Agent: *\nAllow: /",
         "Izin crawler umum",
       );
-      assertIncludes(
-        normalizedBody,
-        `Sitemap: ${siteUrl}/sitemap.xml`,
-        "Referensi sitemap",
-      );
+      if (isStaging) {
+        assertNotIncludes(normalizedBody, "Sitemap:", "Referensi sitemap staging");
+      } else {
+        assertIncludes(
+          normalizedBody,
+          `Sitemap: ${siteUrl}/sitemap.xml`,
+          "Referensi sitemap",
+        );
+      }
     },
   },
   {
@@ -109,6 +131,7 @@ async function runCheck(check) {
         throw new Error("Cloudflare Error 1102 terdeteksi pada body respons.");
       }
 
+      assertDeploymentRobotsHeader(response);
       check.validate(body);
       console.log(
         JSON.stringify({

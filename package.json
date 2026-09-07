@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:production": "npm run security:preflight && npm run build",
+    "build:production": "npm run security:preflight -- --target=production && npm run build",
     "build:vercel": "node scripts/vercel-build.mjs",
     "postbuild": "node scripts/prepare-standalone.mjs",
     "start": "next start",
@@ -17,9 +17,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "npm run security:preflight && opennextjs-cloudflare build && node scripts/deploy-worker.mjs",
-    "deploy:staging": "npm run security:preflight && opennextjs-cloudflare build --env staging && node scripts/deploy-worker.mjs --env staging",
-    "upload": "npm run security:preflight && opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "deploy": "npm run security:preflight -- --target=production && opennextjs-cloudflare build && node scripts/deploy-worker.mjs",
+    "deploy:staging": "npm run security:preflight -- --target=staging && opennextjs-cloudflare build --env staging && node scripts/deploy-worker.mjs --env staging",
+    "upload": "npm run security:preflight -- --target=production && opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {

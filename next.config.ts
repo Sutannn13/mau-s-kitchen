@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
+import { isStagingDeployment } from "./src/config/deployment";
+
 // Aktifkan integrasi `wrangler` saat `next dev` (binding env R2/D1/vars dll).
 // No-op di environment lain. Lihat: https://opennext.js.org/cloudflare
 initOpenNextCloudflareForDev();
 
 const isDevelopment = process.env.NODE_ENV === "development";
+const isStaging = isStagingDeployment(process.env.NEXT_PUBLIC_SITE_URL);
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${isDevelopment ? " 'unsafe-eval'" : ""}`,
@@ -34,6 +37,9 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "no-referrer" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
+          ...(isStaging
+            ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }]
+            : []),
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",

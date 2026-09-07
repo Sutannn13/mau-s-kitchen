@@ -228,6 +228,13 @@ export default function robots(): MetadataRoute.Robots {
 }
 ```
 
+Production mengizinkan crawler untuk halaman publik dan mengiklankan sitemap.
+Build dengan `NEXT_PUBLIC_SITE_URL=https://staging.maukitchen.my.id` berbeda:
+semua respons mendapat `X-Robots-Tag: noindex, nofollow`, sedangkan
+`robots.txt` tidak mengiklankan sitemap staging. Crawler tetap boleh mengambil
+halaman publik agar dapat membaca header `noindex`; autentikasi Cloudflare
+Access adalah kontrol yang membatasi siapa yang dapat membuka staging.
+
 ### Pendaftaran Google Search Console (gratis)
 
 1. Buka [Google Search Console](https://search.google.com/search-console), lalu

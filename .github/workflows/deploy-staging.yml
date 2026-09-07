@@ -123,4 +123,4 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Verify staging deployment
-        run: npm run verify:deployment -- "$NEXT_PUBLIC_SITE_URL"
+        run: npm run verify:deployment -- https://staging.maukitchen.my.id

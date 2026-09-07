@@ -146,6 +146,55 @@ dan deploy staging. Secret tetap disimpan pada GitHub environment `staging`.
 Promotion ke production tetap lewat merge terpisah ke `main`; jangan menunjuk
 domain production ke Worker staging.
 
+Untuk deploy manual, set URL staging secara eksplisit sebelum build agar policy
+anti-indexing ikut terkompilasi:
+
+```powershell
+$env:NEXT_PUBLIC_SITE_URL = "https://staging.maukitchen.my.id"
+npm run deploy:staging
+```
+
+Staging wajib memiliki dua lapisan berikut:
+
+1. Kode staging mengirim `X-Robots-Tag: noindex, nofollow` pada semua respons,
+   dan `/robots.txt` tidak mengiklankan sitemap staging. Verifikasi setelah
+   deploy:
+
+   ```bash
+   curl -sI https://staging.maukitchen.my.id/ | grep -i x-robots-tag
+   curl -s https://staging.maukitchen.my.id/robots.txt
+   ```
+
+   Output pertama harus memuat `noindex, nofollow`; output kedua tidak boleh
+   memiliki baris `Sitemap:` dari aplikasi. Halaman publik tetap dapat di-crawl
+   agar bot membaca header `noindex` sampai Cloudflare Access diaktifkan.
+
+2. Hardening lanjutan yang direkomendasikan: kunci Worker staging dengan
+   Cloudflare Access. Pengaturan dashboard ini belum diterapkan atau diverifikasi
+   oleh perubahan repo:
+
+   - buka **Cloudflare Dashboard → Workers & Pages → maus-kitchen-staging →
+     Access**;
+   - pilih **Protect this Worker behind Access**, lalu **All traffic**;
+   - pada **Authentication policy**, buat policy dengan **Action: Allow**,
+     **Include → Emails**, dan isi hanya `<EMAIL_PEMILIK>`;
+   - jangan gunakan **Include → Everyone** atau hanya **Login Methods →
+     One-time PIN**, karena keduanya dapat membuka akses lebih luas;
+   - pilih identity provider yang digunakan pemilik. Jika memakai kode email,
+     aktifkan **Zero Trust → Integrations → Identity providers → Add new
+     identity provider → One-time PIN** terlebih dahulu;
+   - sebelum memilih **Apply Access**, siapkan service token khusus GitHub
+     Actions dan policy **Service Auth**, lalu ubah verifier staging agar mengirim
+     `CF-Access-Client-Id` dan `CF-Access-Client-Secret`. Tanpa itu, langkah
+     **Verify staging deployment** akan menerima redirect/403 dan gagal;
+   - setelah integrasi CI tersebut tersedia, simpan dengan **Apply Access**, lalu
+     uji dari incognito bahwa email lain tidak menerima akses dan email pemilik
+     dapat masuk.
+
+Worker-level Access juga melindungi hostname `workers.dev` dan preview milik
+Worker staging. Jangan menerapkan policy ini pada Worker production
+`maus-kitchen`.
+
 Catatan 2026-08-31: schema aktual project staging sudah disinkronkan tanpa
 menghapus 20 pesanan uji. Riwayat migration project lama belum identik dengan
 nama file lokal karena schema awal dibuat manual. Sebelum mengaktifkan

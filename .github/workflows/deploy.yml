@@ -98,7 +98,7 @@ jobs:
       # /api/health saja tidak cukup: insiden 1102 pernah mengenai render publik
       # ketika backend tetap sehat. Periksa jalur pelanggan dan discovery crawler.
       - name: Verify deployment
-        run: npm run verify:deployment -- "$NEXT_PUBLIC_SITE_URL"
+        run: npm run verify:deployment -- https://maukitchen.my.id
 
       - name: Deploy status
         run: |
