@@ -31,6 +31,7 @@ sudah divalidasi, sehingga variasi query string tidak membentuk URL duplikat.
 | `/menu/chocoberry` | ChocoBerry — Buah Coklat Premium | Strawberry, anggur, dan pisang segar disiram coklat premium. Mulai Rp25.000. |
 | `/tentang` | Tentang Kami — MAU'S Kitchen | Cerita di balik MAU'S Kitchen, dapur rumahan yang memasak dengan cinta. |
 | `/kontak` | Kontak & Jam Buka — MAU'S Kitchen | Hubungi MAU'S Kitchen lewat WhatsApp 0816-1769-1585 untuk pesan atau tanya menu. |
+| `/pesanan` | Lacak Pesanan \| MAU'S Kitchen | Lacak status pesanan kamu dengan kode pesanan MAU'S Kitchen. |
 
 ### Implementasi
 
