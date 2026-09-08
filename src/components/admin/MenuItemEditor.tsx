@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ImageUp, X } from "lucide-react";
+import { ImageUp, Trash2, X } from "lucide-react";
 
 import type {
   ManagedAddOn,
@@ -10,7 +10,7 @@ import type {
   ManagedItem,
   ManagedVariant,
 } from "@/components/admin/MenuManager";
-import { Dialog } from "@/components/ui";
+import { ConfirmButton, Dialog } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 interface MenuItemEditorProps {
@@ -211,6 +211,29 @@ export function MenuItemEditor({
       }
       router.refresh();
       setNotice("Foto diperbarui.");
+    } catch {
+      setError("Periksa koneksi lalu coba lagi.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteImage(): Promise<void> {
+    setError(null);
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/menu/items/${itemId}/image`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const json = (await response.json().catch(() => null)) as {
+          message?: string;
+        } | null;
+        setError(json?.message ?? "Gagal menghapus foto.");
+        return;
+      }
+      router.refresh();
+      setNotice("Foto dihapus.");
     } catch {
       setError("Periksa koneksi lalu coba lagi.");
     } finally {
@@ -449,21 +472,41 @@ export function MenuItemEditor({
                 </div>
               )}
               {mode === "edit" ? (
-                <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gold px-4 text-sm font-bold text-brown-deep hover:bg-gold-light">
-                  <ImageUp className="size-4" strokeWidth={2} />
-                  Unggah Foto
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) {
-                        void handleUploadImage(file);
+                <>
+                  <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-gold px-4 text-sm font-bold text-brown-deep hover:bg-gold-light">
+                    <ImageUp className="size-4" strokeWidth={2} />
+                    Unggah Foto
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) {
+                          void handleUploadImage(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  {existing?.image ? (
+                    // Destruktif = konfirmasi dua langkah inline (A14),
+                    // sama dengan pola arsip item di MenuManager.
+                    <ConfirmButton
+                      disabled={busy}
+                      onConfirm={() => {
+                        void handleDeleteImage();
+                      }}
+                      label={
+                        <>
+                          <Trash2 className="size-4" strokeWidth={2} />
+                          Hapus Foto
+                        </>
                       }
-                    }}
-                  />
-                </label>
+                      confirmLabel="Ya, Hapus Foto"
+                      className="flex w-full min-h-11 items-center justify-center gap-2 rounded-full border border-chili/40 px-4 text-sm font-bold text-chili transition-colors hover:bg-chili/10 disabled:opacity-50"
+                    />
+                  ) : null}
+                </>
               ) : (
                 <p className="text-xs text-brown/60">
                   Simpan item dulu, lalu unggah foto dari tab ini.

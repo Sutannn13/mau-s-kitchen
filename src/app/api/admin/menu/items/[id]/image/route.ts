@@ -1,9 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { requireAdminService } from "@/lib/admin/menu";
-import { MAX_MENU_IMAGE_BYTES, validateMenuImage } from "@/lib/menu-image";
+import {
+  extractMenuImagePath,
+  MAX_MENU_IMAGE_BYTES,
+  validateMenuImage,
+} from "@/lib/menu-image";
 import { getClientIp, isRateLimited } from "@/lib/rate-limit";
 import {
   readRequestBytesWithLimit,
@@ -22,6 +27,29 @@ function jsonError(status: number, error: string, message: string): NextResponse
     { success: false, error, message },
     { status },
   );
+}
+
+// Hapus file bucket dari URL publik lama — best-effort: kegagalan hanya
+// dicatat, tidak menggagalkan respons (file yatim tidak berbahaya). Hanya
+// dipanggil SETELAH update DB sukses agar menu tidak pernah menunjuk file
+// yang sudah terhapus.
+async function cleanupMenuImageFile(
+  supabase: SupabaseClient,
+  logTag: string,
+  imageUrl: string,
+): Promise<void> {
+  const path = extractMenuImagePath(imageUrl);
+  if (!path) {
+    return;
+  }
+  try {
+    const removed = await supabase.storage.from("menu-images").remove([path]);
+    if (removed.error) {
+      console.error(logTag, removed.error.message);
+    }
+  } catch (error) {
+    console.error(logTag, error);
+  }
 }
 
 // POST /api/admin/menu/items/[id]/image — upload foto menu (multipart).
@@ -49,10 +77,11 @@ export async function POST(
     return jsonError(413, "PAYLOAD_TOO_LARGE", "Ukuran berkas maksimal 3MB.");
   }
 
-  const exists = await supabase.from("menu_items").select("id").eq("id", id).maybeSingle();
+  const exists = await supabase.from("menu_items").select("image_path").eq("id", id).maybeSingle();
   if (exists.error || !exists.data) {
     return jsonError(404, "NOT_FOUND", "Item menu tidak ditemukan.");
   }
+  const oldImage = exists.data.image_path ?? "";
 
   let formData: FormData;
   try {
@@ -126,5 +155,59 @@ export async function POST(
   }
 
   revalidatePath("/", "layout");
+  await cleanupMenuImageFile(supabase, "[POST menu image:cleanup]", oldImage);
   return NextResponse.json({ success: true, data: { imagePath: publicUrl } });
+}
+
+// DELETE /api/admin/menu/items/[id]/image — lepas foto item: image_path
+// diset '' (kolom NOT NULL default ''), lalu file bucket dihapus best-effort
+// setelah DB sukses. Item arsip tetap boleh hapus foto (paralel dengan PATCH).
+export async function DELETE(
+  request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const guard = await requireAdminService(request);
+  if (!guard.ok) {
+    return guard.response;
+  }
+  const { supabase } = guard;
+  const { id } = await context.params;
+
+  const rateKey = `menuimgdel:${getClientIp(request.headers)}`;
+  if (await isRateLimited(rateKey, { maxRequests: 6, windowSeconds: 60 })) {
+    return jsonError(429, "RATE_LIMITED", "Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.");
+  }
+
+  const existing = await supabase
+    .from("menu_items")
+    .select("image_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (existing.error) {
+    console.error("[DELETE menu image:exists]", existing.error.message);
+    return jsonError(500, "INTERNAL_ERROR", "Gagal memeriksa item menu.");
+  }
+  if (!existing.data) {
+    return jsonError(404, "NOT_FOUND", "Item menu tidak ditemukan.");
+  }
+  if (!existing.data.image_path) {
+    return jsonError(404, "NOT_FOUND", "Item belum punya foto.");
+  }
+
+  const updated = await supabase
+    .from("menu_items")
+    .update({ image_path: "" })
+    .eq("id", id);
+  if (updated.error) {
+    console.error("[DELETE menu image:update]", updated.error.message);
+    return jsonError(500, "INTERNAL_ERROR", "Gagal menghapus foto. Coba lagi.");
+  }
+
+  revalidatePath("/", "layout");
+  await cleanupMenuImageFile(
+    supabase,
+    "[DELETE menu image:cleanup]",
+    existing.data.image_path,
+  );
+  return NextResponse.json({ success: true, data: { id } });
 }

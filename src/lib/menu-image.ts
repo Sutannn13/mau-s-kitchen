@@ -1,5 +1,31 @@
 export const MAX_MENU_IMAGE_BYTES = 3 * 1024 * 1024;
 
+const MENU_IMAGE_URL_MARKER = "/object/public/menu-images/";
+
+// Ekstrak path objek bucket dari URL publik menu-images untuk penghapusan
+// file. Hanya URL yang cocok pola bucket sendiri yang diekstrak; URL aset
+// lokal (/images/...) atau eksternal mengembalikan null agar tidak pernah
+// disentuh storage. Path hasil decode ditolak bila kosong, diawali "/", atau
+// mengandung ".." (anti path-traversal).
+export function extractMenuImagePath(url: string): string | null {
+  const markerIndex = url.indexOf(MENU_IMAGE_URL_MARKER);
+  if (markerIndex === -1) {
+    return null;
+  }
+  let path: string;
+  try {
+    path = decodeURIComponent(
+      url.slice(markerIndex + MENU_IMAGE_URL_MARKER.length),
+    );
+  } catch {
+    return null;
+  }
+  if (!path || path.startsWith("/") || path.includes("..")) {
+    return null;
+  }
+  return path;
+}
+
 interface MenuFileLike {
   size: number;
   arrayBuffer(): Promise<ArrayBuffer>;
