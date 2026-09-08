@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   isPrivacyConfigurationReady: vi.fn(),
   isStrictPublicRateLimited: vi.fn(),
-  isTrustedOrderRequest: vi.fn(),
+  isTrustedSiteRequest: vi.fn(),
 }));
 
 vi.mock("@/lib/privacy", () => ({
@@ -16,7 +16,7 @@ vi.mock("@/lib/rate-limit", () => ({
 }));
 
 vi.mock("@/lib/request-origin", () => ({
-  isTrustedOrderRequest: mocks.isTrustedOrderRequest,
+  isTrustedSiteRequest: mocks.isTrustedSiteRequest,
 }));
 
 import { POST } from "@/app/api/orders/route";
@@ -26,7 +26,7 @@ describe("POST /api/orders rate limit", () => {
     vi.clearAllMocks();
     mocks.isPrivacyConfigurationReady.mockReturnValue(true);
     mocks.isStrictPublicRateLimited.mockResolvedValue(true);
-    mocks.isTrustedOrderRequest.mockReturnValue(true);
+    mocks.isTrustedSiteRequest.mockReturnValue(true);
   });
 
   it("menolak checkout setelah lima permintaan per menit dari IP yang sama", async () => {
@@ -49,7 +49,7 @@ describe("POST /api/orders rate limit", () => {
   });
 
   it("menolak origin lintas situs sebelum rate limit dan checkout", async () => {
-    mocks.isTrustedOrderRequest.mockReturnValue(false);
+    mocks.isTrustedSiteRequest.mockReturnValue(false);
 
     const response = await POST(
       new Request("https://maukitchen.my.id/api/orders", {

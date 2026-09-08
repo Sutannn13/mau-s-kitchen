@@ -13,6 +13,7 @@ describe("verifyAdminSession: penulisan ulang cookie (cookieSetter)", () => {
     env.NEXT_PUBLIC_SUPABASE_URL = "https://db.example.supabase.co";
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key-for-tests";
     env.ADMIN_EMAILS = "admin@mauskitchen.test";
+    env.NEXT_PUBLIC_SITE_URL = "https://staging.maukitchen.my.id";
     vi.resetModules();
   });
 
@@ -23,7 +24,12 @@ describe("verifyAdminSession: penulisan ulang cookie (cookieSetter)", () => {
 
   function makeRequest(cookieHeader: string): Request {
     return new Request("https://staging.maukitchen.my.id/api/admin/session", {
-      headers: { cookie: cookieHeader },
+      headers: {
+        cookie: cookieHeader,
+        // verifyAdminRequest kini mewajibkan permintaan same-origin (CSRF).
+        origin: "https://staging.maukitchen.my.id",
+        "sec-fetch-site": "same-origin",
+      },
     });
   }
 
@@ -107,5 +113,30 @@ describe("verifyAdminSession: penulisan ulang cookie (cookieSetter)", () => {
     expect(cookieSetter).toHaveBeenCalledWith([
       { name: "sb-access", value: "new-access", options: { path: "/" } },
     ]);
+  });
+
+  it("verifyAdminRequest menolak permintaan lintas situs walau sesi valid", async () => {
+    const user = { id: "u3", email: "admin@mauskitchen.test", app_metadata: { role: "admin" } };
+    vi.doMock("@supabase/ssr", () => ({
+      createServerClient: () => ({
+        auth: {
+          getUser: async () => ({ data: { user }, error: null }),
+        },
+      }),
+    }));
+    const auth = await import("@/lib/supabase/auth");
+
+    const crossOrigin = new Request(
+      "https://staging.maukitchen.my.id/api/admin/session",
+      {
+        headers: {
+          cookie: "sb-access=valid",
+          origin: "https://evil.example",
+          "sec-fetch-site": "cross-site",
+        },
+      },
+    );
+
+    await expect(auth.verifyAdminRequest(crossOrigin)).resolves.toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 
 import { getSupabaseEnv } from "@/lib/supabase/config";
+import { isTrustedSiteRequest } from "@/lib/request-origin";
 
 interface AdminIdentity {
   id: string;
@@ -84,11 +85,17 @@ export async function verifyAdminSession(
 
 // Helper untuk route handler: verifikasi sesi admin langsung dari objek
 // Request (header cookie diparsing manual — route handler Next 15 tidak
-// mengekspos cookie API seperti NextRequest).
+// mengekspos cookie API seperti NextRequest). Permintaan wajib same-origin:
+// mutasi admin (POST/PATCH/DELETE dengan cookie) tidak boleh dipicu lintas
+// situs (CSRF). Header penanda absen (non-browser) juga ditolak — fail-closed.
 export async function verifyAdminRequest(
   request: Request,
   cookieSetter?: SetAllCookies,
 ): Promise<AdminIdentity | null> {
+  if (!isTrustedSiteRequest(request.headers)) {
+    return null;
+  }
+
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookies = cookieHeader
     .split(";")

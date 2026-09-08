@@ -26,7 +26,7 @@ import {
 } from "@/lib/order-pricing";
 import { isPrivacyConfigurationReady } from "@/lib/privacy";
 import { getClientIp, isStrictPublicRateLimited } from "@/lib/rate-limit";
-import { isTrustedOrderRequest } from "@/lib/request-origin";
+import { isTrustedSiteRequest } from "@/lib/request-origin";
 import {
   readRequestBytesWithLimit,
   RequestBodyTooLargeError,
@@ -68,7 +68,7 @@ function omitPublicToken(order: Order): Omit<Order, "publicToken"> {
 // tolak dengan 503 MENU_STORE_UNAVAILABLE (jangan pakai fallback JSON yang
 // mungkin stale). Lihat docs/11_API_SPEC.md §11.2.
 export async function POST(request: Request): Promise<NextResponse> {
-  if (!isTrustedOrderRequest(request.headers)) {
+  if (!isTrustedSiteRequest(request.headers)) {
     return jsonError(
       403,
       "UNTRUSTED_ORIGIN",
@@ -377,7 +377,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return jsonError(
         503,
         "FITUR_BELUM_AKTIF",
-        "Database belum dikonfigurasi. Ikuti docs/19_SETUP_MANUAL.md.",
+        "Database belum dikonfigurasi. Hubungi pengembang.",
       );
     }
 

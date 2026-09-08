@@ -8,7 +8,10 @@ function getConfiguredOrigin(): string | null {
   }
 }
 
-export function isTrustedOrderRequest(headers: Headers): boolean {
+// Gate same-origin generik: dipakai checkout pelanggan dan mutasi admin.
+// Browser selalu mengirim sec-fetch-site dan/atau Origin yang cocok untuk
+// permintaan same-origin; header absen (mis. curl) atau lintas situs = tolak.
+export function isTrustedSiteRequest(headers: Headers): boolean {
   const fetchSite = headers.get("sec-fetch-site")?.trim().toLowerCase();
   if (fetchSite !== undefined && fetchSite !== "same-origin") {
     return false;

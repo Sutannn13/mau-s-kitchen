@@ -49,7 +49,7 @@ export async function PATCH(
     return jsonError(
       503,
       "FITUR_BELUM_AKTIF",
-      "Database belum dikonfigurasi. Ikuti docs/19_SETUP_MANUAL.md.",
+      "Database belum dikonfigurasi. Hubungi pengembang.",
     );
   }
 

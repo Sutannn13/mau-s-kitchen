@@ -51,7 +51,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       return jsonError(
         503,
         "FITUR_BELUM_AKTIF",
-        "Database belum dikonfigurasi. Ikuti docs/19_SETUP_MANUAL.md.",
+        "Database belum dikonfigurasi. Hubungi pengembang.",
       );
     }
     return NextResponse.json({ success: true, data: rekap });

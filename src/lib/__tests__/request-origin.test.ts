@@ -6,16 +6,16 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/config/site", () => ({ siteConfig: mocks.siteConfig }));
 
-import { isTrustedOrderRequest } from "@/lib/request-origin";
+import { isTrustedSiteRequest } from "@/lib/request-origin";
 
-describe("isTrustedOrderRequest", () => {
+describe("isTrustedSiteRequest", () => {
   beforeEach(() => {
     mocks.siteConfig.siteUrl = "https://maukitchen.my.id";
   });
 
   it("menerima origin deployment aktif dan fetch same-origin", () => {
     expect(
-      isTrustedOrderRequest(
+      isTrustedSiteRequest(
         new Headers({
           origin: "https://maukitchen.my.id",
           "sec-fetch-site": "same-origin",
@@ -25,16 +25,16 @@ describe("isTrustedOrderRequest", () => {
 
     mocks.siteConfig.siteUrl = "https://staging.maukitchen.my.id";
     expect(
-      isTrustedOrderRequest(
+      isTrustedSiteRequest(
         new Headers({ origin: "https://staging.maukitchen.my.id" }),
       ),
     ).toBe(true);
   });
 
   it("menolak request tanpa Origin maupun fetch metadata", () => {
-    expect(isTrustedOrderRequest(new Headers())).toBe(false);
+    expect(isTrustedSiteRequest(new Headers())).toBe(false);
     expect(
-      isTrustedOrderRequest(
+      isTrustedSiteRequest(
         new Headers({ "sec-fetch-site": "same-origin" }),
       ),
     ).toBe(true);
@@ -48,7 +48,7 @@ describe("isTrustedOrderRequest", () => {
     { origin: "", fetchSite: "same-origin" },
   ])("menolak origin browser yang tidak dipercaya: $origin", (headers) => {
     expect(
-      isTrustedOrderRequest(
+      isTrustedSiteRequest(
         new Headers({
           origin: headers.origin,
           "sec-fetch-site": headers.fetchSite,
@@ -59,7 +59,7 @@ describe("isTrustedOrderRequest", () => {
 
   it("menolak fetch metadata lintas situs walau Origin terlihat benar", () => {
     expect(
-      isTrustedOrderRequest(
+      isTrustedSiteRequest(
         new Headers({
           origin: "https://maukitchen.my.id",
           "sec-fetch-site": "same-site",
