@@ -19,7 +19,7 @@ interface CopyButtonProps {
 export function CopyButton({
   value,
   label,
-  successLabel = "Tersalin ✓",
+  successLabel = "Tersalin",
   className,
 }: CopyButtonProps) {
   const [isCopied, setCopied] = useState(false);

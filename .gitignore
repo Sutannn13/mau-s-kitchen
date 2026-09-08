@@ -36,6 +36,14 @@ Thumbs.db
 *.swp
 
 # local agent and browser QA artifacts
+/.ai/
+/AGENTS.md
+/CLAUDE.md
+/CONTEXT.md
+/gemini-extension.json
+/opencode.json
+# Internal specifications, planning, and audit notes stay local.
+/docs/
 /.gsk/
 /.kilo/
 /gui-test-screenshots/
