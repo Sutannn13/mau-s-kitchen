@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { pathToFileURL } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
@@ -10,6 +11,24 @@ interface PackageFile {
 
 function readProjectFile(path: string): string {
   return readFileSync(resolve(process.cwd(), path), "utf8");
+}
+
+function runAccessHeaderProbe(
+  siteUrl: string,
+  env: Record<string, string | undefined>,
+) {
+  const moduleUrl = pathToFileURL(
+    resolve(process.cwd(), "scripts/deployment-access-headers.mjs"),
+  ).href;
+  const source = `
+    import { getDeploymentAccessHeaders } from ${JSON.stringify(moduleUrl)};
+    console.log(JSON.stringify(getDeploymentAccessHeaders(${JSON.stringify(siteUrl)}, process.env)));
+  `;
+
+  return spawnSync(process.execPath, ["--input-type=module", "--eval", source], {
+    encoding: "utf8",
+    env: { ...process.env, ...env },
+  });
 }
 
 describe("production release commands", () => {
@@ -94,6 +113,71 @@ describe("production release commands", () => {
     );
     expect(stagingWorkflow).toContain(
       "npm run verify:deployment -- https://staging.maukitchen.my.id",
+    );
+    expect(stagingWorkflow).toContain(
+      "CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}",
+    );
+    expect(stagingWorkflow).toContain(
+      "CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}",
+    );
+  });
+
+  it("mengirim service token hanya ke hostname staging", () => {
+    const result = runAccessHeaderProbe("https://staging.maukitchen.my.id", {
+      CF_ACCESS_CLIENT_ID: "client-id",
+      CF_ACCESS_CLIENT_SECRET: "client-secret",
+    });
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout.trim())).toEqual({
+      "CF-Access-Client-Id": "client-id",
+      "CF-Access-Client-Secret": "client-secret",
+    });
+  });
+
+  it("membiarkan verifier production berjalan tanpa service token staging", () => {
+    const result = runAccessHeaderProbe("https://maukitchen.my.id", {
+      CF_ACCESS_CLIENT_ID: "",
+      CF_ACCESS_CLIENT_SECRET: "",
+    });
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout.trim())).toEqual({});
+  });
+
+  it("menolak konfigurasi service token yang tidak lengkap", () => {
+    const result = runAccessHeaderProbe("https://staging.maukitchen.my.id", {
+      CF_ACCESS_CLIENT_ID: "client-id",
+      CF_ACCESS_CLIENT_SECRET: "",
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      "CF_ACCESS_CLIENT_ID dan CF_ACCESS_CLIENT_SECRET wajib diisi bersamaan.",
+    );
+  });
+
+  it("menolak staging tanpa service token", () => {
+    const result = runAccessHeaderProbe("https://staging.maukitchen.my.id", {
+      CF_ACCESS_CLIENT_ID: "",
+      CF_ACCESS_CLIENT_SECRET: "",
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      "Staging wajib memakai CF_ACCESS_CLIENT_ID dan CF_ACCESS_CLIENT_SECRET.",
+    );
+  });
+
+  it("menolak pengiriman service token ke production", () => {
+    const result = runAccessHeaderProbe("https://maukitchen.my.id", {
+      CF_ACCESS_CLIENT_ID: "client-id",
+      CF_ACCESS_CLIENT_SECRET: "client-secret",
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain(
+      "Cloudflare Access credentials hanya boleh dikirim ke staging.",
     );
   });
 

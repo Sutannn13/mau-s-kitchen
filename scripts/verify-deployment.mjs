@@ -1,3 +1,5 @@
+import { getDeploymentAccessHeaders } from "./deployment-access-headers.mjs";
+
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_ATTEMPTS = 3;
 
@@ -38,6 +40,7 @@ const siteUrl = normalizeSiteUrl(
   process.argv[2] ?? process.env.NEXT_PUBLIC_SITE_URL,
 );
 const isStaging = new URL(siteUrl).hostname === "staging.maukitchen.my.id";
+const accessHeaders = getDeploymentAccessHeaders(siteUrl);
 
 function assertDeploymentRobotsHeader(response) {
   const robotsHeader = response.headers.get("x-robots-tag")?.toLowerCase();
@@ -118,12 +121,20 @@ async function runCheck(check) {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
       const response = await fetch(url, {
-        headers: { "user-agent": "maus-kitchen-deployment-monitor/1.0" },
-        redirect: "follow",
+        headers: {
+          "user-agent": "maus-kitchen-deployment-monitor/1.0",
+          ...accessHeaders,
+        },
+        redirect: "manual",
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       const body = await response.text();
 
+      if (response.status >= 300 && response.status < 400) {
+        throw new Error(
+          `HTTP ${response.status} redirect ke ${response.headers.get("location") ?? "lokasi tidak diketahui"}`,
+        );
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }

@@ -183,11 +183,19 @@ Staging wajib memiliki dua lapisan berikut:
    - pilih identity provider yang digunakan pemilik. Jika memakai kode email,
      aktifkan **Zero Trust → Integrations → Identity providers → Add new
      identity provider → One-time PIN** terlebih dahulu;
-   - sebelum memilih **Apply Access**, siapkan service token khusus GitHub
-     Actions dan policy **Service Auth**, lalu ubah verifier staging agar mengirim
-     `CF-Access-Client-Id` dan `CF-Access-Client-Secret`. Tanpa itu, langkah
-     **Verify staging deployment** akan menerima redirect/403 dan gagal;
-   - setelah integrasi CI tersebut tersedia, simpan dengan **Apply Access**, lalu
+   - sebelum memilih **Apply Access**, buat service token khusus GitHub Actions
+     melalui **Zero Trust → Access controls → Service credentials → Service
+     Tokens**, lalu tambahkan policy **Service Auth** untuk token tersebut;
+   - simpan Client ID dan Client Secret hanya sebagai GitHub environment secrets
+     `staging` bernama `CF_ACCESS_CLIENT_ID` dan `CF_ACCESS_CLIENT_SECRET`.
+     Workflow meneruskannya sebagai header `CF-Access-Client-Id` dan
+     `CF-Access-Client-Secret` hanya ke hostname staging. Staging tanpa kedua
+     secret, konfigurasi separuh, atau upaya mengirim token ke production akan
+     gagal sebelum request dibuat;
+   - verifier memakai redirect manual agar halaman login Access tidak terbaca
+     keliru sebagai respons aplikasi yang sukses;
+   - setelah service token, dua environment secrets, dan kedua policy tersedia,
+     simpan dengan **Apply Access**, lalu
      uji dari incognito bahwa email lain tidak menerima akses dan email pemilik
      dapat masuk.
 
