@@ -124,3 +124,6 @@ jobs:
 
       - name: Verify staging deployment
         run: npm run verify:deployment -- https://staging.maukitchen.my.id
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
