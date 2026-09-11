@@ -14,14 +14,45 @@ import { spawnSync } from "node:child_process";
 // cache ter-populate saat deploy.
 // OPEN_NEXT_DEPLOY=true mencegah wrangler mendelegasikan balik ke
 // opennextjs-cloudflare deploy (loop tak berujung).
+// Ditambahkan mekanisme auto-retry (hingga 3x) untuk menangani kendala transient
+// 503 Service Unavailable / connection termination dari server Cloudflare API.
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 5000;
 const args = process.argv.slice(2);
-const result = spawnSync(
-  "npx",
-  ["wrangler", "deploy", "--experimental-provision=false", ...args],
-  {
-    stdio: "inherit",
-    env: { ...process.env, OPEN_NEXT_DEPLOY: "true" },
-    shell: true,
-  },
-);
-process.exit(result.status ?? 1);
+
+function runDeploy() {
+  return spawnSync(
+    "npx",
+    ["wrangler", "deploy", "--experimental-provision=false", ...args],
+    {
+      stdio: "inherit",
+      env: { ...process.env, OPEN_NEXT_DEPLOY: "true" },
+      shell: true,
+    },
+  );
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+let attempt = 1;
+let result;
+
+while (attempt <= MAX_RETRIES) {
+  result = runDeploy();
+  if (result.status === 0) {
+    process.exit(0);
+  }
+
+  if (attempt < MAX_RETRIES) {
+    console.warn(
+      `\n[deploy-worker] Wrangler deploy gagal (percobaan ${attempt}/${MAX_RETRIES}). Mencoba ulang dalam ${RETRY_DELAY_MS / 1000}s...\n`,
+    );
+    sleep(RETRY_DELAY_MS * attempt);
+  }
+  attempt++;
+}
+
+process.exit(result?.status ?? 1);
+
