@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@opennextjs/cloudflare": "^1.20.2",
+    "@opennextjs/cloudflare": "^1.20.6",
     "@radix-ui/react-accordion": "^1.2.20",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.112.3",
@@ -32,18 +32,21 @@
     "exceljs": "^4.4.0",
     "lucide-react": "^1.31.0",
     "motion": "^13.1.0",
-    "next": "^16.3.1",
+    "next": "^16.3.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.85.0",
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
+    "wrangler": "^4.131.0",
     "zod": "^3.25.76",
     "zustand": "^5.0.15"
   },
   "overrides": {
+    "js-yaml": "4.3.2",
     "qs": "^6.15.4",
-    "uuid": "11.1.1"
+    "uuid": "11.1.1",
+    "vitest": "4.1.11"
   },
   "devDependencies": {
     "@next/env": "^16.3.1",
@@ -58,6 +61,6 @@
     "shadcn": "^4.21.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0",
-    "vitest": "^4.1.10"
+    "vitest": "4.1.11"
   }
 }
