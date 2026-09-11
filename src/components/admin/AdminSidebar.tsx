@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   BarChart3,
   ChevronUp,
@@ -591,16 +591,26 @@ function AdminMobileDrawer({
   onClose: () => void;
 }) {
   const { dialogRef, handleKeyDown } = useDialogA11y({ onClose });
+  const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="lg:hidden">
-      <button
+    <motion.div className="lg:hidden">
+      {/* Backdrop dengan animasi fade in & fade out */}
+      <motion.button
         type="button"
         aria-label="Tutup menu navigasi admin"
         onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{
+          duration: shouldReduceMotion ? 0 : 0.22,
+          ease: "easeInOut",
+        }}
         className="fixed inset-0 z-40 bg-cocoa-950/60 backdrop-blur-sm"
       />
-      <div
+      {/* Drawer panel dengan animasi slide in & slide out ke kiri */}
+      <motion.div
         id="admin-drawer"
         ref={dialogRef}
         role="dialog"
@@ -608,10 +618,15 @@ function AdminMobileDrawer({
         aria-label="Menu navigasi admin"
         tabIndex={-1}
         onKeyDown={handleKeyDown}
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col shadow-warm-lg outline-none",
-          "animate-drawer-in motion-reduce:animate-none",
-        )}
+        initial={shouldReduceMotion ? false : { x: "-100%" }}
+        animate={{ x: 0 }}
+        exit={shouldReduceMotion ? undefined : { x: "-100%" }}
+        transition={
+          shouldReduceMotion
+            ? { duration: 0 }
+            : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+        }
+        className="fixed inset-y-0 left-0 z-50 flex w-[272px] flex-col shadow-warm-lg outline-none"
         style={{
           background: "linear-gradient(180deg, #1d110b 0%, #140b07 100%)",
         }}
@@ -630,8 +645,8 @@ function AdminMobileDrawer({
           collapsed={false}
           onNavigate={onClose}
         />
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -712,13 +727,16 @@ export function AdminSidebar({ email }: { email: string }) {
       </aside>
 
       {/* Drawer seluler — overlay + panel geluncur dari kiri (a11y dialog). */}
-      {isOpen ? (
-        <AdminMobileDrawer
-          email={email}
-          pathname={pathname}
-          onClose={() => setIsOpen(false)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {isOpen ? (
+          <AdminMobileDrawer
+            key="admin-mobile-drawer"
+            email={email}
+            pathname={pathname}
+            onClose={() => setIsOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
