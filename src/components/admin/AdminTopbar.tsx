@@ -78,16 +78,6 @@ export function AdminTopbar() {
       </div>
 
       <div className="flex shrink-0 items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-pistachio/10 px-3 py-1.5 text-[11px] font-bold text-success ring-1 ring-inset ring-pistachio/25">
-          <span className="relative flex size-1.5">
-            <span
-              aria-hidden="true"
-              className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60 motion-reduce:animate-none"
-            />
-            <span className="relative inline-flex size-1.5 rounded-full bg-success" />
-          </span>
-          Live
-        </span>
         <span className="hidden items-center gap-1.5 rounded-full bg-brown/8 px-3 py-1.5 text-[11px] font-semibold text-brown/60 ring-1 ring-inset ring-brown/10 xl:inline-flex">
           <Clock3 aria-hidden="true" className="size-3.5" strokeWidth={2} />
           Asia/Jakarta

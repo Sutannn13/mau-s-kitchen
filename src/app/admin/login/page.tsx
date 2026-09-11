@@ -18,11 +18,13 @@ export default function AdminLoginPage() {
     isSupabaseConfigured() && hasAdminAuthorizationConfigured();
 
   return (
-    <main className="min-h-screen bg-cream">
-      {/* Panel brand gelap (md+) — split-screen premium ala halaman login
-          SaaS modern; seluler hanya kartu form. */}
+    <main className="relative min-h-screen bg-cream">
+      {/* Panel brand gelap (lg+) — split-screen premium ala halaman login
+          SaaS modern; seluler/tablet hanya kartu form. Muncul mulai lg
+          (1024px) karena di md ruang kiri tidak cukup untuk teks brand +
+          kartu form tanpa saling menimpa. */}
       <div
-        className="hidden md:block"
+        className="hidden lg:block"
         style={{
           position: "absolute",
           inset: 0,
@@ -49,7 +51,9 @@ export default function AdminLoginPage() {
         />
       </div>
 
-      <div className="relative mx-auto flex min-h-screen w-full max-w-content items-center justify-center px-4 py-12 md:px-8">
+      {/* lg: geser kartu ke kanan agar tidak menimpa panel brand kiri;
+          seluler/tablet tetap terpusat. */}
+      <div className="relative mx-auto flex min-h-screen w-full max-w-content items-center justify-center px-4 py-12 md:px-8 lg:justify-end">
         <div className="fade-up w-full max-w-md">
           <div className="au-card rounded-2xl p-6 shadow-luxe-lg md:p-8">
           <div className="flex items-center gap-3">
