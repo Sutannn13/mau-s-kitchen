@@ -1,0 +1,12 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "mcp": {
+    "shadcn": {
+      "type": "local",
+      // Kilo on Windows needs cmd to launch the npx command shim reliably.
+      "command": ["cmd", "/c", "npx", "-y", "shadcn@latest", "mcp"],
+      "enabled": true,
+      "timeout": 60000
+    }
+  }
+}
