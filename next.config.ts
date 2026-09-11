@@ -62,6 +62,18 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     qualities: [60, 70, 75, 80, 85],
     minimumCacheTTL: 60 * 60 * 24 * 30,
+    // Allowlist optimizer untuk foto menu yang di-upload admin —
+    // image_path di tabel menu_items menyimpan URL publik Supabase
+    // Storage (api/admin/menu/items/[id]/image/route.ts), sedangkan
+    // foto seed memakai path lokal /assets/* yang selalu diizinkan.
+    // Tanpa ini /_next/image menolak URL remote dengan 400.
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/menu-images/**",
+      },
+    ],
   },
 };
 
